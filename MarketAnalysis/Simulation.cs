@@ -55,7 +55,7 @@ namespace MarketAnalysis
         {
             var results = new SimulationResult
             {
-                Date = _data.Last().Date,
+                Date = _data.LastOrDefault()?.Date ?? System.DateTime.MinValue,
                 Worth = _funds + (_shares * _latestPrice),
                 BuyCount = BuyCount,
                 ShouldBuy = _shouldBuy

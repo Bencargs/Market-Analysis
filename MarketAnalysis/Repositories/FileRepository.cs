@@ -78,22 +78,19 @@ namespace MarketAnalysis.Repositories
             }
             if (strategies == null)
             {
-                strategies = new IStrategy[]
+                var subStrategies = new IStrategy[]
                 {
                     new LinearRegressionStrategy(149),
                     new DeltaStrategy(1),
                     new VolumeStrategy(182),
                     new PatternRecognitionStrategy(800),
                     new RelativeStrengthStrategy(50),
-                    new MultiStrategy(new IStrategy[]
-                    {
-                        new LinearRegressionStrategy(149),
-                        new DeltaStrategy(1),
-                        new VolumeStrategy(182),
-                        new PatternRecognitionStrategy(800),
-                        new RelativeStrengthStrategy(50)
-                    })
                 };
+
+                strategies = new IStrategy[]
+                {
+                    new MultiStrategy(subStrategies)
+                }.Concat(subStrategies).ToArray();
             }
             return strategies;
         }
