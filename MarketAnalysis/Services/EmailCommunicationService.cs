@@ -1,5 +1,8 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Gmail.v1;
+using Google.Apis.Gmail.v1.Data;
+using Google.Apis.Services;
+using Google.Apis.Util.Store;
 using MailKit.Net.Smtp;
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
@@ -25,7 +28,36 @@ namespace MarketAnalysis.Services
 
         public async Task SendCommunication(IEnumerable<SimulationResult> results)
         {
-            // Disabled while in development
+            string[] scopes = { GmailService.Scope.GmailCompose, GmailService.Scope.GmailSend };
+
+            UserCredential credential;
+            var tokenPath = "token.json";
+            using (var stream = new FileStream(@"C:\Source\credentials.json", FileMode.Open, FileAccess.Read))
+            {
+                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.Load(stream).Secrets,
+                    scopes,
+                    "user",
+                    CancellationToken.None,
+                    new FileDataStore(tokenPath, true));
+            }
+
+            var service = new GmailService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Market Analysis"
+            });
+
+            string plainText = "To: TEST@gmail.com\r\n" +
+                               "Subject: subject Test\r\n" +
+                               "Content-Type: text/html; charset=us-ascii\r\n\r\n" +
+                               "<h1>Body Test </h1>";
+
+            var newMsg = new Message
+            {
+                Raw = Base64UrlEncode(plainText.ToString())
+            };
+            service.Users.Messages.Send(newMsg, "me").Execute();
             return;
 
             // todo: replace with Google OAuth authentication below -
@@ -49,6 +81,12 @@ namespace MarketAnalysis.Services
                 await emailClient.SendAsync(message);
                 await emailClient.DisconnectAsync(true);
             }
+        }
+
+        public static string Base64UrlEncode(string input)
+        {
+            var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
+            return Convert.ToBase64String(inputBytes).Replace("+", "-").Replace("/", "_").Replace("=", "");
         }
 
         private MimeMessage CreateEmailMessage(EmailTemplate template)
