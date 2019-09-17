@@ -3,6 +3,7 @@ using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Strategy;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,6 +21,7 @@ namespace MarketAnalysis.Repositories
 
         public async Task<IEnumerable<Row>> GetHistoricData()
         {
+            Log.Information($"Loading historic market data from {_readonlyDataFilePath}");
             var results = new List<Row>();
             using (var reader = new StreamReader(_readonlyDataFilePath))
             {
@@ -86,12 +88,10 @@ namespace MarketAnalysis.Repositories
                     new PatternRecognitionStrategy(800),
                     new RelativeStrengthStrategy(50),
                 };
-
-                strategies = new IStrategy[]
-                {
-                    new MultiStrategy(subStrategies)
-                }.Concat(subStrategies).ToArray();
+                subStrategies.Concat(new[] { new MultiStrategy(subStrategies) });
+                strategies = subStrategies.ToArray();
             }
+            Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");
             return strategies;
         }
 

@@ -20,9 +20,9 @@ namespace MarketAnalysis.Strategy
             var simulator = new Simulation(_history, false);
             var optimal = Enumerable.Range(0, 100).Select(x =>
             {
-                var worth = simulator.Evaluate(new RelativeStrengthStrategy(x));
-                return new { x, worth, simulator.BuyCount };
-            }).OrderByDescending(x => x.worth).ThenBy(x => x.BuyCount).First();
+                var result = simulator.Evaluate(new RelativeStrengthStrategy(x));
+                return new { x, result.Worth, simulator.BuyCount };
+            }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
             _threshold = optimal.x;
         }
 

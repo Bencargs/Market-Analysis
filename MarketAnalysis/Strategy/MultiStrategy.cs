@@ -61,9 +61,9 @@ namespace MarketAnalysis.Strategy
         {
             return strats.Select(strategy =>
             {
-                var worth = simulator.Evaluate(strategy);
-                return new { strategy, worth, simulator.BuyCount };
-            }).OrderByDescending(x => x.BuyCount)
+                var result = simulator.Evaluate(strategy);
+                return new { strategy, result, simulator.BuyCount };
+            }).OrderByDescending(x => x.result.Worth).OrderByDescending(x => x.BuyCount)
             .Select(x => x.strategy).ToList();
         }
 

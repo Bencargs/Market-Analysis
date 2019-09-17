@@ -2,6 +2,7 @@
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
 using MarketAnalysis.Strategy;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,12 +62,13 @@ namespace MarketAnalysis.Services
         private IEnumerable<SimulationResult> Simulate(IEnumerable<Row> data, IEnumerable<IStrategy> strategies)
         {
             Simulation simulator = Configuration.InitialRun 
-                ? simulator = new Simulation(data.ToList())
-                : simulator = new Simulation(new List<Row> { data.Last() });
+                ? simulator = new Simulation(data)
+                : simulator = new Simulation(new [] { data.Last() }); // wrong (should be last unprocessed data)
 
             // todo: run in parallel
             foreach (var s in strategies)
             {
+                Log.Information($"Evaluating strategy: {s.GetType()}");
                 yield return simulator.Evaluate(s);
             }
         }

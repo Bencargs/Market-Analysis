@@ -16,6 +16,7 @@ namespace MarketAnalysis.Providers
 
         public async Task<IEnumerable<Row>> GetData()
         {
+            Log.Information($"Reading market data from provider {_url}");
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri(_url);

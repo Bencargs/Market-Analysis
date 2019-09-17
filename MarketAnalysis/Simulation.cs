@@ -12,20 +12,20 @@ namespace MarketAnalysis
         private bool _shouldBuy;
         private decimal _latestPrice;
         private bool _isSelfOptimising;
-        private List<Row> _data = new List<Row>();
+        private Row[] _data;
 
         public int BuyCount { get; private set; }
 
-        public Simulation(List<Row> data, bool shouldOptimise = true)
+        public Simulation(IEnumerable<Row> data, bool shouldOptimise = true)
         {
-            _data = data;
+            _data = data.ToArray();
             _isSelfOptimising = shouldOptimise;
         }
 
         public SimulationResult Evaluate(IStrategy strategy)
         {
             Reset();
-            for (int i = 0; i < _data.Count; i++)
+            for (int i = 0; i < _data.Length; i++)
             {
                 if (_isSelfOptimising && i % Configuration.OptimisePeriod == 0)
                     strategy.Optimise();
