@@ -27,7 +27,7 @@ namespace MarketAnalysis
             Reset();
             for (int i = 0; i < _data.Length; i++)
             {
-                if (_isSelfOptimising && i % Configuration.OptimisePeriod == 0)
+                if (ShouldSelfOptimise(i))
                     strategy.Optimise();
 
                 if (strategy.ShouldAddFunds())
@@ -49,6 +49,14 @@ namespace MarketAnalysis
             _latestPrice = 0;
 
             BuyCount = 0;
+        }
+
+        private bool ShouldSelfOptimise(int index)
+        {
+            return
+                _isSelfOptimising &&
+                index > 1 &&
+                index % Configuration.OptimisePeriod == 0;
         }
 
         private SimulationResult GetResults(IStrategy strategy)

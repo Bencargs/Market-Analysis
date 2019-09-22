@@ -16,10 +16,12 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
+            return;
+
             var simulator = new Simulation(_history, false);
             var optimal = Enumerable.Range(1, 800).Select(x =>
             {
-                var result = simulator.Evaluate(new LinearRegressionStrategy(x));
+                var result = simulator.Evaluate(new VolumeStrategy(x));
                 return new { x, result.Worth, simulator.BuyCount };
             }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
             _threshold = optimal.x;

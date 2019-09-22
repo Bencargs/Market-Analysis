@@ -27,9 +27,6 @@ namespace MarketAnalysis.Strategy
             //Disabled untill I have an idea on how long this takes to complete
             return;
 
-            if (_history.Count < 30)
-                return;
-
             var simulator = new Simulation(_history, false);
             using (var clone = new Bitmap(_average))
             {

@@ -17,6 +17,8 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
+            return;
+
             var simulator = new Simulation(_history, false);
             var optimal = Enumerable.Range(30, 200).Select(x =>
             {

@@ -87,9 +87,9 @@ namespace MarketAnalysis.Repositories
                     new VolumeStrategy(182),
                     new PatternRecognitionStrategy(800),
                     new RelativeStrengthStrategy(50),
+                    new GradientStrategy(20, -0.06m)
                 };
-                subStrategies.Concat(new[] { new MultiStrategy(subStrategies) });
-                strategies = subStrategies.ToArray();
+                strategies = subStrategies.Concat(new[] { new MultiStrategy(subStrategies) });
             }
             Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");
             return strategies;

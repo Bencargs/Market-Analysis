@@ -19,7 +19,7 @@ namespace MarketAnalysis.Strategy
             var simulator = new Simulation(_history, false);
             var optimal = Enumerable.Range(1, 200).Select(x =>
             {
-                var result = simulator.Evaluate(new LinearRegressionStrategy(x));
+                var result = simulator.Evaluate(new DeltaStrategy(x));
                 return new { x, result.Worth, simulator.BuyCount };
             }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
             _threshold = optimal.x;

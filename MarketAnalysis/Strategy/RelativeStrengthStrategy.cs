@@ -17,6 +17,8 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
+            return;
+
             var simulator = new Simulation(_history, false);
             var optimal = Enumerable.Range(0, 100).Select(x =>
             {
@@ -35,16 +37,17 @@ namespace MarketAnalysis.Strategy
         {
             if (!_history.Any(x => x.Date == data.Date))
                 _history.Add(data);
-            if (_history.Count < 3)
+
+            var batch = _history.AsEnumerable().Reverse().Take(_threshold).Reverse().ToArray();
+            if (batch.Count() < 3)
                 return false;
 
-            var batch = _history.AsEnumerable().Reverse().Take(_threshold).Reverse().ToList();
             var strength = GetRelativeStrength(data.Price, batch);
 
             return new[] { 0, 3, 5, 6 }.Contains(strength);
         }
 
-        private int GetRelativeStrength(decimal price, List<Row> data)
+        private int GetRelativeStrength(decimal price, Row[] data)
         {
             var min = data.Min(y => y.Price);
             var max = data.Max(y => y.Price);
