@@ -36,7 +36,6 @@ namespace MarketAnalysis.Services
 
             var results = Simulate(data, strategies).ToList();
 
-            Console.WriteLine($"Hit:{SimulationCache.Hit} Miss:{SimulationCache.Miss}");
             var buySignals = results.Where(x => x.ShouldBuy);
             if (buySignals.Any())
                 await _communicationService.SendCommunication(buySignals);
@@ -63,14 +62,15 @@ namespace MarketAnalysis.Services
         private IEnumerable<SimulationResult> Simulate(IEnumerable<Row> data, IEnumerable<IStrategy> strategies)
         {
             Simulation simulator = Configuration.InitialRun 
-                ? simulator = new Simulation(data)
-                : simulator = new Simulation(new [] { data.Last() }); // wrong (should be last unprocessed data)
+                ? simulator = new Simulation(data, true)
+                : simulator = new Simulation(new [] { data.Last() }, true); // wrong (should be last unprocessed data)
 
             // todo: run in parallel
             foreach (var s in strategies)
             {
                 Log.Information($"Evaluating strategy: {s.GetType()}");
                 yield return simulator.Evaluate(s);
+                SimulationCache.ClearCache();
             }
         }
     }

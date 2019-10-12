@@ -82,12 +82,12 @@ namespace MarketAnalysis.Repositories
             {
                 var subStrategies = new IStrategy[]
                 {
-                    new LinearRegressionStrategy(149),
-                    new DeltaStrategy(1),
-                    new VolumeStrategy(182),
                     new PatternRecognitionStrategy(800),
                     new RelativeStrengthStrategy(50),
-                    new GradientStrategy(20, -0.06m)
+                    new DeltaStrategy(1),
+                    new GradientStrategy(20, -0.06m),
+                    new LinearRegressionStrategy(149),
+                    new VolumeStrategy(182),
                 };
                 strategies = subStrategies.Concat(new[] { new MultiStrategy(subStrategies) });
             }

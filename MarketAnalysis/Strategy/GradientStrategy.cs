@@ -31,18 +31,22 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
-            var simulator = new Simulation(_history);
-            var optimal = Enumerable.Range(1, 10).SelectMany(x =>
+            using (var progress = ProgressBarReporter.SpawnChild(10 * 20, "Optimising..."))
             {
-                return Enumerable.Range(20, 20).Select(window =>
+                var simulator = new Simulation(_history);
+                var optimal = Enumerable.Range(1, 10).SelectMany(x =>
                 {
-                    var threshold = -((decimal)x / 100);
-                    var result = simulator.Evaluate(new GradientStrategy(window, threshold, false));
-                    return new { threshold, window, result.Worth, simulator.BuyCount };
-                });
-            }).OrderByDescending(x => x.Worth).ThenByDescending(x => x.BuyCount).First();
-            _window = optimal.window;
-            _threshold = optimal.threshold;
+                    return Enumerable.Range(20, 20).Select(window =>
+                    {
+                        var threshold = -((decimal)x / 100);
+                        var result = simulator.Evaluate(new GradientStrategy(window, threshold, false));
+                        progress.Tick($"x:{x} y:{window}");
+                        return new { threshold, window, result.Worth, simulator.BuyCount };
+                    });
+                }).OrderByDescending(x => x.Worth).ThenByDescending(x => x.BuyCount).First();
+                _window = optimal.window;
+                _threshold = optimal.threshold;
+            }
         }
 
         public bool ShouldAddFunds()

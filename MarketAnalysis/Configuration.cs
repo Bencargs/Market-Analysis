@@ -20,6 +20,6 @@ namespace MarketAnalysis
         public static string EmailTemplatePath => ConfigurationManager.AppSettings["EmailTemplatePath"];
         public static string PatternRecognitionImagePath => ConfigurationManager.AppSettings["PatternRecognitionImagePath"];
         public static decimal OnlinePriceAdjustment => decimal.Parse(ConfigurationManager.AppSettings["OnlinePriceAdjustment"]);
-        public static int OptimisePeriod => int.Parse(ConfigurationManager.AppSettings["OptimisePeriod"]);
+        public static int CacheSize => int.Parse(ConfigurationManager.AppSettings["CacheSize"]);
     }
 }

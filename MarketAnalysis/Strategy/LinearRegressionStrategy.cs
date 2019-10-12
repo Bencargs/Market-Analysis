@@ -29,13 +29,17 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
-            var simulator = new Simulation(_history);
-            var optimal = Enumerable.Range(30, 200).Select(x =>
+            using (var progress = ProgressBarReporter.SpawnChild(200, "Optimising..."))
             {
-                var result = simulator.Evaluate(new LinearRegressionStrategy(x, false));
-                return new { x, result.Worth, simulator.BuyCount };
-            }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
-            _window = optimal.x;
+                var simulator = new Simulation(_history);
+                var optimal = Enumerable.Range(30, 200).Select(x =>
+                {
+                    var result = simulator.Evaluate(new LinearRegressionStrategy(x, false));
+                    progress.Tick($"Optimising... x:{x}");
+                    return new { x, result.Worth, simulator.BuyCount };
+                }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
+                _window = optimal.x;
+            }
         }
 
         public bool ShouldAddFunds()

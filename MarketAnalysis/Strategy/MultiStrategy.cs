@@ -9,10 +9,10 @@ namespace MarketAnalysis.Strategy
         private IStrategy[] _strategies;
         private IStrategy _combinationRule;
         private readonly bool _shouldOptimise;
-        private const int OptimisePeriod = 1024;
+        private const int OptimisePeriod = 524;
         private List<Row> _history = new List<Row>(5000);
 
-        public object Key => new { _combinationRule.Key };
+        public object Key => new { _combinationRule?.Key };
 
         public MultiStrategy(IStrategy[] strategies, bool shouldOptimise = true)
         {
@@ -28,30 +28,34 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
-            var simulator = new Simulation(_history);
-            var strategyRules = new List<IStrategy>();
-            var orderedStrategies = OrderStratergies(simulator, _strategies);
-            while (orderedStrategies.Any())
+            using (var progress = ProgressBarReporter.SpawnChild(_strategies.Count(), "Optimising..."))
             {
-                var first = orderedStrategies.First();
-                var parentValue = simulator.Evaluate(first).Worth;
+                var simulator = new Simulation(_history);
+                var strategyRules = new List<IStrategy>();
+                var orderedStrategies = OrderStratergies(simulator, _strategies);
+                while (orderedStrategies.Any())
+                {
+                    var first = orderedStrategies.First();
+                    var parentValue = simulator.Evaluate(first).Worth;
 
-                var combination = GetCombinedStrategy(simulator, orderedStrategies);
-                if (combination != null && combination.Value > parentValue)
-                {
-                    strategyRules.Add(combination.AndStrategy);
-                    foreach (var s in combination.Strategies)
+                    var combination = GetCombinedStrategy(simulator, orderedStrategies);
+                    if (combination != null && combination.Value > parentValue)
                     {
-                        orderedStrategies.Remove(s);
+                        strategyRules.Add(combination.AndStrategy);
+                        foreach (var s in combination.Strategies)
+                        {
+                            orderedStrategies.Remove(s);
+                        }
                     }
+                    else
+                    {
+                        strategyRules.Add(first);
+                        orderedStrategies.Remove(first);
+                    }
+                    progress.Tick();
                 }
-                else
-                {
-                    strategyRules.Add(first);
-                    orderedStrategies.Remove(first);
-                }
+                _combinationRule = new OrStrategy(strategyRules.ToArray());
             }
-            _combinationRule = new OrStrategy(strategyRules.ToArray());
         }
 
         public bool ShouldAddFunds()
@@ -107,7 +111,7 @@ namespace MarketAnalysis.Strategy
         private class AndStrategy : IStrategy
         {
             private IStrategy[] _strats;
-            public object Key => _strats.Sum(x => x.Key.GetHashCode());
+            public object Key => _strats.Select(x => x.Key);
 
             public AndStrategy(IStrategy[] strats)
             {
@@ -133,12 +137,22 @@ namespace MarketAnalysis.Strategy
             {
                 return _strats.All(x => x.ShouldBuyShares(data));
             }
+
+            public override bool Equals(object obj)
+            {
+                return Equals(Key, (obj as AndStrategy)?.Key);
+            }
+
+            public override int GetHashCode()
+            {
+                return Key.GetHashCode();
+            }
         }
 
         private class OrStrategy : IStrategy
         {
             private IStrategy[] _strats;
-            public object Key => _strats.Sum(x => x.Key.GetHashCode());
+            public object Key => _strats.Select(x => x.Key);
 
             public OrStrategy(IStrategy[] strats)
             {
@@ -164,6 +178,16 @@ namespace MarketAnalysis.Strategy
             {
                 return _strats.Any(x => x.ShouldBuyShares(data));
             }
+
+            public override bool Equals(object obj)
+            {
+                return Equals(Key, (obj as OrStrategy)?.Key);
+            }
+
+            public override int GetHashCode()
+            {
+                return Key.GetHashCode();
+            }
         }
 
         public override bool Equals(object obj)
@@ -173,7 +197,7 @@ namespace MarketAnalysis.Strategy
 
         public override int GetHashCode()
         {
-            return Key.GetHashCode();
+            return Key?.GetHashCode() ?? 0;
         }
     }
 }

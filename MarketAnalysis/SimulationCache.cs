@@ -7,21 +7,32 @@ namespace MarketAnalysis
 {
     public static class SimulationCache
     {
-        private static MemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
-        public static int Hit;
-        public static int Miss;
+        private static MemoryCache _cache = InitializeCache();
 
-        public static SimulationState GetOrAdd(Tuple<IStrategy, int> key, Func<SimulationState> createItem)
+        public static SimulationState GetOrCreate(Tuple<IStrategy, int> key, Func<SimulationState> createItem)
         {
             if (!_cache.TryGetValue(key, out SimulationState cacheEntry))
             {
                 cacheEntry = createItem();
 
-                _cache.Set(key, cacheEntry);
-                Miss++;
+                _cache.Set(key, cacheEntry, options: new MemoryCacheEntryOptions { Size = 1 });
             }
-            else { Hit++; }
             return cacheEntry;
+        }
+
+        public static void ClearCache()
+        {
+            _cache?.Dispose();
+            _cache = InitializeCache();
+        }
+
+        private static MemoryCache InitializeCache()
+        {
+            return new MemoryCache(new MemoryCacheOptions
+            {
+                SizeLimit = Configuration.CacheSize,
+                CompactionPercentage = 0.8
+            });
         }
     }
 }

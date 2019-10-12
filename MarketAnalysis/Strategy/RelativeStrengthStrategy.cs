@@ -29,13 +29,17 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
-            var simulator = new Simulation(_history);
-            var optimal = Enumerable.Range(0, 100).Select(x =>
+            using (var progress = ProgressBarReporter.SpawnChild(100, "Optimising..."))
             {
-                var result = simulator.Evaluate(new RelativeStrengthStrategy(x, false));
-                return new { x, result.Worth, simulator.BuyCount };
-            }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
-            _threshold = optimal.x;
+                var simulator = new Simulation(_history);
+                var optimal = Enumerable.Range(0, 100).Select(x =>
+                {
+                    var result = simulator.Evaluate(new RelativeStrengthStrategy(x, false));
+                    progress.Tick($"Optimising... x:{x}");
+                    return new { x, result.Worth, simulator.BuyCount };
+                }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
+                _threshold = optimal.x;
+            }
         }
 
         public bool ShouldAddFunds()
@@ -54,6 +58,7 @@ namespace MarketAnalysis.Strategy
 
             var strength = GetRelativeStrength(data.Price, batch);
 
+            // todo: these parameters should be derived from self optimisation
             return new[] { 0, 3, 5, 6 }.Contains(strength);
         }
 

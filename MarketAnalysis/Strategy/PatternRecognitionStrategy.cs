@@ -10,13 +10,16 @@ namespace MarketAnalysis.Strategy
     {
         private double _threshold;
         private Bitmap _average;
+        private bool _shouldOptimise;
+        private const int OptimisePeriod = 3000;
         private List<Row> _history = new List<Row>(5000);
 
         public object Key => _threshold;
 
-        public PatternRecognitionStrategy(double threshold, Bitmap average = null)
+        public PatternRecognitionStrategy(double threshold, Bitmap average = null, bool shouldOptimise = true)
         {
             _threshold = threshold;
+            _shouldOptimise = shouldOptimise;
             _average = average ?? new Func<Bitmap>(() =>
                  {
                      var averagePath = Configuration.PatternRecognitionImagePath;
@@ -26,32 +29,35 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldOptimise()
         {
-            return false;
+            return _shouldOptimise &&
+                   _history.Count > 1 &&
+                   _history.Count % OptimisePeriod == 0;
         }
 
         public void Optimise()
         {
-            //Disabled untill I have an idea on how long this takes to complete
-            return;
-
-            var simulator = new Simulation(_history);
-            using (var clone = new Bitmap(_average))
+            using (var progress = ProgressBarReporter.SpawnChild(_average.Width * _average.Height, "Optimising..."))
             {
-                var width = _average.Width - Math.Min(Configuration.OptimisePeriod, _average.Width - 1);
-                for (int x = width; x < _average.Width; x++)
-                    for (int y = 0; y < _average.Height; y++)
-                    {
-                        var optimal = Enumerable.Range(0, 255).Select(i =>
+                var simulator = new Simulation(_history);
+                using (var clone = new Bitmap(_average))
+                {
+                    var width = _average.Width - Math.Min(OptimisePeriod, _average.Width - 1);
+                    for (int x = width; x < _average.Width; x++)
+                        for (int y = 0; y < _average.Height; y++)
                         {
-                            var intensity = Color.FromArgb(i, i, i);
-                            clone.SetPixel(x, y, intensity);
-                            var result = simulator.Evaluate(new PatternRecognitionStrategy(_threshold, clone));
-                            return new { intensity, result.Worth, result.BuyCount };
-                        }).OrderByDescending(v => v.Worth).ThenBy(v => v.BuyCount).First();
-                        
-                        clone.SetPixel(x, y, optimal.intensity);
-                    }
-                _average = new Bitmap(clone);
+                            var optimal = Enumerable.Range(0, 255).Select(i =>
+                            {
+                                var intensity = Color.FromArgb(i, i, i);
+                                clone.SetPixel(x, y, intensity);
+                                var result = simulator.Evaluate(new PatternRecognitionStrategy(_threshold, clone, false));
+                                return new { intensity, result.Worth, result.BuyCount };
+                            }).OrderByDescending(v => v.Worth).ThenBy(v => v.BuyCount).First();
+
+                            clone.SetPixel(x, y, optimal.intensity);
+                            progress.Tick($"Optimising... x: {x} y: {y}");
+                        }
+                    _average = new Bitmap(clone);
+                }
             }
         }
 
