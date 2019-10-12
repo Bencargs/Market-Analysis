@@ -36,6 +36,7 @@ namespace MarketAnalysis.Services
 
             var results = Simulate(data, strategies).ToList();
 
+            Console.WriteLine($"Hit:{SimulationCache.Hit} Miss:{SimulationCache.Miss}");
             var buySignals = results.Where(x => x.ShouldBuy);
             if (buySignals.Any())
                 await _communicationService.SendCommunication(buySignals);

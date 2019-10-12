@@ -12,6 +12,8 @@ namespace MarketAnalysis.Strategy
         private Bitmap _average;
         private List<Row> _history = new List<Row>(5000);
 
+        public object Key => _threshold;
+
         public PatternRecognitionStrategy(double threshold, Bitmap average = null)
         {
             _threshold = threshold;
@@ -22,12 +24,17 @@ namespace MarketAnalysis.Strategy
                  }).Invoke();
         }
 
+        public bool ShouldOptimise()
+        {
+            return false;
+        }
+
         public void Optimise()
         {
             //Disabled untill I have an idea on how long this takes to complete
             return;
 
-            var simulator = new Simulation(_history, false);
+            var simulator = new Simulation(_history);
             using (var clone = new Bitmap(_average))
             {
                 var width = _average.Width - Math.Min(Configuration.OptimisePeriod, _average.Width - 1);
@@ -138,6 +145,16 @@ namespace MarketAnalysis.Strategy
                 total += (255 - min);
             }
             return sum;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(Key, (obj as PatternRecognitionStrategy)?.Key);
+        }
+
+        public override int GetHashCode()
+        {
+            return Key.GetHashCode();
         }
     }
 }

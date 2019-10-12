@@ -7,21 +7,31 @@ namespace MarketAnalysis.Strategy
     public class VolumeStrategy : IStrategy
     {
         private int _threshold;
+        private readonly bool _shouldOptimise;
+        private const int OptimisePeriod = 524;
         private List<Row> _history = new List<Row>(5000);
 
-        public VolumeStrategy(int threshold)
+        public object Key => _threshold;
+
+        public VolumeStrategy(int threshold, bool shouldOptimise = true)
         {
             _threshold = threshold;
+            _shouldOptimise = shouldOptimise;
+        }
+
+        public bool ShouldOptimise()
+        {
+            return _shouldOptimise &&
+                   _history.Count > 1 &&
+                   _history.Count % OptimisePeriod == 0;
         }
 
         public void Optimise()
         {
-            return;
-
-            var simulator = new Simulation(_history, false);
+            var simulator = new Simulation(_history);
             var optimal = Enumerable.Range(1, 800).Select(x =>
             {
-                var result = simulator.Evaluate(new VolumeStrategy(x));
+                var result = simulator.Evaluate(new VolumeStrategy(x, false));
                 return new { x, result.Worth, simulator.BuyCount };
             }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
             _threshold = optimal.x;
@@ -38,6 +48,16 @@ namespace MarketAnalysis.Strategy
                 _history.Add(data);
 
             return data.Volume < _threshold;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(Key, (obj as VolumeStrategy)?.Key);
+        }
+
+        public override int GetHashCode()
+        {
+            return Key.GetHashCode();
         }
     }
 }

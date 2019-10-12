@@ -5,6 +5,13 @@ namespace MarketAnalysis
 {
     public class ConstantStrategy : IStrategy
     {
+        public object Key => new object();
+
+        public bool ShouldOptimise()
+        {
+            return false;
+        }
+
         public void Optimise()
         {
             return;

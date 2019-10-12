@@ -8,16 +8,27 @@ namespace MarketAnalysis.Strategy
     {
         private IStrategy[] _strategies;
         private IStrategy _combinationRule;
+        private readonly bool _shouldOptimise;
+        private const int OptimisePeriod = 1024;
         private List<Row> _history = new List<Row>(5000);
 
-        public MultiStrategy(IStrategy[] strategies)
+        public object Key => new { _combinationRule.Key };
+
+        public MultiStrategy(IStrategy[] strategies, bool shouldOptimise = true)
         {
             _strategies = strategies;
+            _shouldOptimise = shouldOptimise;
+        }
+
+        public bool ShouldOptimise()
+        {
+            return _shouldOptimise &&
+                   _history.Count % OptimisePeriod == 0;
         }
 
         public void Optimise()
         {
-            var simulator = new Simulation(_history, false);
+            var simulator = new Simulation(_history);
             var strategyRules = new List<IStrategy>();
             var orderedStrategies = OrderStratergies(simulator, _strategies);
             while (orderedStrategies.Any())
@@ -50,9 +61,11 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuyShares(Row data)
         {
-            _history.Add(data);
             if (_combinationRule == null)
                 return false;
+
+            if (!_history.Any(x => x.Date == data.Date))
+                _history.Add(data);
 
             return _combinationRule.ShouldBuyShares(data);
         }
@@ -63,7 +76,7 @@ namespace MarketAnalysis.Strategy
             {
                 var result = simulator.Evaluate(strategy);
                 return new { strategy, result, simulator.BuyCount };
-            }).OrderByDescending(x => x.BuyCount).ThenByDescending(x => x.result.Worth)
+            }).OrderBy(x => x.BuyCount)
             .Select(x => x.strategy).ToList();
         }
 
@@ -94,10 +107,16 @@ namespace MarketAnalysis.Strategy
         private class AndStrategy : IStrategy
         {
             private IStrategy[] _strats;
+            public object Key => _strats.Sum(x => x.Key.GetHashCode());
 
             public AndStrategy(IStrategy[] strats)
             {
                 _strats = strats;
+            }
+
+            public bool ShouldOptimise()
+            {
+                return false;
             }
 
             public void Optimise()
@@ -119,10 +138,16 @@ namespace MarketAnalysis.Strategy
         private class OrStrategy : IStrategy
         {
             private IStrategy[] _strats;
+            public object Key => _strats.Sum(x => x.Key.GetHashCode());
 
             public OrStrategy(IStrategy[] strats)
             {
                 _strats = strats;
+            }
+
+            public bool ShouldOptimise()
+            {
+                return false;
             }
 
             public void Optimise()
@@ -139,6 +164,16 @@ namespace MarketAnalysis.Strategy
             {
                 return _strats.Any(x => x.ShouldBuyShares(data));
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(Key, (obj as MultiStrategy)?.Key);
+        }
+
+        public override int GetHashCode()
+        {
+            return Key.GetHashCode();
         }
     }
 }

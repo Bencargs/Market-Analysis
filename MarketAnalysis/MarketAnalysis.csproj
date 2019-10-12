@@ -7,10 +7,18 @@
 
   <ItemGroup>
     <None Remove="Resources\Historical Data.csv" />
+    <None Remove="Resources\Logo.png" />
+    <None Remove="Resources\PatternRecognitionAverage.bmp" />
+    <None Remove="Resources\Template.html" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Resources\Template.html">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Historical Data.csv" />
+    <Content Include="Resources\Logo.png" />
+    <Content Include="Resources\PatternRecognitionAverage.bmp" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,8 +27,10 @@
     <PackageReference Include="MailKit" Version="2.2.0" />
     <PackageReference Include="MathNet.Numerics" Version="4.8.1" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
     <PackageReference Include="Microsoft.Windows.Compatibility" Version="2.1.1" />
+    <PackageReference Include="MimeKit" Version="2.3.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="Serilog" Version="2.8.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="4.0.0" />

@@ -1,5 +1,6 @@
 ﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,83 +8,68 @@ namespace MarketAnalysis
 {
     public class Simulation : ISimulation
     {
-        private decimal _funds;
-        private decimal _shares;
-        private bool _shouldBuy;
-        private decimal _latestPrice;
-        private bool _isSelfOptimising;
+        private SimulationState _state;
         private Row[] _data;
 
-        public int BuyCount { get; private set; }
+        public int BuyCount => _state.BuyCount;
 
-        public Simulation(IEnumerable<Row> data, bool shouldOptimise = true)
+        public Simulation(IEnumerable<Row> data)
         {
             _data = data.ToArray();
-            _isSelfOptimising = shouldOptimise;
         }
 
         public SimulationResult Evaluate(IStrategy strategy)
         {
-            Reset();
+            _state = new SimulationState();
             for (int i = 0; i < _data.Length; i++)
             {
-                if (ShouldSelfOptimise(i))
-                    strategy.Optimise();
-
-                if (strategy.ShouldAddFunds())
-                    AddFunds();
-
-                _latestPrice = _data[i].Price;
-                _shouldBuy = strategy.ShouldBuyShares(_data[i]);
-                if (_shouldBuy)
-                    BuyShares();
+                var key = Tuple.Create(strategy, i);
+                _state = SimulationCache.GetOrAdd(key, () => SimulateDay(strategy, _data[i], _state));
             }
-            return GetResults(strategy);
+            return GetResults(strategy, _data.LastOrDefault(), _state);
         }
 
-        private void Reset()
+        private SimulationState SimulateDay(IStrategy strategy, Row day, SimulationState state)
         {
-            _funds = 0;
-            _shares = 0;
-            _shouldBuy = false;
-            _latestPrice = 0;
+            if (strategy.ShouldOptimise())
+                strategy.Optimise();
 
-            BuyCount = 0;
+            if (strategy.ShouldAddFunds())
+                AddFunds(state);
+
+            state.LatestPrice = day.Price;
+
+            if (strategy.ShouldBuyShares(day))
+                BuyShares(state);
+
+            return state;
         }
 
-        private bool ShouldSelfOptimise(int index)
-        {
-            return
-                _isSelfOptimising &&
-                index > 1 &&
-                index % Configuration.OptimisePeriod == 0;
-        }
-
-        private SimulationResult GetResults(IStrategy strategy)
+        private SimulationResult GetResults(IStrategy strategy, Row day, SimulationState state)
         {
             var results = new SimulationResult
             {
-                Date = _data.LastOrDefault()?.Date ?? System.DateTime.MinValue,
-                Worth = _funds + (_shares * _latestPrice),
+                Date = day?.Date ?? DateTime.MinValue,
+                Worth = state.Funds + (state.Shares * state.LatestPrice),
                 BuyCount = BuyCount,
-                ShouldBuy = _shouldBuy
+                ShouldBuy = state.ShouldBuy
             };
             results.SetStrategy(strategy);
             return results;
         }
-        
-        private void AddFunds()
+
+        public void BuyShares(SimulationState state)
         {
-            _funds += 10;
+            state.ShouldBuy = true;
+            var newShares = state.Funds / state.LatestPrice;
+            state.Shares += newShares;
+            state.Funds = 0;
+            state.BuyCount++;
         }
 
-        private void BuyShares()
+        private void AddFunds(SimulationState state)
         {
-            var newShares = _funds / _latestPrice;
-            _shares += newShares;
-            _funds = 0;
-
-            BuyCount++;
+            state.Funds += 10;
         }
     }
 }
