@@ -17,7 +17,6 @@ namespace MarketAnalysis.Repositories
         private readonly string _dataFilePath = Configuration.DataPath;
         private readonly string _readonlyDataFilePath = Configuration.ReadonlyDataPath;
         private readonly string _resultsFilePath = Configuration.ResultsPath;
-        private readonly string _emailTemplateFilePath = Configuration.EmailTemplatePath;
 
         public async Task<IEnumerable<Row>> GetHistoricData()
         {
@@ -97,7 +96,8 @@ namespace MarketAnalysis.Repositories
 
         public async Task<string> GetEmailTemplate()
         {
-            return await File.ReadAllTextAsync(_emailTemplateFilePath);
+            var path = Configuration.EmailTemplatePath;
+            return await File.ReadAllTextAsync(path);
         }
 
         public async Task<IEnumerable<RecipientDetails>> GetEmailRecipients()

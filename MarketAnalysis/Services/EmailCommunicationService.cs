@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using System.Text;
+using Serilog;
 
 namespace MarketAnalysis.Services
 {
@@ -23,11 +24,11 @@ namespace MarketAnalysis.Services
 
         public async Task SendCommunication(IEnumerable<SimulationResult> results)
         {
-            var (Body, Attachments) = await GetEmailBody(results);
-            var body = Body;
-            var attachments = Attachments;
+            var recipient = (await _emailTemplateProvider.GetEmailRecipients()).First(); // todo: enumerate this
 
-            var message = CreateEmailMessage(null, body, attachments);
+            Log.Information($"Emailing recipient:{recipient.Name}");
+            var (Body, Attachments) = await GetEmailBody(recipient, results);
+            var message = CreateEmailMessage(recipient, Body, Attachments);
 
             var client = new SendGridClient(Configuration.SmtpApiKey);
             await client.SendEmailAsync(message);
@@ -46,12 +47,11 @@ namespace MarketAnalysis.Services
             return msg;
         }
 
-        private async Task<(string Body, List<Attachment> Attachments)> GetEmailBody(IEnumerable<SimulationResult> results)
+        private async Task<(string Body, List<Attachment> Attachments)> GetEmailBody(RecipientDetails recipient, IEnumerable<SimulationResult> results)
         {
             var profit = results.Sum(x => x.Worth) / results.Count();
             var recommendation = results.Any();
 
-            var recipient = (await _emailTemplateProvider.GetEmailRecipients()).First(); // todo: enumerate this
             var template = await _emailTemplateProvider.GetEmailTemplate();
 
             template = template.Replace(@"{date}", recipient.Date.ToString("dd/MM/yyyy"));
