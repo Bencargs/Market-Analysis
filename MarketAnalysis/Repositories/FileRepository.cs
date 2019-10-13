@@ -95,32 +95,23 @@ namespace MarketAnalysis.Repositories
             return strategies;
         }
 
-        public async Task<EmailTemplate> GetEmailTemplate()
+        public async Task<string> GetEmailTemplate()
         {
-            return new EmailTemplate
+            return await File.ReadAllTextAsync(_emailTemplateFilePath);
+        }
+
+        public async Task<IEnumerable<RecipientDetails>> GetEmailRecipients()
+        {
+            return new[]
             {
-                Recipients = new[] 
+                new RecipientDetails
                 {
-                    new EmailAddress { Name = "Client Name", Address = "client@email.com" },
-                },
-                Sender = new EmailAddress { Name = "CBC Market Analysis", Address = "research@cbc.com" },
-                Subject = $"Market Report {DateTime.Now.ToString("dd-MMM-yyyy")}",
-                Content = "Test"
+                    Date = DateTime.Now,
+                    Name = "Client Name",
+                    Number = "000001",
+                    Email = "client@email.com"
+                }
             };
-
-            //if (!File.Exists(resultsFilePath))
-            //{
-            //    Log.Error("No email template found");
-            //    return null;
-            //}
-
-            //using (var reader = new StreamReader(emailTemplateFilePath))
-            //{
-            //    var json = await reader.ReadToEndAsync();
-            //    var template = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<EmailTemplate>(json));
-
-            //    return template;
-            //}
         }
 
         public async Task SaveData(IEnumerable<Row> data)

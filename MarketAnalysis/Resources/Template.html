@@ -1,22 +1,22 @@
 <table style="height: 300px; width: 800px; margin-left: auto; margin-right: auto;">
     <tbody>
         <tr>
-            <td><img style="float: right;" src="{logo}" alt="CBC Market Analysis" width="240" height="50" /></td>
-            <td style="text-align: right;">
+            <td><img style="float: left;" src="{logo}" alt="CBC Market Analysis" width="240" height="200" /></td>
+            <td style="text-align: right; float: right;">
                 <p style="text-align: left;"><strong>CBC Market Analysis</strong><br />Mount Lawley<br />Perth W.A., 6050<br />Australia</p>
                 <table>
                     <tbody>
                         <tr>
-                            <td>{website}</td>
-                            <td><a href="http://www.cbc.com.au">www.cbc.com.au</a></td>
+                            <td style="text-align: right;"><img src="{website}" /></td>
+                            <td style="text-align: left;"><a href="http://www.cbc.com.au">www.cbc.com.au</a></td>
                         </tr>
                         <tr>
-                            <td>{phone}</td>
-                            <td>+61 450 307 000</td>
+                            <td style="text-align: right;"><img src="{phone}" /></td>
+                            <td style="text-align: left;">+61 450 307 000</td>
                         </tr>
                         <tr>
-                            <td>{email}</td>
-                            <td><a href="mailto:research@cbc.com.au">Research@cbc.com.au</a></td>
+                            <td style="text-align: right;"><img src="{email}" /></td>
+                            <td style="text-align: left;"><a href="mailto:research@cbc.com.au">Research@cbc.com.au</a></td>
                         </tr>
                     </tbody>
                 </table>
@@ -26,8 +26,8 @@
             <td colspan="2"><hr />&nbsp;</td>
         </tr>
         <tr>
-            <td style="text-align: left;"><span style="text-decoration: underline;">Market Recommendation</span>:&nbsp; {recommendation}</td>
-            <td>
+            <td><span style="text-decoration: underline;">Market Recommendation</span>:&nbsp; {recommendation}</td>
+            <td style="float: right;">
                 <table>
                     <tbody>
                         <tr>
@@ -52,45 +52,11 @@
                 <table style="margin-left: auto; margin-right: auto;">
                     <tbody>
                         <tr>
-                            <td><u>Simulated Strategies</u></td>
-                            <td><u>Recommendation</u></td>
-                            <td><u>Profit to Date</u></td>
+                            <td><u><b>Simulated Strategies</b></u></td>
+                            <td><u><b>Recommendation</b></u></td>
+                            <td><u><b>Profit to Date</b></u></td>
                         </tr>
-                        <tr>
-                            <td>{stratName}</td>
-                            <td>{stratRecommendation}</td>
-                            <td>{stratProfit}</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
+						{results}						
                     </tbody>
                 </table>
                 &nbsp;

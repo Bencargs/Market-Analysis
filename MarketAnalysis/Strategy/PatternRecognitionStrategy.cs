@@ -11,7 +11,7 @@ namespace MarketAnalysis.Strategy
         private double _threshold;
         private Bitmap _average;
         private bool _shouldOptimise;
-        private const int OptimisePeriod = 3000;
+        private const int OptimisePeriod = 1024;
         private List<Row> _history = new List<Row>(5000);
 
         public object Key => _threshold;

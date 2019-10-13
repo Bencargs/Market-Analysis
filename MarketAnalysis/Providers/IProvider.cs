@@ -9,6 +9,7 @@ namespace MarketAnalysis.Providers
     {
         Task<IEnumerable<Row>> GetHistoricData();
         Task<IEnumerable<IStrategy>> GetStrategies();
-        Task<EmailTemplate> GetEmailTemplate();
+        Task<string> GetEmailTemplate();
+        Task<IEnumerable<RecipientDetails>> GetEmailRecipients();
     }
 }

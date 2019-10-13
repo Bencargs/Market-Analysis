@@ -13,10 +13,11 @@ namespace MarketAnalysis
         public static string ApiEndpoint => ConfigurationManager.AppSettings["ApiEndpoint"];
         public static string QueryString => ConfigurationManager.AppSettings["QueryString"];
         public static string ApiKey => Environment.GetEnvironmentVariable("ApiKey", EnvironmentVariableTarget.User);
-        public static string SmtpServer => ConfigurationManager.AppSettings["SmtpServer"];
-        public static int SmtpPort => int.Parse(ConfigurationManager.AppSettings["SmtpPort"]);
-        public static string SmtpUsername => Environment.GetEnvironmentVariable("SmtpUsername", EnvironmentVariableTarget.User);
-        public static string SmtpPassword => Environment.GetEnvironmentVariable("SmtpPassword", EnvironmentVariableTarget.User);
+        public static string SmtpApiKey => Environment.GetEnvironmentVariable("SmptApiKey", EnvironmentVariableTarget.User);
+        public static string LogoImagePath => ConfigurationManager.AppSettings["LogoImagePath"];
+        public static string WorldImagePath => ConfigurationManager.AppSettings["WorldImagePath"];
+        public static string PhoneImagePath => ConfigurationManager.AppSettings["PhoneImagePath"];
+        public static string EmailImagePath => ConfigurationManager.AppSettings["EmailImagePath"];
         public static string EmailTemplatePath => ConfigurationManager.AppSettings["EmailTemplatePath"];
         public static string PatternRecognitionImagePath => ConfigurationManager.AppSettings["PatternRecognitionImagePath"];
         public static decimal OnlinePriceAdjustment => decimal.Parse(ConfigurationManager.AppSettings["OnlinePriceAdjustment"]);

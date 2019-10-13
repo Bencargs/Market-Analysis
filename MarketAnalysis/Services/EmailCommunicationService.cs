@@ -1,21 +1,14 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Google.Apis.Gmail.v1;
-using Google.Apis.Gmail.v1.Data;
-using Google.Apis.Services;
-using Google.Apis.Util.Store;
-using MailKit.Net.Smtp;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
-using MimeKit;
-using MimeKit.Text;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net.Mail;
-using System.Threading;
 using System.Threading.Tasks;
+using SendGrid;
+using SendGrid.Helpers.Mail;
+using System.Text;
 
 namespace MarketAnalysis.Services
 {
@@ -30,159 +23,94 @@ namespace MarketAnalysis.Services
 
         public async Task SendCommunication(IEnumerable<SimulationResult> results)
         {
-            string[] scopes = { GmailService.Scope.GmailCompose, GmailService.Scope.GmailSend };
+            var (Body, Attachments) = await GetEmailBody(results);
+            var body = Body;
+            var attachments = Attachments;
 
-            UserCredential credential;
-            var tokenPath = "token.json";
-            using (var stream = new FileStream(@"C:\Source\credentials.json", FileMode.Open, FileAccess.Read))
-            {
-                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
-                    scopes,
-                    "user",
-                    CancellationToken.None,
-                    new FileDataStore(tokenPath, true));
-            }
+            var message = CreateEmailMessage(null, body, attachments);
 
-            var mail = new MailMessage();
-            mail.Subject = "subject Test";
-            mail.Body = await GetEmailBody();
-            mail.From = new MailAddress("research@cbc.com");
-            mail.IsBodyHtml = true;
-            //var attImg = @"C:\Source\MarketAnalysis\MarketAnalysis\Resources\Logo.png";
-            //var attachement = new Attachment(attImg);
-            //attachement.ContentId = "logo";
-            ////attachement.ContentDisposition.Inline = true;
-            //mail.Attachments.Add(attachement);
-            mail.To.Add(new MailAddress("benjamin.d.cargill@gmail.com"));
-            var mimeMessage = MimeMessage.CreateFromMailMessage(mail);
-
-            //var body = await GetEmailBody();
-            //string plainText = "To: benjamin.d.cargill@gmail.com\r\n" +
-            //                   "Subject: subject Test\r\n" +
-            //                   "Content-Type: text/html; charset=us-ascii\r\n\r\n" +
-            //                   $"{body}";
-
-            var newMsg = new Message
-            {
-                //Raw = Base64UrlEncode(plainText.ToString())
-                Raw = Base64UrlEncode(mimeMessage.ToString())
-            };
-
-            var service = new GmailService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Market Analysis"
-            });
-            service.Users.Messages.Send(newMsg, "me").Execute();
-            return;
-
-            // todo: replace with Google OAuth authentication below -
-            //var secrets = new ClientSecrets
-            //{
-            //    ClientId = "abc",
-            //    ClientSecret = "abc"
-            //};
-
-            //string user = "";
-            //var credentials = await GoogleWebAuthorizationBroker.AuthorizeAsync(secrets,
-            //    new[] { GmailService.Scope.MailGoogleCom }, user, CancellationToken.None);
-
-            //var template = await _emailTemplateProvider.GetEmailTemplate();
-            //var message = CreateEmailMessage(template);
-            //using (var emailClient = new SmtpClient())
-            //{
-            //    emailClient.Connect(Configuration.SmtpServer, Configuration.SmtpPort);
-            //    emailClient.AuthenticationMechanisms.Remove("XOAUTH2");
-            //    emailClient.Authenticate(Configuration.SmtpUsername, Configuration.SmtpPassword);
-            //    await emailClient.SendAsync(message);
-            //    await emailClient.DisconnectAsync(true);
-            //}
+            var client = new SendGridClient(Configuration.SmtpApiKey);
+            await client.SendEmailAsync(message);
         }
 
-        public static string Base64UrlEncode(string input)
+        private SendGridMessage CreateEmailMessage(RecipientDetails recipient, string content, List<Attachment> attachments)
         {
-            var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
-            return Convert.ToBase64String(inputBytes)
-                .Replace("+", "-")
-                .Replace("/", "_")
-                .Replace("=", "");
+            var from = new EmailAddress("research@cbc.com", "CBC Market Analysis");
+            var subject = $"Market Report {recipient.Date.ToShortDateString()}";
+            var to = new EmailAddress(recipient.Email, recipient.Name);
+            var plainTextContent = "";
+            var htmlContent = content;
+            var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+            msg.AddAttachments(attachments);
+
+            return msg;
         }
 
-        //public async static Task<string> Base64ImageEncode(string path)
-        //{
-        //    return await Task.Run(() =>
-        //    {
-        //        using (var image = Image.FromFile(path))
-        //        using (var stream = new MemoryStream())
-        //        {
-        //            image.Save(stream, image.RawFormat);
-        //            var bytes = stream.ToArray();
-        //            return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
-        //        }
-        //    });
-        //}
+        private async Task<(string Body, List<Attachment> Attachments)> GetEmailBody(IEnumerable<SimulationResult> results)
+        {
+            var profit = results.Sum(x => x.Worth) / results.Count();
+            var recommendation = results.Any();
 
-        public async static Task<string> GetUTF8Image(string path)
+            var recipient = (await _emailTemplateProvider.GetEmailRecipients()).First(); // todo: enumerate this
+            var template = await _emailTemplateProvider.GetEmailTemplate();
+
+            template = template.Replace(@"{date}", recipient.Date.ToString("dd/MM/yyyy"));
+            template = template.Replace(@"{InvestorName}", recipient.Name);
+            template = template.Replace(@"{InvestorNumber}", recipient.Number);
+            template = template.Replace(@"{recommendation}", ToRecommendation(recommendation));
+            template = template.Replace(@"{profit}", profit.ToString("C2"));
+
+            var attachments = new List<Attachment>();
+            template = await AddImageAsync(template, "logo", Configuration.LogoImagePath, attachments);
+            template = await AddImageAsync(template, "website", Configuration.WorldImagePath, attachments);
+            template = await AddImageAsync(template, "phone", Configuration.PhoneImagePath, attachments);
+            template = await AddImageAsync(template, "email", Configuration.EmailImagePath, attachments);
+
+            template = AddResults(template, results);
+
+            return (template, attachments);
+        }
+
+        private string ToRecommendation(bool shouldBuy) => shouldBuy ? "Buy" : "Hold";
+
+        private string AddResults(string template, IEnumerable<SimulationResult> simulationResults)
+        {
+            var results = new StringBuilder();
+            foreach (var s in simulationResults)
+            {
+                results.Append("<tr>");
+                results.Append($"<td>{s.Strategy}</td> <td>{ToRecommendation(s.ShouldBuy)}</td> <td>{s.Worth.ToString("C2")}</td>");
+                results.Append("</tr>");
+            }
+            return template.Replace(@"{results}", results.ToString());
+        }
+
+        private async Task<string> AddImageAsync(string template, string tag, string path, List<Attachment> attachments)
+        {
+            var content = await Base64ImageEncode(path);
+            attachments.Add(new Attachment
+            {
+                Content = content,
+                Type = "image/png",
+                Filename = $"{tag}.png",
+                Disposition = "inline",
+                ContentId = $"{tag}"
+            });
+            return template.Replace($"{{{tag}}}", $"cid:{tag}");
+        }
+
+        private async static Task<string> Base64ImageEncode(string path)
         {
             return await Task.Run(() =>
             {
-                using (var image = Image.FromFile(path))
-                using (var stream = new MemoryStream())
+                using (Image image = Image.FromFile(path))
+                using (MemoryStream stream = new MemoryStream())
                 {
                     image.Save(stream, image.RawFormat);
-                    var bytes = stream.ToArray();
-                    return System.Text.Encoding.UTF8.GetString(bytes);
+                    byte[] imageBytes = stream.ToArray();
+                    return Convert.ToBase64String(imageBytes);
                 }
             });
-        }
-
-        public async static Task<string> GetEmailBody()
-        {
-            var templatePath = @"C:\Source\MarketAnalysis\MarketAnalysis\Resources\Template.html";
-            var template = await File.ReadAllTextAsync(templatePath);
-
-            var logoImagePath = @"C:\Source\MarketAnalysis\MarketAnalysis\Resources\Logo.png";
-
-            //var logo = await Base64ImageEncode(logoImagePath);
-
-            //var websiteImagePath = @"C:\Source\MarketAnalysis\MarketAnalysis\Resources\World.png";
-            //var website = await Base64ImageEncode(websiteImagePath);
-
-            //var phoneImagePath = @"C:\Source\MarketAnalysis\MarketAnalysis\Resources\Phone.png";
-            //var phone = await Base64ImageEncode(phoneImagePath);
-
-            //var emailImagePath = @"C:\Source\MarketAnalysis\MarketAnalysis\Resources\Email.png";
-            //var email = await Base64ImageEncode(emailImagePath);
-
-            template = template
-                //.Replace(@"{logo}", logo)
-                .Replace(@"{logo}", "cid:logo")
-                //.Replace(@"{website}", website)
-                //.Replace(@"{phone}", phone)
-                //.Replace(@"{email}", email)
-                .Replace(@"{date}", DateTime.Now.ToString("dd/MM/yyyy"));
-
-            return template.Replace("+", "-").Replace("/", "_").Replace("=", "");
-        }
-
-        private MimeMessage CreateEmailMessage(EmailTemplate template)
-        {
-            var message = new MimeMessage();
-            message.To.AddRange(template.Recipients.Select(x => new MailboxAddress(x.Name, x.Address)));
-            message.From.Add(new MailboxAddress(template.Sender.Name, template.Sender.Address));
-            message.Subject = template.Subject;
-            var builder = new BodyBuilder();
-            builder.TextBody = template.Content;
-            builder.Attachments.Add(@"C:\Source\MarketAnalysis\MarketAnalysis\Resources\Template.pdf");
-            message.Body = builder.ToMessageBody();
-            //message.Body = new TextPart(TextFormat.Html)
-            //{
-            //    Text = template.Content
-            //};
-            
-
-            return message;
         }
     }
 }
