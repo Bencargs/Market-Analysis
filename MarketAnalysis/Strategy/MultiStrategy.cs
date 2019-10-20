@@ -30,13 +30,13 @@ namespace MarketAnalysis.Strategy
         {
             using (var progress = ProgressBarReporter.SpawnChild(_strategies.Count(), "Optimising..."))
             {
-                var simulator = new Simulation(_history);
+                var simulator = new Simulator(_history);
                 var strategyRules = new List<IStrategy>();
                 var orderedStrategies = OrderStratergies(simulator, _strategies);
                 while (orderedStrategies.Any())
                 {
                     var first = orderedStrategies.First();
-                    var parentValue = simulator.Evaluate(first).Worth;
+                    var parentValue = simulator.Evaluate(first).Last().Worth;
 
                     var combination = GetCombinedStrategy(simulator, orderedStrategies);
                     if (combination != null && combination.Value > parentValue)
@@ -74,23 +74,23 @@ namespace MarketAnalysis.Strategy
             return _combinationRule.ShouldBuyShares(data);
         }
 
-        private List<IStrategy> OrderStratergies(ISimulation simulator, IStrategy[] strats)
+        private List<IStrategy> OrderStratergies(ISimulator simulator, IStrategy[] strats)
         {
             return strats.Select(strategy =>
             {
-                var result = simulator.Evaluate(strategy);
-                return new { strategy, result, simulator.BuyCount };
+                var result = simulator.Evaluate(strategy).Last();
+                return new { strategy, result, result.BuyCount };
             }).OrderBy(x => x.BuyCount)
             .Select(x => x.strategy).ToList();
         }
 
-        private CombinationResult GetCombinedStrategy(ISimulation simulator, List<IStrategy> orderedStrategies)
+        private CombinationResult GetCombinedStrategy(ISimulator simulator, List<IStrategy> orderedStrategies)
         {
             var combination = orderedStrategies.Select((s, i) =>
             {
                 var collection = orderedStrategies.GetRange(0, i).ToArray();
                 var andStrat = new AndStrategy(collection);
-                var value = simulator.Evaluate(andStrat).Worth;
+                var value = simulator.Evaluate(andStrat).Last().Worth;
                 return new CombinationResult
                 {
                     Strategies = collection,

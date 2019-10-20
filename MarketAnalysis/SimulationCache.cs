@@ -5,12 +5,24 @@ using System;
 
 namespace MarketAnalysis
 {
-    public static class SimulationCache
+    public sealed class SimulationCache : IDisposable
     {
-        private static MemoryCache _cache = InitializeCache();
+        private static readonly Lazy<SimulationCache> _instance = new Lazy<SimulationCache>(() => new SimulationCache());
+        public static SimulationCache Instance => _instance.Value;
+        private MemoryCache _cache;
 
-        public static SimulationState GetOrCreate(Tuple<IStrategy, int> key, Func<SimulationState> createItem)
+        private SimulationCache()
         {
+            _cache = InitializeCache();
+        }
+
+        public bool IsEnabled { get; set; }
+
+        public SimulationState GetOrCreate((IStrategy strategy, int day) key, Func<SimulationState> createItem)
+        {
+            if (!IsEnabled)
+                return createItem();
+
             if (!_cache.TryGetValue(key, out SimulationState cacheEntry))
             {
                 cacheEntry = createItem();
@@ -20,19 +32,19 @@ namespace MarketAnalysis
             return cacheEntry;
         }
 
-        public static void ClearCache()
-        {
-            _cache?.Dispose();
-            _cache = InitializeCache();
-        }
-
-        private static MemoryCache InitializeCache()
+        private MemoryCache InitializeCache()
         {
             return new MemoryCache(new MemoryCacheOptions
             {
                 SizeLimit = Configuration.CacheSize,
                 CompactionPercentage = 0.8
             });
+        }
+
+        public void Dispose()
+        {
+            _cache?.Dispose();
+            _cache = InitializeCache();
         }
     }
 }

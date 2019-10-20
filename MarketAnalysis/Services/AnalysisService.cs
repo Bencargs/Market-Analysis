@@ -15,13 +15,13 @@ namespace MarketAnalysis.Services
         private readonly IApiClient _apiClient;
         private readonly IProvider _dataProvider;
         private readonly IRepository _dataRepository;
-        private readonly ICommunicationService<SimulationResult> _communicationService;
+        private readonly ICommunicationService _communicationService;
 
         public AnalysisService(
             IApiClient apiClient,
             IProvider dataProvider,
             IRepository dataRepository,
-            ICommunicationService<SimulationResult> communicationService)
+            ICommunicationService communicationService)
         {
             _apiClient = apiClient;
             _dataProvider = dataProvider;
@@ -34,11 +34,10 @@ namespace MarketAnalysis.Services
             var data = await GetPriceData();
             var strategies = await _dataProvider.GetStrategies();
 
-            var results = Simulate(data, strategies).ToList();
+            var results = Simulate(data, strategies);
 
-            var buySignals = results.Where(x => x.ShouldBuy);
-            if (buySignals.Any())
-                await _communicationService.SendCommunication(buySignals);
+            if (results.ShouldBuy())
+                await _communicationService.SendCommunication(results);
 
             await _dataRepository.SaveSimulationResults(results);
             await _dataRepository.SaveData(data);
@@ -59,19 +58,25 @@ namespace MarketAnalysis.Services
             return latestData.SkipWhile(x => historicDates.Contains(x.Date));
         }
 
-        private IEnumerable<SimulationResult> Simulate(IEnumerable<Row> data, IEnumerable<IStrategy> strategies)
+        private ResultsProvider Simulate(IEnumerable<Row> data, IEnumerable<IStrategy> strategies)
         {
-            Simulation simulator = Configuration.InitialRun 
-                ? simulator = new Simulation(data, true)
-                : simulator = new Simulation(new [] { data.Last() }, true); // wrong (should be last unprocessed data)
+            Simulator simulator = Configuration.InitialRun 
+                ? simulator = new Simulator(data, true)
+                : simulator = new Simulator(new [] { data.Last() }, true); // wrong (should be last unprocessed data)
 
-            // todo: run in parallel
+            var resultsProvider = new ResultsProvider();
+            resultsProvider.Initialise(data);
+
             foreach (var s in strategies)
             {
                 Log.Information($"Evaluating strategy: {s.GetType()}");
-                yield return simulator.Evaluate(s);
-                SimulationCache.ClearCache();
+                using (var cache = SimulationCache.Instance)
+                {
+                    var history = simulator.Evaluate(s);
+                    resultsProvider.AddResults(s, history);
+                }
             }
+            return resultsProvider;
         }
     }
 }

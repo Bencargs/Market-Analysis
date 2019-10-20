@@ -48,7 +48,7 @@ namespace MarketAnalysis
             services.AddSingleton(typeof(IProvider), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository), typeof(FileRepository));
             services.AddSingleton(typeof(IApiClient), typeof(ApiMarketDataProvider));
-            services.AddSingleton(typeof(ICommunicationService<SimulationResult>), typeof(EmailCommunicationService));
+            services.AddSingleton(typeof(ICommunicationService), typeof(EmailCommunicationService));
             services.AddTransient(typeof(WindowsService), typeof(WindowsService));
             services.AddTransient<AnalysisService>();
 

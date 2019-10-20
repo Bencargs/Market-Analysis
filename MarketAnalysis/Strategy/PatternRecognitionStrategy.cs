@@ -36,29 +36,42 @@ namespace MarketAnalysis.Strategy
 
         public void Optimise()
         {
-            using (var progress = ProgressBarReporter.SpawnChild(_average.Width * _average.Height, "Optimising..."))
-            {
-                var simulator = new Simulation(_history);
-                using (var clone = new Bitmap(_average))
-                {
-                    var width = _average.Width - Math.Min(OptimisePeriod, _average.Width - 1);
-                    for (int x = width; x < _average.Width; x++)
-                        for (int y = 0; y < _average.Height; y++)
-                        {
-                            var optimal = Enumerable.Range(0, 255).Select(i =>
-                            {
-                                var intensity = Color.FromArgb(i, i, i);
-                                clone.SetPixel(x, y, intensity);
-                                var result = simulator.Evaluate(new PatternRecognitionStrategy(_threshold, clone, false));
-                                return new { intensity, result.Worth, result.BuyCount };
-                            }).OrderByDescending(v => v.Worth).ThenBy(v => v.BuyCount).First();
+            return;
 
-                            clone.SetPixel(x, y, optimal.intensity);
-                            progress.Tick($"Optimising... x: {x} y: {y}");
-                        }
-                    _average = new Bitmap(clone);
-                }
-            }
+            //using (var progress = ProgressBarReporter.SpawnChild(500, "Optimising..."))
+            //{
+            //    var simulator = new Simulator(_history);
+            //    var optimal = Enumerable.Range(500, 1000).Select(x =>
+            //    {
+            //        var result = simulator.Evaluate(new PatternRecognitionStrategy(x, _average, shouldOptimise: false)).Last();
+            //        progress.Tick($"Optimising... x:{x}");
+            //        return new { x, result.Worth, result.BuyCount };
+            //    }).OrderByDescending(x => x.Worth).First();
+            //    _threshold = optimal.x;
+            //}
+
+            //using (var progress = ProgressBarReporter.SpawnChild(_average.Width * _average.Height, "Optimising..."))
+            //{
+            //    var simulator = new Simulation(_history);
+            //    var clone = new Image(_average);
+            //    var width = _average.Width - Math.Min(OptimisePeriod, _average.Width - 1);
+            //    for (int x = width; x < _average.Width; x++)
+            //    {
+            //        for (int y = 0; y < _average.Height; y++)
+            //        {
+            //            var optimal = Enumerable.Range(0, 255).Select(i =>
+            //            {
+            //                clone.SetPixel(x, y, i);
+            //                var result = simulator.Evaluate(new PatternRecognitionStrategy(_threshold, clone, false));
+            //                return new { i, result.Worth, result.BuyCount };
+            //            }).OrderByDescending(v => v.Worth).ThenBy(v => v.BuyCount).First();
+
+            //            clone.SetPixel(x, y, optimal.i);
+            //            progress.Tick($"Optimising... x: {x} y: {y}");
+            //        }
+            //    }
+            //    _average = clone;
+            //}
         }
 
         private Bitmap CreateAverage(List<Bitmap> images)

@@ -1,11 +1,11 @@
 ﻿using MarketAnalysis.Models;
-using System.Collections.Generic;
+using MarketAnalysis.Providers;
 using System.Threading.Tasks;
 
 namespace MarketAnalysis.Services
 {
-    public interface ICommunicationService<T>
+    public interface ICommunicationService
     {
-        Task SendCommunication(IEnumerable<T> results);
+        Task SendCommunication(IResultsProvider results);
     }
 }

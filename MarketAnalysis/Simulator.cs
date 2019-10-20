@@ -1,40 +1,51 @@
 ﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 using ShellProgressBar;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis
 {
-    public class Simulation : ISimulation
+    public class Simulator : ISimulator
     {
-        private SimulationState _state;
         private Row[] _data;
         private bool _showProgress;
 
-        public int BuyCount => _state.BuyCount;
-
-        public Simulation(IEnumerable<Row> data, bool showProgress = false)
+        public Simulator(IEnumerable<Row> data, bool showProgress = false)
         {
             _data = data.ToArray();
             _showProgress = showProgress;
         }
 
-        public SimulationResult Evaluate(IStrategy strategy)
+        public List<SimulationState> Evaluate(IStrategy strategy)
         {
+            var history = new List<SimulationState>();
             using (var progress = InitialiseProgressBar(strategy))
             {
-                _state = new SimulationState();
                 for (int i = 0; i < _data.Length; i++)
                 {
-                    var key = Tuple.Create(strategy, i);
-                    _state = SimulationCache.GetOrCreate(key, () => SimulateDay(strategy, _data[i], _state));
+                    var key = (strategy, i);
+                    var previousState = GetPreviousState(history);
+                    var latestState = SimulationCache.Instance.GetOrCreate(key, () => SimulateDay(strategy, _data[i], previousState));
+                    history.Add(latestState);
                     progress?.Tick();
                 }
             }
+            return history;
+        }
 
-            return GetResults(strategy, _data.LastOrDefault(), _state);
+        private SimulationState GetPreviousState(List<SimulationState> history)
+        {
+            var previousState = history.LastOrDefault() ?? new SimulationState();
+            return new SimulationState
+            {
+                Date = previousState.Date,
+                Funds = previousState.Funds,
+                Shares = previousState.Shares,
+                ShouldBuy = previousState.ShouldBuy,
+                SharePrice = previousState.SharePrice,
+                BuyCount = previousState.BuyCount
+            };
         }
 
         private ProgressBar InitialiseProgressBar(IStrategy strategy)
@@ -52,7 +63,8 @@ namespace MarketAnalysis
             if (strategy.ShouldAddFunds())
                 AddFunds(state);
 
-            state.LatestPrice = day.Price;
+            state.Date = day.Date;
+            state.SharePrice = day.Price;
             state.ShouldBuy = strategy.ShouldBuyShares(day);
 
             if (state.ShouldBuy)
@@ -61,22 +73,9 @@ namespace MarketAnalysis
             return state;
         }
 
-        private SimulationResult GetResults(IStrategy strategy, Row day, SimulationState state)
-        {
-            var results = new SimulationResult
-            {
-                Date = day?.Date ?? DateTime.MinValue,
-                Worth = state.Funds + (state.Shares * state.LatestPrice),
-                BuyCount = BuyCount,
-                ShouldBuy = state.ShouldBuy
-            };
-            results.SetStrategy(strategy);
-            return results;
-        }
-
         public void BuyShares(SimulationState state)
         {
-            var newShares = state.Funds / state.LatestPrice;
+            var newShares = state.Funds / state.SharePrice;
             state.Shares += newShares;
             state.Funds = 0;
             state.BuyCount++;

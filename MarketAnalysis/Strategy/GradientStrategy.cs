@@ -33,15 +33,15 @@ namespace MarketAnalysis.Strategy
         {
             using (var progress = ProgressBarReporter.SpawnChild(10 * 20, "Optimising..."))
             {
-                var simulator = new Simulation(_history);
+                var simulator = new Simulator(_history);
                 var optimal = Enumerable.Range(1, 10).SelectMany(x =>
                 {
                     return Enumerable.Range(20, 20).Select(window =>
                     {
                         var threshold = -((decimal)x / 100);
-                        var result = simulator.Evaluate(new GradientStrategy(window, threshold, false));
+                        var result = simulator.Evaluate(new GradientStrategy(window, threshold, false)).Last();
                         progress.Tick($"x:{x} y:{window}");
-                        return new { threshold, window, result.Worth, simulator.BuyCount };
+                        return new { threshold, window, result.Worth, result.BuyCount };
                     });
                 }).OrderByDescending(x => x.Worth).ThenByDescending(x => x.BuyCount).First();
                 _window = optimal.window;

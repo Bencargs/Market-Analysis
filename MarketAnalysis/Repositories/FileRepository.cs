@@ -127,8 +127,9 @@ namespace MarketAnalysis.Repositories
             }
         }
 
-        public async Task SaveSimulationResults(IEnumerable<SimulationResult> results)
+        public async Task SaveSimulationResults(IResultsProvider resultsProvider)
         {
+            var results = resultsProvider.GetResults();
             var json = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(results));
             File.WriteAllText(_resultsFilePath, json);
         }

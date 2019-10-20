@@ -30,12 +30,12 @@ namespace MarketAnalysis.Strategy
         {
             using (var progress = ProgressBarReporter.SpawnChild(800, "Optimising..."))
             {
-                var simulator = new Simulation(_history);
+                var simulator = new Simulator(_history);
                 var optimal = Enumerable.Range(1, 800).Select(x =>
                 {
-                    var result = simulator.Evaluate(new VolumeStrategy(x, false));
+                    var result = simulator.Evaluate(new VolumeStrategy(x, false)).Last();
                     progress.Tick($"Optimising... x:{x}");
-                    return new { x, result.Worth, simulator.BuyCount };
+                    return new { x, result.Worth, result.BuyCount };
                 }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
                 _threshold = optimal.x;
             }
