@@ -20,6 +20,7 @@ namespace MarketAnalysis
         public static string EmailImagePath => ConfigurationManager.AppSettings["EmailImagePath"];
         public static string EmailTemplatePath => ConfigurationManager.AppSettings["EmailTemplatePath"];
         public static string PatternRecognitionImagePath => ConfigurationManager.AppSettings["PatternRecognitionImagePath"];
+        public static decimal DailyFunds => decimal.Parse(ConfigurationManager.AppSettings["DailyFunds"]);
         public static decimal OnlinePriceAdjustment => decimal.Parse(ConfigurationManager.AppSettings["OnlinePriceAdjustment"]);
         public static int CacheSize => int.Parse(ConfigurationManager.AppSettings["CacheSize"]);
     }

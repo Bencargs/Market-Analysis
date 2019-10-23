@@ -52,7 +52,7 @@ namespace MarketAnalysis.Strategy
             if (!_history.Any(x => x.Date == data.Date))
                 _history.Add(data);
 
-            var latestPoints = _history.AsEnumerable().Reverse().Take(_window).Reverse()
+            var latestPoints = _history.Last(_window)
                 .Select((x, i) => new XYPoint { X = i, Y = x.Price }).ToList();
             if (latestPoints.Count < 2)
                 return false;

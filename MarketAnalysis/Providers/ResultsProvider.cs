@@ -1,4 +1,5 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 using System;
 using System.Collections.Generic;
@@ -24,8 +25,8 @@ namespace MarketAnalysis.Providers
         private List<SimulationState> GetMarketMaximum(ISimulator simulator, Row[] data)
         {
             using (var progress = ProgressBarReporter.StartProgressBar(data.Count(), "Initialising..."))
+            using (new CacheSettings { IsEnabled = false })
             {
-                SimulationCache.Instance.IsEnabled = false; //todo - fix this
                 var buyDates = Enumerable.Repeat(true, data.Count()).ToArray();
                 var strategy = new StaticDatesStrategy(buyDates);
                 var history = simulator.Evaluate(strategy);
@@ -46,7 +47,6 @@ namespace MarketAnalysis.Providers
                     }
                     progress.Tick($"Initialising... x:{data.Count() - i}");
                 }
-                SimulationCache.Instance.IsEnabled = true;
                 return history;
             }
         }
@@ -56,7 +56,7 @@ namespace MarketAnalysis.Providers
             var latestState = history.Last();
             var currentMarketWorth = _marketAverage.Last().Worth;
 
-            var profitTotal = CalculateTotalProfit(latestState);
+            var profitTotal = latestState.Worth - GetInvestmentSince(0, history);
             var profitYTD = CalculateYTDProfit(history, currentMarketWorth);
 
             var alpha = CalculateAlpha(currentMarketWorth);
@@ -169,16 +169,16 @@ namespace MarketAnalysis.Providers
         private decimal CalculateYTDProfit(List<SimulationState> history, decimal currentMarketWorth)
         {
             var latestState = history.Last();
-            var yearOpenDay = history.First(x => x.Date > new DateTime(latestState.Date.Year, 1, 1)).Date;
-            var marketOpenWorth = _marketAverage.First(x => x.Date == yearOpenDay).Worth;
-            var strategyOpenWorth = history.First(x => x.Date == yearOpenDay).Worth;
-            return (latestState.Worth - strategyOpenWorth) - (currentMarketWorth - marketOpenWorth);
+            var yearOpenDay = history.FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
+            var marketOpenWorth = _marketAverage[yearOpenDay].Worth;
+            var strategyOpenWorth = history[yearOpenDay].Worth;
+            var investment = GetInvestmentSince(yearOpenDay, history);
+            return (latestState.Worth - strategyOpenWorth) - investment;
         }
 
-        private decimal CalculateTotalProfit(SimulationState latestState)
+        private decimal GetInvestmentSince(int index, List<SimulationState> history)
         {
-            var marketAtDate = _marketAverage.First(x => x.Date == latestState.Date);
-            return latestState.Worth - marketAtDate.Worth;
+            return (history.Count - index) * Configuration.DailyFunds;
         }
     }
 }

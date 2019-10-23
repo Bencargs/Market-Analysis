@@ -21,7 +21,7 @@ namespace MarketAnalysis.Models
         public bool ShouldBuy { get; set; }
         public string Strategy { get; set; }
         public string StrategyType { get; set; }
-        public string StrategyName => StrategyType.Substring(StrategyType.LastIndexOf("."));
+        public string StrategyName => StrategyType.Substring(StrategyType.LastIndexOf(".") + 1).Replace("Strategy", "");
 
         public IStrategy GetStrategy()
         {

@@ -59,7 +59,7 @@ namespace MarketAnalysis.Strategy
             if (!_history.Any(x => x.Date == data.Date))
                 _history.Add(data);
 
-            var batch = _history.AsEnumerable().Reverse().Take(_window).Reverse().ToArray();
+            var batch = _history.Last(_window);
             if (batch.Length < 2)
                 return false;
 

@@ -1,4 +1,5 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 using ShellProgressBar;
 using System.Collections.Generic;
@@ -83,7 +84,8 @@ namespace MarketAnalysis
 
         private void AddFunds(SimulationState state)
         {
-            state.Funds += 10;
+            // todo: this should be a property of an individual investor
+            state.Funds += Configuration.DailyFunds;
         }
     }
 }

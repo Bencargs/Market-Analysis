@@ -3,31 +3,31 @@ using MarketAnalysis.Strategy;
 using Microsoft.Extensions.Caching.Memory;
 using System;
 
-namespace MarketAnalysis
+namespace MarketAnalysis.Caching
 {
     public sealed class SimulationCache : IDisposable
     {
         private static readonly Lazy<SimulationCache> _instance = new Lazy<SimulationCache>(() => new SimulationCache());
         public static SimulationCache Instance => _instance.Value;
+        public static CacheSettings Settings { get; set; }
         private MemoryCache _cache;
 
         private SimulationCache()
         {
+            Settings = new CacheSettings();
             _cache = InitializeCache();
         }
-
-        public bool IsEnabled { get; set; }
-
+        
         public SimulationState GetOrCreate((IStrategy strategy, int day) key, Func<SimulationState> createItem)
         {
-            if (!IsEnabled)
+            if (!Settings.IsEnabled)
                 return createItem();
 
             if (!_cache.TryGetValue(key, out SimulationState cacheEntry))
             {
                 cacheEntry = createItem();
 
-                _cache.Set(key, cacheEntry, options: new MemoryCacheEntryOptions { Size = 1 });
+                _cache.Set(key, cacheEntry, options: Settings.EntryOptions);
             }
             return cacheEntry;
         }
@@ -36,8 +36,8 @@ namespace MarketAnalysis
         {
             return new MemoryCache(new MemoryCacheOptions
             {
-                SizeLimit = Configuration.CacheSize,
-                CompactionPercentage = 0.8
+                SizeLimit = Settings.CacheSize,
+                CompactionPercentage = Settings.CompactionPercentage
             });
         }
 

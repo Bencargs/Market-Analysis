@@ -38,7 +38,7 @@ namespace MarketAnalysis.Services
         private SendGridMessage CreateEmailMessage(RecipientDetails recipient, string content, List<Attachment> attachments)
         {
             var from = new EmailAddress("research@cbc.com", "CBC Market Analysis");
-            var subject = $"Market Report {recipient.Date.ToShortDateString()}";
+            var subject = $"Market Report {recipient.Date.ToString("dd MMM yyyy")}";
             var to = new EmailAddress(recipient.Email, recipient.Name);
             var plainTextContent = "";
             var htmlContent = content;
