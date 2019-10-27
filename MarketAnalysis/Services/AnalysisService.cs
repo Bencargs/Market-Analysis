@@ -1,9 +1,9 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
 using MarketAnalysis.Strategy;
 using Serilog;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,17 +45,13 @@ namespace MarketAnalysis.Services
 
         private async Task<IEnumerable<Row>> GetPriceData()
         {
-            var latestData = await _apiClient.GetData();
             var historicData = await _dataProvider.GetHistoricData();
+            var latestData = await _apiClient.GetData();
 
-            if (Configuration.InitialRun)
-            {
-                return historicData
-                    .TakeWhile(x => x.Date < latestData.First().Date)
-                    .Union(latestData);
-            }
-            var historicDates = new HashSet<DateTime>(historicData.Select(y => y.Date));
-            return latestData.SkipWhile(x => historicDates.Contains(x.Date));
+            var firstOnlineDate = latestData.First().Date;
+            return historicData
+                .TakeWhile(x => x.Date < firstOnlineDate)
+                .Union(latestData);
         }
 
         private ResultsProvider Simulate(IEnumerable<Row> data, IEnumerable<IStrategy> strategies)

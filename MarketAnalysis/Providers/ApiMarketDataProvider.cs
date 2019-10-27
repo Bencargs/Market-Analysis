@@ -46,16 +46,11 @@ namespace MarketAnalysis.Providers
                 if (price == 0)
                     continue;
 
-                var adjustment = Configuration.OnlinePriceAdjustment;
-                // All historic data sets were trained with the All Ords dataset
-                // Unfortunately the online data provider does not track this index
-                // the all market VAS index can be used, with this adjustment to approximate
-
                 results.Add(new Row
                 {
                     Date = DateTime.Parse(row.Key),
                     Volume = row.Value.Volume,
-                    Price = price / adjustment,
+                    Price = price,
                     Delta = price - (results.LastOrDefault()?.Price ?? 0m)
                 });
             }

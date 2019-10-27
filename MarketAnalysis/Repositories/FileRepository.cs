@@ -15,48 +15,18 @@ namespace MarketAnalysis.Repositories
     public class FileRepository : IRepository, IProvider
     {
         private readonly string _dataFilePath = Configuration.DataPath;
-        private readonly string _readonlyDataFilePath = Configuration.ReadonlyDataPath;
         private readonly string _resultsFilePath = Configuration.ResultsPath;
 
         public async Task<IEnumerable<Row>> GetHistoricData()
         {
-            Log.Information($"Loading historic market data from {_readonlyDataFilePath}");
-            var results = new List<Row>();
-            using (var reader = new StreamReader(_readonlyDataFilePath))
+            return await Task.Run(() =>
             {
-                while (!reader.EndOfStream)
+                using (var reader = new StreamReader(_dataFilePath))
+                using (var csv = new CsvReader(reader, new CsvHelper.Configuration.Configuration { HasHeaderRecord = false }))
                 {
-                    var line = await reader.ReadLineAsync();
-                    var values = line.Split(',');
-
-                    var provider = System.Globalization.CultureInfo.InvariantCulture;
-                    var dateStr = values[0].ToString().Replace("\"", "");
-                    var date = DateTime.ParseExact(dateStr, "MMM-dd-yyyy", provider);
-
-                    var priceStr = values[1].ToString().Replace("\"", "");
-                    if (!decimal.TryParse(priceStr, out decimal price))
-                        continue;
-
-                    var volumeStr = values[5].ToString().Replace("\"", "");
-                    decimal.TryParse(volumeStr.Replace("M", "").Replace("B", ""), out decimal volume);
-                    if (volumeStr.Last() == 'B')
-                        volume = volume * 1000;
-
-                    results.Add(new Row
-                    {
-                        Date = date,
-                        Price = price,
-                        Volume = volume
-                    });
+                    return csv.GetRecords<Row>().ToArray();
                 }
-            }
-            results = results.OrderBy(x => x.Date).ToList();
-            for (int i = 1; i < results.Count; i++)
-            {
-                var delta = results[i].Price - results[i - 1].Price;
-                results[i].Delta = delta;
-            }
-            return results;
+            });
         }
 
         public async Task<IEnumerable<IStrategy>> GetStrategies()

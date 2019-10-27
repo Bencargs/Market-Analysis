@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Resources\Historical Data.csv" />
     <None Remove="Resources\Logo.png" />
     <None Remove="Resources\PatternRecognitionAverage.bmp" />
     <None Remove="Resources\Template.html" />
@@ -16,7 +15,6 @@
     <Content Include="Resources\Template.html">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
-    <Content Include="Resources\Historical Data.csv" />
     <Content Include="Resources\Logo.png" />
     <Content Include="Resources\PatternRecognitionAverage.bmp" />
   </ItemGroup>

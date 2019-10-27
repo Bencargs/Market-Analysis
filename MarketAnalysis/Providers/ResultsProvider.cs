@@ -57,9 +57,9 @@ namespace MarketAnalysis.Providers
             var currentMarketWorth = _marketAverage.Last().Worth;
 
             var profitTotal = latestState.Worth - GetInvestmentSince(0, history);
-            var profitYTD = CalculateYTDProfit(history, currentMarketWorth);
+            var profitYTD = CalculateYTDProfit(history);
 
-            var alpha = CalculateAlpha(currentMarketWorth);
+            var alpha = CalculateAlpha(latestState.Worth);
             var maximumAlpha = CalculateAlpha(_marketMaximum.Last().Worth);
 
             var maximumDrawdown = CalculateMaximumDrawdown(history);
@@ -160,17 +160,17 @@ namespace MarketAnalysis.Providers
             return history.Select((h, i) => h.Worth - _marketAverage[i].Worth).Min();
         }
 
-        private decimal CalculateAlpha(decimal currentMarketWorth)
+        private decimal CalculateAlpha(decimal currentWorth)
         {
-            var excessReturn = currentMarketWorth - _marketAverage.Last().Worth;
+            var currentMarketWorth = _marketAverage.Last().Worth;
+            var excessReturn = currentWorth - currentMarketWorth;
             return excessReturn / currentMarketWorth;
         }
 
-        private decimal CalculateYTDProfit(List<SimulationState> history, decimal currentMarketWorth)
+        private decimal CalculateYTDProfit(List<SimulationState> history)
         {
             var latestState = history.Last();
             var yearOpenDay = history.FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
-            var marketOpenWorth = _marketAverage[yearOpenDay].Worth;
             var strategyOpenWorth = history[yearOpenDay].Worth;
             var investment = GetInvestmentSince(yearOpenDay, history);
             return (latestState.Worth - strategyOpenWorth) - investment;
