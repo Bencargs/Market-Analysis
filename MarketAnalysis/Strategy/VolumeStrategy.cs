@@ -56,7 +56,7 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            return Equals(Key, (obj as VolumeStrategy)?.Key);
+            return Key.Equals((obj as VolumeStrategy)?.Key);
         }
 
         public override int GetHashCode()

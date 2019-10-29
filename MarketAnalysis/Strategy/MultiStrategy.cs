@@ -35,8 +35,8 @@ namespace MarketAnalysis.Strategy
                 var orderedStrategies = OrderStratergies(simulator, _strategies);
                 while (orderedStrategies.Any())
                 {
-                    var first = orderedStrategies.First();
-                    var parentValue = simulator.Evaluate(first).Last().Worth;
+                    var first = orderedStrategies.FirstOrDefault();
+                    var parentValue = simulator.Evaluate(first).LastOrDefault()?.Worth ?? 0m;
 
                     var combination = GetCombinedStrategy(simulator, orderedStrategies);
                     if (combination != null && combination.Value > parentValue)
@@ -78,8 +78,8 @@ namespace MarketAnalysis.Strategy
         {
             return strats.Select(strategy =>
             {
-                var result = simulator.Evaluate(strategy).Last();
-                return new { strategy, result, result.BuyCount };
+                var result = simulator.Evaluate(strategy).LastOrDefault();
+                return new { strategy, result, result?.BuyCount };
             }).OrderBy(x => x.BuyCount)
             .Select(x => x.strategy).ToList();
         }
@@ -90,7 +90,7 @@ namespace MarketAnalysis.Strategy
             {
                 var collection = orderedStrategies.GetRange(0, i).ToArray();
                 var andStrat = new AndStrategy(collection);
-                var value = simulator.Evaluate(andStrat).Last().Worth;
+                var value = simulator.Evaluate(andStrat).LastOrDefault()?.Worth ?? 0m;
                 return new CombinationResult
                 {
                     Strategies = collection,

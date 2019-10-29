@@ -9,6 +9,7 @@ using SendGrid;
 using SendGrid.Helpers.Mail;
 using System.Text;
 using Serilog;
+using Newtonsoft.Json;
 
 namespace MarketAnalysis.Services
 {
@@ -67,9 +68,25 @@ namespace MarketAnalysis.Services
             template = await AddImageAsync(template, "phone", Configuration.PhoneImagePath, attachments);
             template = await AddImageAsync(template, "email", Configuration.EmailImagePath, attachments);
 
+            AddDetailedResults(resultsProvider, attachments);
+
             template = AddResults(template, resultsProvider);
 
             return (template, attachments);
+        }
+
+        private void AddDetailedResults(IResultsProvider resultsProvider, List<Attachment> attachments)
+        {
+            // todo: custom PDF generation for each strategy type
+            var json = JsonConvert.SerializeObject(resultsProvider.GetResults());
+            var bytes = Encoding.ASCII.GetBytes(json);
+            attachments.Add(new Attachment
+            {
+                Content = Convert.ToBase64String(bytes),
+                Type = "application/json",
+                Filename = "results.json",
+                Disposition = "attachment"
+            });
         }
 
         private string ToRecommendation(bool shouldBuy) => shouldBuy ? "Buy" : "Hold";
@@ -107,7 +124,7 @@ namespace MarketAnalysis.Services
         {
             return await Task.Run(() =>
             {
-                using (Image image = Image.FromFile(path))
+                using (System.Drawing.Image image = System.Drawing.Image.FromFile(path))
                 using (MemoryStream stream = new MemoryStream())
                 {
                     image.Save(stream, image.RawFormat);

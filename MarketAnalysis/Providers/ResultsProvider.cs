@@ -59,6 +59,8 @@ namespace MarketAnalysis.Providers
             var profitTotal = latestState.Worth - GetInvestmentSince(0, history);
             var profitYTD = CalculateYTDProfit(history);
 
+            var aboveMarketReturn = latestState.Worth - currentMarketWorth;
+
             var alpha = CalculateAlpha(latestState.Worth);
             var maximumAlpha = CalculateAlpha(_marketMaximum.Last().Worth);
 
@@ -77,6 +79,7 @@ namespace MarketAnalysis.Providers
                 ShouldBuy = latestState.ShouldBuy,
                 ProfitTotal = profitTotal,
                 ProfitYTD = profitYTD,
+                AboveMarketReturn = aboveMarketReturn,
                 Alpha = alpha,
                 MaximumAlpha = maximumAlpha,
                 MaximumDrawdown = maximumDrawdown,

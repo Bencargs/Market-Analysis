@@ -10,6 +10,7 @@ namespace MarketAnalysis.Models
         public DateTime Date { get; set; }
         public decimal ProfitYTD { get; set; }
         public decimal ProfitTotal { get; set; }
+        public decimal AboveMarketReturn { get; set; }
         public decimal Alpha { get; set; }
         public decimal MaximumAlpha { get; set; }
         public decimal MaximumDrawdown { get; set; }
