@@ -13,7 +13,7 @@ namespace MarketAnalysis.Providers
         private List<SimulationState> _marketAverage;
         private List<SimulationState> _marketMaximum;
 
-        public void Initialise(IEnumerable<Row> data)
+        public void Initialise(IEnumerable<MarketData> data)
         {
             var marketData = data.ToArray();
             var simulator = new Simulator(data, false);
@@ -22,7 +22,7 @@ namespace MarketAnalysis.Providers
             _marketMaximum = GetMarketMaximum(simulator, marketData);
         }
 
-        private List<SimulationState> GetMarketMaximum(ISimulator simulator, Row[] data)
+        private List<SimulationState> GetMarketMaximum(ISimulator simulator, MarketData[] data)
         {
             using (var progress = ProgressBarReporter.StartProgressBar(data.Count(), "Initialising..."))
             using (new CacheSettings { IsEnabled = false })
@@ -66,7 +66,7 @@ namespace MarketAnalysis.Providers
 
             var maximumDrawdown = CalculateMaximumDrawdown(history);
 
-            var frequency = CalculateFrequency(history);
+            var buyCount = history.Count(x => x.ShouldBuy);
 
             var confusionMatrix = CalculateConfusionMatrix(history);
             var accuracy = CalculateAccuracy(confusionMatrix, history);
@@ -83,7 +83,7 @@ namespace MarketAnalysis.Providers
                 Alpha = alpha,
                 MaximumAlpha = maximumAlpha,
                 MaximumDrawdown = maximumDrawdown,
-                Frequency = frequency,
+                BuyCount = buyCount,
                 Accuracy = accuracy,
                 Recall = recall,
                 Precision = precision,
@@ -151,11 +151,6 @@ namespace MarketAnalysis.Providers
             }
 
             return confusionMatrix;
-        }
-
-        private decimal CalculateFrequency(List<SimulationState> history)
-        {
-            return (decimal)history.Count(x => x.ShouldBuy) / history.Count();
         }
 
         private decimal CalculateMaximumDrawdown(List<SimulationState> history)

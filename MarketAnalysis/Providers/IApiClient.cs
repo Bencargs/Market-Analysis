@@ -6,6 +6,6 @@ namespace MarketAnalysis.Providers
 {
     public interface IApiClient
     {
-        Task<IEnumerable<Row>> GetData();
+        Task<IEnumerable<MarketData>> GetData();
     }
 }

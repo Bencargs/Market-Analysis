@@ -15,9 +15,9 @@ namespace MarketAnalysis
             _path = path;
         }
 
-        public List<Row> ReadOpeningPrices()
+        public List<MarketData> ReadOpeningPrices()
         {
-            var results = new List<Row>();
+            var results = new List<MarketData>();
             using (var reader = new StreamReader(_path))
             {
                 while (!reader.EndOfStream)
@@ -39,7 +39,7 @@ namespace MarketAnalysis
                     if (volumeStr.Last() == 'B')
                         volume = volume * 1000;
 
-                    results.Add(new Row
+                    results.Add(new MarketData
                     {
                         Date = date,
                         Price = price,

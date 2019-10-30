@@ -8,6 +8,6 @@ namespace MarketAnalysis.Strategy
         bool ShouldOptimise();
         void Optimise();
         bool ShouldAddFunds();
-        bool ShouldBuyShares(Row data);
+        bool ShouldBuyShares(MarketData data);
     }
 }

@@ -7,7 +7,7 @@ namespace MarketAnalysis.Providers
 {
     public interface IProvider
     {
-        Task<IEnumerable<Row>> GetHistoricData();
+        Task<IEnumerable<MarketData>> GetHistoricData();
         Task<IEnumerable<IStrategy>> GetStrategies();
         Task<string> GetEmailTemplate();
         Task<IEnumerable<RecipientDetails>> GetEmailRecipients();

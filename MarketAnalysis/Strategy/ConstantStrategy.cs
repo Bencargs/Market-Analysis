@@ -22,7 +22,7 @@ namespace MarketAnalysis
             return true;
         }
 
-        public bool ShouldBuyShares(Row data)
+        public bool ShouldBuyShares(MarketData data)
         {
             return true;
         }

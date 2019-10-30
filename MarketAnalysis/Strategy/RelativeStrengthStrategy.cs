@@ -1,6 +1,6 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
@@ -10,7 +10,7 @@ namespace MarketAnalysis.Strategy
         private int _threshold;
         private readonly bool _shouldOptimise;
         private const int OptimisePeriod = 1024;
-        private List<Row> _history = new List<Row>(5000);
+        private DateTime _latestDate;
 
         public object Key => _threshold;
 
@@ -22,16 +22,18 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldOptimise()
         {
+            var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   _history.Count > 1 &&
-                   _history.Count % OptimisePeriod == 0;
+                   count > 1 &&
+                   count % OptimisePeriod == 0;
         }
 
         public void Optimise()
         {
             using (var progress = ProgressBarReporter.SpawnChild(100, "Optimising..."))
             {
-                var simulator = new Simulator(_history);
+                var history = MarketDataCache.Instance.TakeUntil(_latestDate);
+                var simulator = new Simulator(history);
                 var optimal = Enumerable.Range(0, 100).Select(x =>
                 {
                     var result = simulator.Evaluate(new RelativeStrengthStrategy(x, false)).Last();
@@ -47,12 +49,12 @@ namespace MarketAnalysis.Strategy
             return true;
         }
 
-        public bool ShouldBuyShares(Row data)
+        public bool ShouldBuyShares(MarketData data)
         {
-            if (!_history.Any(x => x.Date == data.Date))
-                _history.Add(data);
+            if (MarketDataCache.Instance.TryAdd(data))
+                _latestDate = data.Date;
 
-            var batch = _history.Last(_threshold);
+            var batch = MarketDataCache.Instance.GetLastSince(_latestDate, _threshold).ToArray();
             if (batch.Count() < 3)
                 return false;
 
@@ -62,7 +64,7 @@ namespace MarketAnalysis.Strategy
             return new[] { 0, 3, 5, 6 }.Contains(strength);
         }
 
-        private int GetRelativeStrength(decimal price, Row[] data)
+        private int GetRelativeStrength(decimal price, MarketData[] data)
         {
             var min = data.Min(y => y.Price);
             var max = data.Max(y => y.Price);

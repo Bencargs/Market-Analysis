@@ -7,7 +7,7 @@ namespace MarketAnalysis.Repositories
 {
     public interface IRepository
     {
-        Task SaveData(IEnumerable<Row> data);
+        Task SaveData(IEnumerable<MarketData> data);
         Task SaveSimulationResults(IResultsProvider results);
     }
 }

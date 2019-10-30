@@ -1,6 +1,6 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
@@ -10,7 +10,7 @@ namespace MarketAnalysis.Strategy
         private int _window;
         private readonly bool _shouldOptimise;
         private const int OptimisePeriod = 1024;
-        private List<Row> _history = new List<Row>(5000);
+        private DateTime _latestDate;
 
         public object Key => _window;
 
@@ -22,16 +22,18 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldOptimise()
         {
+            var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   _history.Count > 1 &&
-                   _history.Count % OptimisePeriod == 0;
+                   count > 1 &&
+                   count % OptimisePeriod == 0;
         }
 
         public void Optimise()
         {
             using (var progress = ProgressBarReporter.SpawnChild(200, "Optimising..."))
             {
-                var simulator = new Simulator(_history);
+                var history = MarketDataCache.Instance.TakeUntil(_latestDate);
+                var simulator = new Simulator(history);
                 var optimal = Enumerable.Range(30, 200).Select(x =>
                 {
                     var result = simulator.Evaluate(new LinearRegressionStrategy(x, false)).Last();
@@ -47,24 +49,24 @@ namespace MarketAnalysis.Strategy
             return true;
         }
 
-        public bool ShouldBuyShares(Row data)
+        public bool ShouldBuyShares(MarketData data)
         {
-            if (!_history.Any(x => x.Date == data.Date))
-                _history.Add(data);
+            if (MarketDataCache.Instance.TryAdd(data))
+                _latestDate = data.Date;
 
-            var latestPoints = _history.Last(_window)
-                .Select((x, i) => new XYPoint { X = i, Y = x.Price }).ToList();
-            if (latestPoints.Count < 2)
+            var latestPoints = MarketDataCache.Instance.GetLastSince(_latestDate, _window)
+                .Select((x, i) => new XYPoint { X = i, Y = x.Price }).ToArray();
+            if (latestPoints.Length < 2)
                 return false;
 
             GenerateLinearBestFit(latestPoints, out double m, out double b);
-            var prediction = (decimal) (m * _history.Count - b);
+            var prediction = (decimal) (m * MarketDataCache.Instance.Count - b);
             return (data.Price > prediction);
         }
 
-        private void GenerateLinearBestFit(List<XYPoint> points, out double m, out double b)
+        private void GenerateLinearBestFit(XYPoint[] points, out double m, out double b)
         {
-            int numPoints = points.Count;
+            int numPoints = points.Length;
             double meanX = points.Average(point => point.X);
             decimal meanY = points.Average(point => point.Y);
 

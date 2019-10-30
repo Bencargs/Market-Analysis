@@ -9,10 +9,10 @@ namespace MarketAnalysis
 {
     public class Simulator : ISimulator
     {
-        private Row[] _data;
+        private MarketData[] _data;
         private bool _showProgress;
 
-        public Simulator(IEnumerable<Row> data, bool showProgress = false)
+        public Simulator(IEnumerable<MarketData> data, bool showProgress = false)
         {
             _data = data.ToArray();
             _showProgress = showProgress;
@@ -56,7 +56,7 @@ namespace MarketAnalysis
                 : null;
         }
 
-        private SimulationState SimulateDay(IStrategy strategy, Row day, SimulationState state)
+        private SimulationState SimulateDay(IStrategy strategy, MarketData day, SimulationState state)
         {
             if (strategy.ShouldOptimise())
                 strategy.Optimise();

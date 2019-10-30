@@ -30,7 +30,7 @@ namespace MarketAnalysis.Strategy
             return true;
         }
 
-        public bool ShouldBuyShares(Row data)
+        public bool ShouldBuyShares(MarketData data)
         {
             return (_buyDates[_i++]);
         }

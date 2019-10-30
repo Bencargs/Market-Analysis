@@ -1,4 +1,5 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace MarketAnalysis.Strategy
         private Image _average;
         private bool _shouldOptimise;
         private const int OptimisePeriod = 30;
-        private List<Row> _history = new List<Row>(5000);
+        private DateTime _latestDate;
 
         public object Key => _average;
 
@@ -28,22 +29,24 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldOptimise()
         {
+            var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   _history.Count > 1 &&
-                   _history.Count % OptimisePeriod == 0;
+                   count > 1 &&
+                   count % OptimisePeriod == 0;
         }
 
         public void Optimise()
         {
-            using (var progress = ProgressBarReporter.SpawnChild(_history.Count / OptimisePeriod, "Optimising..."))
+            var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();
+            using (var progress = ProgressBarReporter.SpawnChild(history.Count / OptimisePeriod, "Optimising..."))
             {
                 var minimums = new List<Image>();
-                for (int i = OptimisePeriod; i < _history.Count - OptimisePeriod; i += OptimisePeriod)
+                for (int i = OptimisePeriod; i < history.Count - OptimisePeriod; i += OptimisePeriod)
                 {
-                    var batch = _history.GetRange(i, OptimisePeriod);
+                    var batch = history.GetRange(i, OptimisePeriod);
                     var minBatchIndex = batch.Select(x => x.Price).ToList().IndexOfMin();
                     var minRangeIndex = (i - OptimisePeriod) + minBatchIndex;
-                    var dataset = _history.GetRange(minRangeIndex, OptimisePeriod)
+                    var dataset = history.GetRange(minRangeIndex, OptimisePeriod)
                         .Select(x => x.Price)
                         .ToList();
                     var image = CreateImage(dataset, OptimisePeriod, OptimisePeriod);
@@ -104,15 +107,16 @@ namespace MarketAnalysis.Strategy
             return true;
         }
 
-        public bool ShouldBuyShares(Row data)
+        public bool ShouldBuyShares(MarketData data)
         {
-            if (!_history.Any(x => x.Date == data.Date))
-                _history.Add(data);
+            if (MarketDataCache.Instance.TryAdd(data))
+                _latestDate = data.Date;
 
-            if (_history.Count < 30)
+            var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();
+            if (history.Count < 30)
                 return false;
 
-            var dataset = _history.GetRange(_history.Count - 30, 30)
+            var dataset = history.GetRange(history.Count - 30, 30)
                 .Select(x => x.Price).ToList();
 
             var image = CreateImage(dataset, 30, 30);

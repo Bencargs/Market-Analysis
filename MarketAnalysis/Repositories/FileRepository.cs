@@ -17,14 +17,14 @@ namespace MarketAnalysis.Repositories
         private readonly string _dataFilePath = Configuration.DataPath;
         private readonly string _resultsFilePath = Configuration.ResultsPath;
 
-        public async Task<IEnumerable<Row>> GetHistoricData()
+        public async Task<IEnumerable<MarketData>> GetHistoricData()
         {
             return await Task.Run(() =>
             {
                 using (var reader = new StreamReader(_dataFilePath))
                 using (var csv = new CsvReader(reader, new CsvHelper.Configuration.Configuration { HasHeaderRecord = false }))
                 {
-                    return csv.GetRecords<Row>().ToArray();
+                    return csv.GetRecords<MarketData>().ToArray();
                 }
             });
         }
@@ -84,7 +84,7 @@ namespace MarketAnalysis.Repositories
             };
         }
 
-        public async Task SaveData(IEnumerable<Row> data)
+        public async Task SaveData(IEnumerable<MarketData> data)
         {
             using (var writer = new StreamWriter(_dataFilePath, false))
             using (var csv = new CsvWriter(writer))

@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
+using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MathNet.Numerics;
 
@@ -11,7 +12,7 @@ namespace MarketAnalysis.Strategy
         private decimal _threshold;
         private readonly bool _shouldOptimise;
         private const int OptimisePeriod = 524;
-        private List<Row> _history = new List<Row>(5000);
+        private DateTime _latestDate;
 
         public object Key => new { _window, _threshold };
 
@@ -24,16 +25,18 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldOptimise()
         {
+            var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   _history.Count > 1 &&
-                   _history.Count % OptimisePeriod == 0;
+                   count > 1 &&
+                   count % OptimisePeriod == 0;
         }
 
         public void Optimise()
         {
             using (var progress = ProgressBarReporter.SpawnChild(10 * 20, "Optimising..."))
             {
-                var simulator = new Simulator(_history);
+                var history = MarketDataCache.Instance.TakeUntil(_latestDate);
+                var simulator = new Simulator(history);
                 var optimal = Enumerable.Range(1, 10).SelectMany(x =>
                 {
                     return Enumerable.Range(20, 20).Select(window =>
@@ -54,12 +57,12 @@ namespace MarketAnalysis.Strategy
             return true;
         }
 
-        public bool ShouldBuyShares(Row data)
+        public bool ShouldBuyShares(MarketData data)
         {
-            if (!_history.Any(x => x.Date == data.Date))
-                _history.Add(data);
+            if (MarketDataCache.Instance.TryAdd(data))
+                _latestDate = data.Date;
 
-            var batch = _history.Last(_window);
+            var batch = MarketDataCache.Instance.TakeUntil(_latestDate).ToList().Last(_window);
             if (batch.Length < 2)
                 return false;
 

@@ -43,7 +43,7 @@ namespace MarketAnalysis.Services
             await _dataRepository.SaveData(data);
         }
 
-        private async Task<IEnumerable<Row>> GetPriceData()
+        private async Task<IEnumerable<MarketData>> GetPriceData()
         {
             var historicData = await _dataProvider.GetHistoricData();
             var latestData = await _apiClient.GetData();
@@ -54,7 +54,7 @@ namespace MarketAnalysis.Services
                 .Union(latestData);
         }
 
-        private ResultsProvider Simulate(IEnumerable<Row> data, IEnumerable<IStrategy> strategies)
+        private ResultsProvider Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
         {
             Simulator simulator = Configuration.InitialRun 
                 ? simulator = new Simulator(data, true)
@@ -66,7 +66,8 @@ namespace MarketAnalysis.Services
             foreach (var s in strategies)
             {
                 Log.Information($"Evaluating strategy: {s.GetType()}");
-                using (var cache = SimulationCache.Instance)
+                using (SimulationCache.Instance)
+                using (MarketDataCache.Instance)
                 {
                     var history = simulator.Evaluate(s);
                     resultsProvider.AddResults(s, history);
