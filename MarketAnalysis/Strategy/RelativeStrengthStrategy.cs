@@ -34,12 +34,12 @@ namespace MarketAnalysis.Strategy
             {
                 var history = MarketDataCache.Instance.TakeUntil(_latestDate);
                 var simulator = new Simulator(history);
-                var optimal = Enumerable.Range(0, 100).Select(x =>
+                var optimal = Enumerable.Range(1, 101).Select(x =>
                 {
                     var result = simulator.Evaluate(new RelativeStrengthStrategy(x, false)).Last();
                     progress.Tick($"Optimising... x:{x}");
                     return new { x, result.Worth, result.BuyCount };
-                }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
+                }).OrderByDescending(x => x.Worth).First();
                 _threshold = optimal.x;
             }
         }

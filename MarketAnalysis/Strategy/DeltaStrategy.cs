@@ -7,14 +7,14 @@ namespace MarketAnalysis.Strategy
 {
     public class DeltaStrategy : IStrategy
     {
-        private int _threshold;
+        private decimal _threshold;
         private readonly bool _shouldOptimise;
-        private const int OptimisePeriod = 60;
+        private const int OptimisePeriod = 1024;
         private DateTime _latestDate;
 
         public object Key => _threshold;
 
-        public DeltaStrategy(int threshold, bool shouldOptimise = true)
+        public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
         {
             _threshold = threshold;
             _shouldOptimise = shouldOptimise;
@@ -36,11 +36,12 @@ namespace MarketAnalysis.Strategy
                 var simulator = new Simulator(history);
                 var optimal = Enumerable.Range(1, 200).Select(x =>
                 {
-                    var result = simulator.Evaluate(new DeltaStrategy(x, false)).Last();
+                    var parameter = (decimal) x / 1000;
+                    var result = simulator.Evaluate(new DeltaStrategy(parameter, false)).Last();
                     progress.Tick($"Optimising... x:{x}");
-                    return new { x, result.Worth, result.BuyCount };
-                }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
-                _threshold = optimal.x;
+                    return new { parameter, result.Worth, result.BuyCount };
+                }).OrderByDescending(x => x.Worth).First();
+                _threshold = optimal.parameter;
             }
         }
 
@@ -54,7 +55,7 @@ namespace MarketAnalysis.Strategy
             if (MarketDataCache.Instance.TryAdd(data))
                 _latestDate = data.Date;
 
-            return data.Delta < _threshold;
+            return Math.Abs(data.Delta) < _threshold;
         }
 
         public override bool Equals(object obj)

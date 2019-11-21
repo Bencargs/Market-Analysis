@@ -9,7 +9,7 @@ namespace MarketAnalysis.Strategy
     {
         private int _threshold;
         private readonly bool _shouldOptimise;
-        private const int OptimisePeriod = 524;
+        private const int OptimisePeriod = 1024;
         private DateTime _latestDate;
 
         public object Key => _threshold;

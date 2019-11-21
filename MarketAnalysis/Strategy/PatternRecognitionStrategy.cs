@@ -57,6 +57,18 @@ namespace MarketAnalysis.Strategy
                     _average = CreateAverage(minimums);
             }
 
+            using (var progress = ProgressBarReporter.SpawnChild(300, "Optimising..."))
+            {
+                var simulator = new Simulator(history);
+                var optimal = Enumerable.Range(600, 300).Select(x =>
+                {
+                    var result = simulator.Evaluate(new PatternRecognitionStrategy(x, _average, false)).Last();
+                    progress.Tick($"Optimising... x:{x}");
+                    return new { x, result.Worth, result.BuyCount };
+                }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
+                _threshold = optimal.x;
+            }
+
             // this approach is ideal, but prohibitively slow
             //using (var progress = ProgressBarReporter.SpawnChild(_average.Width * _average.Height, "Optimising..."))
             //{

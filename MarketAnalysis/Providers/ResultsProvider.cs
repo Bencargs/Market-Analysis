@@ -108,14 +108,14 @@ namespace MarketAnalysis.Providers
 
         private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix, List<SimulationState> history)
         {
-            return (decimal) confusionMatrix[ConfusionCategory.TruePostative]
-                            / (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalsePostative]);
+            var denominator = (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalsePostative]);
+            return (decimal) denominator != 0 ? confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
         }
 
         private decimal CalculateRecall(Dictionary<ConfusionCategory, int> confusionMatrix, List<SimulationState> history)
         {
-            return (decimal)confusionMatrix[ConfusionCategory.TruePostative] 
-                / (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalseNegative]);
+            var denominator = (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalseNegative]);
+            return (decimal) denominator != 0 ? confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
         }
 
         private decimal CalculateAccuracy(Dictionary<ConfusionCategory, int> confusionMatrix, List<SimulationState> history)
@@ -142,11 +142,11 @@ namespace MarketAnalysis.Providers
 
                 if (model && ideal)
                     confusionMatrix[ConfusionCategory.TruePostative]++;
-                else if (!model && ideal)
-                    confusionMatrix[ConfusionCategory.FalsePostative]++;
-                else if (model && !ideal)
+                if (!model && !ideal)
                     confusionMatrix[ConfusionCategory.TrueNegative]++;
-                else if (!model && !ideal)
+                if (model && !ideal)
+                    confusionMatrix[ConfusionCategory.FalsePostative]++;
+                if (!model && ideal)
                     confusionMatrix[ConfusionCategory.FalseNegative]++;
             }
 
