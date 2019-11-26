@@ -6,7 +6,6 @@ namespace MarketAnalysis
 {
     public static class Configuration
     {
-        public static bool InitialRun => bool.Parse(ConfigurationManager.AppSettings["InitialRun"]);
         public static string LogPath => GetAbsolutePath(ConfigurationManager.AppSettings["LogPath"]);
         public static string DataPath => GetAbsolutePath( ConfigurationManager.AppSettings["DataPath"]);
         public static string ResultsPath => GetAbsolutePath(ConfigurationManager.AppSettings["ResultsPath"]);
@@ -22,6 +21,7 @@ namespace MarketAnalysis
         public static string PatternRecognitionImagePath => GetAbsolutePath(ConfigurationManager.AppSettings["PatternRecognitionImagePath"]);
         public static decimal DailyFunds => decimal.Parse(ConfigurationManager.AppSettings["DailyFunds"]);
         public static int CacheSize => int.Parse(ConfigurationManager.AppSettings["CacheSize"]);
+        public static DateTime BacktestingDate => DateTime.Parse(ConfigurationManager.AppSettings["BacktestingDate"]);
 
         private static string GetAbsolutePath(string relativePath)
         {

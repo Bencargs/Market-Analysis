@@ -2,7 +2,6 @@
 using MarketAnalysis.Providers;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using SendGrid;
@@ -101,6 +100,7 @@ namespace MarketAnalysis.Services
                 results.Append($"<td>{ToRecommendation(s.ShouldBuy)}</td>");
                 results.Append($"<td>{s.ProfitYTD.ToString("C2")}</td>");
                 results.Append($"<td>{s.ProfitTotal.ToString("C2")}</td>");
+                results.Append($"<td>{s.BuyCount}</td>");
                 results.Append("</tr>");
             }
             return template.Replace(@"{results}", results.ToString());

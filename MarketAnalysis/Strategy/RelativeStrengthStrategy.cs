@@ -1,6 +1,7 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
@@ -24,24 +25,13 @@ namespace MarketAnalysis.Strategy
         {
             var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   count > 1 &&
                    count % OptimisePeriod == 0;
         }
 
-        public void Optimise()
+        public IEnumerable<IStrategy> Optimise()
         {
-            using (var progress = ProgressBarReporter.SpawnChild(100, "Optimising..."))
-            {
-                var history = MarketDataCache.Instance.TakeUntil(_latestDate);
-                var simulator = new Simulator(history);
-                var optimal = Enumerable.Range(1, 101).Select(x =>
-                {
-                    var result = simulator.Evaluate(new RelativeStrengthStrategy(x, false)).Last();
-                    progress.Tick($"Optimising... x:{x}");
-                    return new { x, result.Worth, result.BuyCount };
-                }).OrderByDescending(x => x.Worth).First();
-                _threshold = optimal.x;
-            }
+            return Enumerable.Range(1, 101).Select(x =>
+                new RelativeStrengthStrategy(x, false));
         }
 
         public bool ShouldAddFunds()
@@ -51,7 +41,7 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuyShares(MarketData data)
         {
-            if (MarketDataCache.Instance.TryAdd(data))
+            if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
             var batch = MarketDataCache.Instance.GetLastSince(_latestDate, _threshold).ToArray();

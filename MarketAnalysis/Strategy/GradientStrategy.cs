@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
@@ -8,8 +9,8 @@ namespace MarketAnalysis.Strategy
 {
     public class GradientStrategy : IStrategy
     {
-        private int _window;
-        private decimal _threshold;
+        private readonly int _window;
+        private readonly decimal _threshold;
         private readonly bool _shouldOptimise;
         private const int OptimisePeriod = 1024;
         private DateTime _latestDate;
@@ -27,29 +28,19 @@ namespace MarketAnalysis.Strategy
         {
             var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   count > 1 &&
                    count % OptimisePeriod == 0;
         }
 
-        public void Optimise()
+        public IEnumerable<IStrategy> Optimise()
         {
-            using (var progress = ProgressBarReporter.SpawnChild(10 * 20, "Optimising..."))
+            return Enumerable.Range(1, 10).SelectMany(x =>
             {
-                var history = MarketDataCache.Instance.TakeUntil(_latestDate);
-                var simulator = new Simulator(history);
-                var optimal = Enumerable.Range(1, 10).SelectMany(x =>
+                return Enumerable.Range(20, 20).Select(window =>
                 {
-                    return Enumerable.Range(20, 20).Select(window =>
-                    {
-                        var threshold = -((decimal)x / 100);
-                        var result = simulator.Evaluate(new GradientStrategy(window, threshold, false)).Last();
-                        progress.Tick($"x:{x} y:{window}");
-                        return new { threshold, window, result.Worth, result.BuyCount };
-                    });
-                }).OrderByDescending(x => x.Worth).ThenByDescending(x => x.BuyCount).First();
-                _window = optimal.window;
-                _threshold = optimal.threshold;
-            }
+                    var threshold = -((decimal)x / 100);
+                    return new GradientStrategy(window, threshold, false);
+                });
+            });
         }
 
         public bool ShouldAddFunds()
@@ -59,7 +50,7 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuyShares(MarketData data)
         {
-            if (MarketDataCache.Instance.TryAdd(data))
+            if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
             var batch = MarketDataCache.Instance.TakeUntil(_latestDate).ToList().Last(_window);

@@ -2,6 +2,7 @@
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
+using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using Serilog;
 using System.Collections.Generic;
@@ -13,19 +14,25 @@ namespace MarketAnalysis.Services
     public class AnalysisService
     {
         private readonly IApiClient _apiClient;
+        private readonly ISimulator _simulator;
         private readonly IProvider _dataProvider;
         private readonly IRepository _dataRepository;
+        private readonly IResultsProvider _resultsProvider;
         private readonly ICommunicationService _communicationService;
 
         public AnalysisService(
             IApiClient apiClient,
+            ISimulator simulator,
             IProvider dataProvider,
             IRepository dataRepository,
+            IResultsProvider resultsProvider,
             ICommunicationService communicationService)
         {
             _apiClient = apiClient;
+            _simulator = simulator;
             _dataProvider = dataProvider;
             _dataRepository = dataRepository;
+            _resultsProvider = resultsProvider;
             _communicationService = communicationService;
         }
 
@@ -38,7 +45,7 @@ namespace MarketAnalysis.Services
 
             if (results.ShouldBuy())
                 await _communicationService.SendCommunication(results);
-
+                
             await _dataRepository.SaveSimulationResults(results);
             await _dataRepository.SaveData(data);
         }
@@ -54,26 +61,21 @@ namespace MarketAnalysis.Services
                 .Union(latestData);
         }
 
-        private ResultsProvider Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
+        private IResultsProvider Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
         {
-            Simulator simulator = Configuration.InitialRun 
-                ? simulator = new Simulator(data, true)
-                : simulator = new Simulator(new [] { data.Last() }, true); // wrong (should be last unprocessed data)
-
-            var resultsProvider = new ResultsProvider();
-            resultsProvider.Initialise(data);
-
-            foreach (var s in strategies)
+            using (var cache = MarketDataCache.Instance)
             {
-                Log.Information($"Evaluating strategy: {s.GetType()}");
-                using (SimulationCache.Instance)
-                using (MarketDataCache.Instance)
+                cache.Initialise(data);
+                _resultsProvider.Initialise();
+
+                foreach (var s in strategies)
                 {
-                    var history = simulator.Evaluate(s);
-                    resultsProvider.AddResults(s, history);
+                    Log.Information($"Evaluating strategy: {s.GetType()}");
+                    var history = _simulator.Evaluate(s);
+                    _resultsProvider.AddResults(s, history);
                 }
             }
-            return resultsProvider;
+            return _resultsProvider;
         }
     }
 }

@@ -1,7 +1,8 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
 using MarketAnalysis.Services;
+using MarketAnalysis.Simulation;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using SerilogTimings;
@@ -49,7 +50,13 @@ namespace MarketAnalysis
             services.AddSingleton(typeof(IRepository), typeof(FileRepository));
             services.AddSingleton(typeof(IApiClient), typeof(ApiMarketDataProvider));
             services.AddSingleton(typeof(ICommunicationService), typeof(EmailCommunicationService));
+
+            services.AddSingleton(typeof(MarketDataCache), MarketDataCache.Instance);
+            services.AddSingleton(typeof(ISimulator), typeof(Simulator));
+            services.AddSingleton(typeof(IResultsProvider), typeof(ResultsProvider));
             services.AddTransient(typeof(WindowsService), typeof(WindowsService));
+
+            services.AddSingleton<SimulationCache>();
             services.AddTransient<AnalysisService>();
 
             return services.BuildServiceProvider();

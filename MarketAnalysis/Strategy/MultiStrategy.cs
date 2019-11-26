@@ -1,5 +1,6 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Simulation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +9,8 @@ namespace MarketAnalysis.Strategy
 {
     public class MultiStrategy : IStrategy
     {
-        private IStrategy[] _strategies;
-        private IStrategy _combinationRule;
+        private readonly IStrategy[] _strategies;
+        private readonly IStrategy _combinationRule;
         private readonly bool _shouldOptimise;
         private const int OptimisePeriod = 524;
         private DateTime _latestDate;
@@ -28,37 +29,38 @@ namespace MarketAnalysis.Strategy
                    MarketDataCache.Instance.Count % OptimisePeriod == 0;
         }
 
-        public void Optimise()
+        public IEnumerable<IStrategy> Optimise()
         {
-            using (var progress = ProgressBarReporter.SpawnChild(_strategies.Count(), "Optimising..."))
-            {
-                var history = MarketDataCache.Instance.TakeUntil(_latestDate);
-                var simulator = new Simulator(history);
-                var strategyRules = new List<IStrategy>();
-                var orderedStrategies = OrderStratergies(simulator, _strategies);
-                while (orderedStrategies.Any())
-                {
-                    var first = orderedStrategies.FirstOrDefault();
-                    var parentValue = simulator.Evaluate(first).LastOrDefault()?.Worth ?? 0m;
+            return new IStrategy[0];
 
-                    var combination = GetCombinedStrategy(simulator, orderedStrategies);
-                    if (combination != null && combination.Value > parentValue)
-                    {
-                        strategyRules.Add(combination.AndStrategy);
-                        foreach (var s in combination.Strategies)
-                        {
-                            orderedStrategies.Remove(s);
-                        }
-                    }
-                    else
-                    {
-                        strategyRules.Add(first);
-                        orderedStrategies.Remove(first);
-                    }
-                    progress.Tick();
-                }
-                _combinationRule = new OrStrategy(strategyRules.ToArray());
-            }
+            //todo: fix
+            //using (var progress = ProgressBarReporter.SpawnChild(_strategies.Count(), "Optimising..."))
+            //{
+            //    var strategyRules = new List<IStrategy>();
+            //    var orderedStrategies = OrderStratergies(simulator, _strategies);
+            //    while (orderedStrategies.Any())
+            //    {
+            //        var first = orderedStrategies.FirstOrDefault();
+            //        var parentValue = simulator.Evaluate(first, _latestDate).LastOrDefault()?.Worth ?? 0m;
+
+            //        var combination = GetCombinedStrategy(simulator, orderedStrategies);
+            //        if (combination != null && combination.Value > parentValue)
+            //        {
+            //            strategyRules.Add(combination.AndStrategy);
+            //            foreach (var s in combination.Strategies)
+            //            {
+            //                orderedStrategies.Remove(s);
+            //            }
+            //        }
+            //        else
+            //        {
+            //            strategyRules.Add(first);
+            //            orderedStrategies.Remove(first);
+            //        }
+            //        progress.Tick();
+            //    }
+            //    _combinationRule = new OrStrategy(strategyRules.ToArray());
+            //}
         }
 
         public bool ShouldAddFunds()
@@ -71,7 +73,7 @@ namespace MarketAnalysis.Strategy
             if (_combinationRule == null)
                 return false;
 
-            if (MarketDataCache.Instance.TryAdd(data))
+            if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
             return _combinationRule.ShouldBuyShares(data);
@@ -81,7 +83,7 @@ namespace MarketAnalysis.Strategy
         {
             return strats.Select(strategy =>
             {
-                var result = simulator.Evaluate(strategy).LastOrDefault();
+                var result = simulator.Evaluate(strategy, _latestDate).LastOrDefault();
                 return new { strategy, result, result?.BuyCount };
             }).OrderBy(x => x.BuyCount)
             .Select(x => x.strategy).ToList();
@@ -93,7 +95,7 @@ namespace MarketAnalysis.Strategy
             {
                 var collection = orderedStrategies.GetRange(0, i).ToArray();
                 var andStrat = new AndStrategy(collection);
-                var value = simulator.Evaluate(andStrat).LastOrDefault()?.Worth ?? 0m;
+                var value = simulator.Evaluate(andStrat, _latestDate).LastOrDefault()?.Worth ?? 0m;
                 return new CombinationResult
                 {
                     Strategies = collection,
@@ -126,9 +128,9 @@ namespace MarketAnalysis.Strategy
                 return false;
             }
 
-            public void Optimise()
+            public IEnumerable<IStrategy> Optimise()
             {
-                return;
+                return new IStrategy[0];
             }
 
             public bool ShouldAddFunds()
@@ -167,9 +169,9 @@ namespace MarketAnalysis.Strategy
                 return false;
             }
 
-            public void Optimise()
+            public IEnumerable<IStrategy> Optimise()
             {
-                return;
+                return new IStrategy[0];
             }
 
             public bool ShouldAddFunds()

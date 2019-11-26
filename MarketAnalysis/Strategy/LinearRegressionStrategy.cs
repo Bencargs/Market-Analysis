@@ -1,15 +1,16 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
     public class LinearRegressionStrategy : IStrategy
     {
-        private int _window;
+        private readonly int _window;
         private readonly bool _shouldOptimise;
-        private const int OptimisePeriod = 1024;
+        private const int _optimisePeriod = 1024;
         private DateTime _latestDate;
 
         public object Key => _window;
@@ -24,24 +25,13 @@ namespace MarketAnalysis.Strategy
         {
             var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   count > 1 &&
-                   count % OptimisePeriod == 0;
+                   count % _optimisePeriod == 0;
         }
 
-        public void Optimise()
+        public IEnumerable<IStrategy> Optimise()
         {
-            using (var progress = ProgressBarReporter.SpawnChild(200, "Optimising..."))
-            {
-                var history = MarketDataCache.Instance.TakeUntil(_latestDate);
-                var simulator = new Simulator(history);
-                var optimal = Enumerable.Range(30, 200).Select(x =>
-                {
-                    var result = simulator.Evaluate(new LinearRegressionStrategy(x, false)).Last();
-                    progress.Tick($"Optimising... x:{x}");
-                    return new { x, result.Worth, result.BuyCount };
-                }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
-                _window = optimal.x;
-            }
+            return Enumerable.Range(30, 200).Select(x => 
+                new LinearRegressionStrategy(x, false));
         }
 
         public bool ShouldAddFunds()
@@ -51,7 +41,7 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuyShares(MarketData data)
         {
-            if (MarketDataCache.Instance.TryAdd(data))
+            if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
             var latestPoints = MarketDataCache.Instance.GetLastSince(_latestDate, _window)

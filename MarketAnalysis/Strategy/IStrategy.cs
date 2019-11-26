@@ -1,4 +1,5 @@
 ﻿using MarketAnalysis.Models;
+using System.Collections.Generic;
 
 namespace MarketAnalysis.Strategy
 {
@@ -6,7 +7,7 @@ namespace MarketAnalysis.Strategy
     {
         object Key { get; }
         bool ShouldOptimise();
-        void Optimise();
+        IEnumerable<IStrategy> Optimise();
         bool ShouldAddFunds();
         bool ShouldBuyShares(MarketData data);
     }

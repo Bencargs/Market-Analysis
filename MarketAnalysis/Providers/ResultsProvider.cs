@@ -1,5 +1,6 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using System;
 using System.Collections.Generic;
@@ -9,43 +10,50 @@ namespace MarketAnalysis.Providers
 {
     public class ResultsProvider : IResultsProvider
     {
-        private List<SimulationResult> _results = new List<SimulationResult>();
+        private readonly List<SimulationResult> _results = new List<SimulationResult>();
+        private readonly ISimulator _simulator;
+        private readonly MarketDataCache _cache;
         private List<SimulationState> _marketAverage;
         private List<SimulationState> _marketMaximum;
 
-        public void Initialise(IEnumerable<MarketData> data)
+        public ResultsProvider(ISimulator simulator, MarketDataCache cache)
         {
-            var marketData = data.ToArray();
-            var simulator = new Simulator(data, false);
-
-            _marketAverage = simulator.Evaluate(new ConstantStrategy());
-            _marketMaximum = GetMarketMaximum(simulator, marketData);
+            _cache = cache;
+            _simulator = simulator;
         }
 
-        private List<SimulationState> GetMarketMaximum(ISimulator simulator, MarketData[] data)
+        public void Initialise()
         {
-            using (var progress = ProgressBarReporter.StartProgressBar(data.Count(), "Initialising..."))
+            _marketAverage = _simulator.Evaluate(new ConstantStrategy());
+            _marketMaximum = GetMarketMaximum(_simulator);
+        }
+
+        private List<SimulationState> GetMarketMaximum(ISimulator simulator)
+        {
+            var marketData = _cache.TakeUntil(DateTime.MaxValue).ToArray();
+            using (var progress = ProgressBarReporter.StartProgressBar(marketData.Count(), "Initialising..."))
             using (new CacheSettings { IsEnabled = false })
             {
-                var buyDates = Enumerable.Repeat(true, data.Count()).ToArray();
+                var buyDates = marketData.Select(x => x.Date).ToDictionary(k => k, v => true);
                 var strategy = new StaticDatesStrategy(buyDates);
                 var history = simulator.Evaluate(strategy);
                 var worth = history.LastOrDefault()?.Worth ?? 0m;
 
-                for (int i = buyDates.Length - 1; i > 0; i--)
+                //for (int i = buyDates.Count() - 1; i > 0; i--)
+                foreach (var d in buyDates.Reverse())
                 {
-                    buyDates[i] = false;
+                    buyDates[d.Key] = false;    // d.value?
                     strategy = new StaticDatesStrategy(buyDates);
-                    var newHistory = simulator.Evaluate(strategy);
+                    var newHistory = simulator.Evaluate(strategy, DateTime.MaxValue);
                     var newWorth = newHistory?.LastOrDefault()?.Worth ?? 0m;
                     if (newWorth < worth)
-                        buyDates[i] = true;
+                        buyDates[d.Key] = true;
                     else
                     {
                         worth = newWorth;
                         history = newHistory;
                     }
-                    progress.Tick($"Initialising... x:{data.Count() - i}");
+                    progress.Tick($"Initialising...");
                 }
                 return history;
             }

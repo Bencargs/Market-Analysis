@@ -34,34 +34,19 @@ namespace MarketAnalysis.Repositories
             if (!File.Exists(_resultsFilePath))
                 File.Create(_resultsFilePath);
 
-            IEnumerable<IStrategy> strategies = null;
-            if (!Configuration.InitialRun)
+            var subStrategies = new IStrategy[]
             {
-                using (var reader = new StreamReader(_resultsFilePath))
-                {
-                    var json = await reader.ReadToEndAsync();
-                    strategies = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<List<SimulationResult>>(json)?.Select(x =>
-                    {
-                        var type = Type.GetType(x.StrategyType);
-                        return (IStrategy)JsonConvert.DeserializeObject(x.Strategy, type);
-                    }));
-                }
-            }
-            if (strategies == null)
-            {
-                var subStrategies = new IStrategy[]
-                {
-                    new PatternRecognitionStrategy(800),
-                    new RelativeStrengthStrategy(50),
-                    new DeltaStrategy(1),
-                    new GradientStrategy(20, -0.06m),
-                    new LinearRegressionStrategy(149),
-                    new VolumeStrategy(182),
-                };
-                strategies = subStrategies.Concat(new[] { new MultiStrategy(subStrategies) });
-            }
+                new PatternRecognitionStrategy(800),
+                new RelativeStrengthStrategy(50),
+                new DeltaStrategy(0.05m),
+                new GradientStrategy(20, -0.06m),
+                new LinearRegressionStrategy(149),
+                new VolumeStrategy(182),
+            };
+            var strategies = subStrategies.Concat(new[] { new MultiStrategy(subStrategies) });
             Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");
-            return strategies;
+
+            return await Task.FromResult(strategies);
         }
 
         public async Task<string> GetEmailTemplate()
@@ -70,9 +55,9 @@ namespace MarketAnalysis.Repositories
             return await File.ReadAllTextAsync(path);
         }
 
-        public async Task<IEnumerable<RecipientDetails>> GetEmailRecipients()
+        public Task<IEnumerable<RecipientDetails>> GetEmailRecipients()
         {
-            return new[]
+            return Task.FromResult((IEnumerable<RecipientDetails>) new[]
             {
                 new RecipientDetails
                 {
@@ -82,6 +67,8 @@ namespace MarketAnalysis.Repositories
                     Email = "client@email.com"
                 }
             };
+                },
+            });
         }
 
         public async Task SaveData(IEnumerable<MarketData> data)

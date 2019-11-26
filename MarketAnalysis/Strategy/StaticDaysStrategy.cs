@@ -1,16 +1,16 @@
 ﻿using MarketAnalysis.Models;
-using System.Linq;
+using System;
+using System.Collections.Generic;
 
 namespace MarketAnalysis.Strategy
 {
     public class StaticDatesStrategy : IStrategy
     {
-        private bool[] _buyDates;
-        private int _i;
+        private readonly Dictionary<DateTime, bool> _buyDates;
 
         public object Key => _buyDates;
 
-        public StaticDatesStrategy(bool[] buyDates)
+        public StaticDatesStrategy(Dictionary<DateTime, bool> buyDates)
         {
             _buyDates = buyDates;
         }
@@ -20,9 +20,9 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public void Optimise()
+        public IEnumerable<IStrategy> Optimise()
         {
-            return;
+            return new IStrategy[0];
         }
 
         public bool ShouldAddFunds()
@@ -32,7 +32,7 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuyShares(MarketData data)
         {
-            return (_buyDates[_i++]);
+            return _buyDates[data.Date];
         }
 
         public override bool Equals(object obj)

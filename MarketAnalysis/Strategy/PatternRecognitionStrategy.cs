@@ -8,9 +8,9 @@ namespace MarketAnalysis.Strategy
 {
     public class PatternRecognitionStrategy : IStrategy
     {
-        private double _threshold;
-        private Image _average;
-        private bool _shouldOptimise;
+        private readonly double _threshold;
+        private readonly Image _average;
+        private readonly bool _shouldOptimise;
         private const int OptimisePeriod = 30;
         private DateTime _latestDate;
 
@@ -21,53 +21,43 @@ namespace MarketAnalysis.Strategy
             _threshold = threshold;
             _shouldOptimise = shouldOptimise;
             _average = average ?? new Func<Image>(() =>
-                 {
-                     var averagePath = Configuration.PatternRecognitionImagePath;
-                     return new Image(averagePath);
-                 }).Invoke();
+            {
+                var averagePath = Configuration.PatternRecognitionImagePath;
+                return new Image(averagePath);
+            }).Invoke();
         }
 
         public bool ShouldOptimise()
         {
             var count = MarketDataCache.Instance.Count;
             return _shouldOptimise &&
-                   count > 1 &&
                    count % OptimisePeriod == 0;
         }
 
-        public void Optimise()
+        public IEnumerable<IStrategy> Optimise()
         {
-            var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();
-            using (var progress = ProgressBarReporter.SpawnChild(history.Count / OptimisePeriod, "Optimising..."))
-            {
-                var minimums = new List<Image>();
-                for (int i = OptimisePeriod; i < history.Count - OptimisePeriod; i += OptimisePeriod)
-                {
-                    var batch = history.GetRange(i, OptimisePeriod);
-                    var minBatchIndex = batch.Select(x => x.Price).ToList().IndexOfMin();
-                    var minRangeIndex = (i - OptimisePeriod) + minBatchIndex;
-                    var dataset = history.GetRange(minRangeIndex, OptimisePeriod)
-                        .Select(x => x.Price)
-                        .ToList();
-                    var image = CreateImage(dataset, OptimisePeriod, OptimisePeriod);
-                    minimums.Add(image);
-                    progress.Tick($"Optimising... x: {i}");
-                }
-                if (minimums.Any())
-                    _average = CreateAverage(minimums);
-            }
+            //var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();
+            //using (var progress = ProgressBarReporter.SpawnChild(history.Count / OptimisePeriod, "Optimising..."))
+            //{
+            //    var minimums = new List<Image>();
+            //    for (int i = OptimisePeriod; i < history.Count - OptimisePeriod; i += OptimisePeriod)
+            //    {
+            //        var batch = history.GetRange(i, OptimisePeriod);
+            //        var minBatchIndex = batch.Select(x => x.Price).ToList().IndexOfMin();
+            //        var minRangeIndex = (i - OptimisePeriod) + minBatchIndex;
+            //        var dataset = history.GetRange(minRangeIndex, OptimisePeriod)
+            //            .Select(x => x.Price)
+            //            .ToList();
+            //        var image = CreateImage(dataset, OptimisePeriod, OptimisePeriod);
+            //        minimums.Add(image);
+            //        progress.Tick($"Optimising... x: {i}");
+            //    }
+            //    if (minimums.Any())
+            //        _average = CreateAverage(minimums);
+            //}
 
-            using (var progress = ProgressBarReporter.SpawnChild(300, "Optimising..."))
-            {
-                var simulator = new Simulator(history);
-                var optimal = Enumerable.Range(600, 300).Select(x =>
-                {
-                    var result = simulator.Evaluate(new PatternRecognitionStrategy(x, _average, false)).Last();
-                    progress.Tick($"Optimising... x:{x}");
-                    return new { x, result.Worth, result.BuyCount };
-                }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount).First();
-                _threshold = optimal.x;
-            }
+            return Enumerable.Range(600, 300).Select(x =>
+                new PatternRecognitionStrategy(x, _average, false));
 
             // this approach is ideal, but prohibitively slow
             //using (var progress = ProgressBarReporter.SpawnChild(_average.Width * _average.Height, "Optimising..."))
@@ -121,7 +111,7 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuyShares(MarketData data)
         {
-            if (MarketDataCache.Instance.TryAdd(data))
+            if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
             var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();

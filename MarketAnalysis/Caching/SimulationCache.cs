@@ -1,50 +1,45 @@
 ﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
-using Microsoft.Extensions.Caching.Memory;
 using System;
+using System.Collections.Generic;
 
 namespace MarketAnalysis.Caching
 {
-    public sealed class SimulationCache : IDisposable
+    public sealed class SimulationCache
     {
-        private static readonly Lazy<SimulationCache> _instance = new Lazy<SimulationCache>(() => new SimulationCache());
-        public static SimulationCache Instance => _instance.Value;
         public static CacheSettings Settings { get; set; }
-        private MemoryCache _cache;
+        private readonly Dictionary<IStrategy, SortedList<DateTime, SimulationState>> _cache;
 
-        private SimulationCache()
+        public SimulationCache()
         {
             Settings = new CacheSettings();
-            _cache = InitializeCache();
+            _cache = new Dictionary<IStrategy, SortedList<DateTime, SimulationState>>();
         }
         
-        public SimulationState GetOrCreate((IStrategy strategy, int day) key, Func<SimulationState> createItem)
+        public SimulationState GetOrCreate((IStrategy strategy, DateTime day) key, Func<SimulationState> createItem)
         {
             if (!Settings.IsEnabled)
                 return createItem();
 
-            if (!_cache.TryGetValue(key, out SimulationState cacheEntry))
+            if (!_cache.TryGetValue(key.strategy, out var history))
+            {
+                history = new SortedList<DateTime, SimulationState>();
+                _cache.Add(key.strategy, history);
+            }
+            if (!history.TryGetValue(key.day, out SimulationState cacheEntry))
             {
                 cacheEntry = createItem();
-
-                _cache.Set(key, cacheEntry, options: Settings.EntryOptions);
+                history.Add(key.day, cacheEntry);
             }
+
             return cacheEntry;
         }
 
-        private MemoryCache InitializeCache()
+        public IList<SimulationState> GetHistory(IStrategy strategy)
         {
-            return new MemoryCache(new MemoryCacheOptions
-            {
-                SizeLimit = Settings.CacheSize,
-                CompactionPercentage = Settings.CompactionPercentage
-            });
-        }
+            _cache.TryGetValue(strategy, out var history);
 
-        public void Dispose()
-        {
-            _cache?.Dispose();
-            _cache = InitializeCache();
+            return history?.Values ?? new List<SimulationState>();
         }
     }
 }
