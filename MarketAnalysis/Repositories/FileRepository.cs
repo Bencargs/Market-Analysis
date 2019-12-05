@@ -31,8 +31,9 @@ namespace MarketAnalysis.Repositories
 
         public async Task<IEnumerable<IStrategy>> GetStrategies()
         {
+            // todo: this is in the wrong place?
             if (!File.Exists(_resultsFilePath))
-                File.Create(_resultsFilePath);
+                File.Create(_resultsFilePath).Dispose();
 
             var subStrategies = new IStrategy[]
             {

@@ -1,24 +1,21 @@
-﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 using System;
 using System.Linq;
 
 namespace MarketAnalysis.Simulation
 {
-    public class BacktestingSimulator : StimulationStrategy
+    public class BacktestingSimulator : IStimulationStrategy
     {
         private readonly ISimulator _simulator;
 
-        public BacktestingSimulator(SimulationCache cache, ISimulator simulator)
-            : base(cache)
+        public BacktestingSimulator(ISimulator simulator)
         {
             _simulator = simulator;
         }
 
-        public override SimulationState SimulateDay(IStrategy strategy, MarketData data)
+        public SimulationState SimulateDay(IStrategy strategy, MarketData data, SimulationState previousState)
         {
-            var previousState = GetPreviousState(strategy, data);
             var state = UpdateState(strategy, data, previousState);
 
             if (strategy.ShouldOptimise())
@@ -31,6 +28,21 @@ namespace MarketAnalysis.Simulation
                 BuyShares(state);
 
             return state;
+        }
+
+        private SimulationState UpdateState(IStrategy strategy, MarketData data, SimulationState previousState)
+        {
+            var shouldBuy = strategy.ShouldBuyShares(data);
+
+            return new SimulationState
+            {
+                Date = data.Date,
+                SharePrice = data.Price,
+                ShouldBuy = shouldBuy,
+                Funds = previousState.Funds,
+                Shares = previousState.Shares,
+                BuyCount = previousState.BuyCount,
+            };
         }
 
         private void BuyShares(SimulationState state)
@@ -49,15 +61,20 @@ namespace MarketAnalysis.Simulation
 
         private IStrategy Optimise(IStrategy strategy, DateTime endDate)
         {
-            var potentials = strategy.Optimise();
-            var optimal = potentials.Select(strat =>
+            var potentials = strategy.Optimise().ToArray();
+            using (var progress = ProgressBarReporter.SpawnChild(potentials.Count(), "Optimising..."))
             {
-                var result = _simulator.Evaluate(strat, endDate).Last();
-                return new { result.Worth, result.BuyCount, strat };
-            }).OrderByDescending(x => x.Worth).ThenBy(x => x.BuyCount)
-            .FirstOrDefault();
-
-            return optimal?.strat ?? strategy;
+                var optimal = potentials.Select(strat =>
+                {
+                    var result = _simulator.Evaluate(strat, endDate, false).Last();
+                    progress.Tick();
+                    return new { result.Worth, result.BuyCount, strat };
+                }).OrderByDescending(x => x.Worth)
+                .ThenBy(x => x.BuyCount)
+                .FirstOrDefault();
+            
+                return optimal?.strat ?? strategy;
+            }
         }
     }
 }

@@ -10,11 +10,11 @@ namespace MarketAnalysis.Providers
 {
     public class ResultsProvider : IResultsProvider
     {
-        private readonly List<SimulationResult> _results = new List<SimulationResult>();
+        private readonly List<SimulationResult> _results = new List<SimulationResult>(5000);
         private readonly ISimulator _simulator;
         private readonly MarketDataCache _cache;
-        private List<SimulationState> _marketAverage;
-        private List<SimulationState> _marketMaximum;
+        private SimulationState[] _marketAverage;
+        private SimulationState[] _marketMaximum;
 
         public ResultsProvider(ISimulator simulator, MarketDataCache cache)
         {
@@ -24,27 +24,26 @@ namespace MarketAnalysis.Providers
 
         public void Initialise()
         {
-            _marketAverage = _simulator.Evaluate(new ConstantStrategy());
-            _marketMaximum = GetMarketMaximum(_simulator);
+            _marketAverage = _simulator.Evaluate(new ConstantStrategy(), showProgress: false).ToArray();
+            _marketMaximum = GetMarketMaximum(_simulator).ToArray();
         }
 
-        private List<SimulationState> GetMarketMaximum(ISimulator simulator)
+        private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator)
         {
-            var marketData = _cache.TakeUntil(DateTime.MaxValue).ToArray();
-            using (var progress = ProgressBarReporter.StartProgressBar(marketData.Count(), "Initialising..."))
-            using (new CacheSettings { IsEnabled = false })
+            var marketData = _cache.TakeUntil().ToArray();
+            using (var progress = ProgressBarReporter.StartProgressBar(_cache.BacktestingIndex, "Initialising..."))
             {
                 var buyDates = marketData.Select(x => x.Date).ToDictionary(k => k, v => true);
                 var strategy = new StaticDatesStrategy(buyDates);
-                var history = simulator.Evaluate(strategy);
+                var history = simulator.Evaluate(strategy, showProgress: false);
                 var worth = history.LastOrDefault()?.Worth ?? 0m;
 
-                //for (int i = buyDates.Count() - 1; i > 0; i--)
-                foreach (var d in buyDates.Reverse())
+                var i = 0;
+                foreach (var d in buyDates.Where(x => x.Key > Configuration.BacktestingDate).Reverse())
                 {
                     buyDates[d.Key] = false;    // d.value?
-                    strategy = new StaticDatesStrategy(buyDates);
-                    var newHistory = simulator.Evaluate(strategy, DateTime.MaxValue);
+                    strategy = new StaticDatesStrategy(buyDates) { Identifier = i++ };
+                    var newHistory = simulator.Evaluate(strategy, showProgress: false);
                     var newWorth = newHistory?.LastOrDefault()?.Worth ?? 0m;
                     if (newWorth < worth)
                         buyDates[d.Key] = true;
@@ -55,16 +54,19 @@ namespace MarketAnalysis.Providers
                     }
                     progress.Tick($"Initialising...");
                 }
+
+                var w = history.Last().Worth;
                 return history;
             }
         }
 
-        public void AddResults(IStrategy strategy, List<SimulationState> history)
+        public void AddResults(IStrategy strategy, IEnumerable<SimulationState> source)
         {
+            var history = source.ToArray();
             var latestState = history.Last();
             var currentMarketWorth = _marketAverage.Last().Worth;
 
-            var profitTotal = latestState.Worth - GetInvestmentSince(0, history);
+            var profitTotal = latestState.Worth - GetInvestmentSince(_cache.BacktestingIndex, history); ;
             var profitYTD = CalculateYTDProfit(history);
 
             var aboveMarketReturn = latestState.Worth - currentMarketWorth;
@@ -114,24 +116,24 @@ namespace MarketAnalysis.Providers
             return _results.Sum(x => x.ProfitTotal) / _results.Count();
         }
 
-        private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix, List<SimulationState> history)
+        private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix, IList<SimulationState> history)
         {
             var denominator = (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalsePostative]);
             return (decimal) denominator != 0 ? confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
         }
 
-        private decimal CalculateRecall(Dictionary<ConfusionCategory, int> confusionMatrix, List<SimulationState> history)
+        private decimal CalculateRecall(Dictionary<ConfusionCategory, int> confusionMatrix, IList<SimulationState> history)
         {
             var denominator = (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalseNegative]);
             return (decimal) denominator != 0 ? confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
         }
 
-        private decimal CalculateAccuracy(Dictionary<ConfusionCategory, int> confusionMatrix, List<SimulationState> history)
+        private decimal CalculateAccuracy(Dictionary<ConfusionCategory, int> confusionMatrix, IList<SimulationState> history)
         {
             return (decimal) (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.TrueNegative]) / history.Count;
         }
 
-        private Dictionary<ConfusionCategory, int> CalculateConfusionMatrix(List<SimulationState> history)
+        private Dictionary<ConfusionCategory, int> CalculateConfusionMatrix(IList<SimulationState> history)
         {
             var confusionMatrix = new Dictionary<ConfusionCategory, int>
             {
@@ -161,9 +163,9 @@ namespace MarketAnalysis.Providers
             return confusionMatrix;
         }
 
-        private decimal CalculateMaximumDrawdown(List<SimulationState> history)
+        private decimal CalculateMaximumDrawdown(IList<SimulationState> history)
         {
-            return history.Select((h, i) => h.Worth - _marketAverage[i].Worth).Min();
+            return history.Select((h, i) => h.Worth - _marketAverage.First(x => x.Date == h.Date).Worth).Min();
         }
 
         private decimal CalculateAlpha(decimal currentWorth)
@@ -173,16 +175,16 @@ namespace MarketAnalysis.Providers
             return excessReturn / currentMarketWorth;
         }
 
-        private decimal CalculateYTDProfit(List<SimulationState> history)
+        private decimal CalculateYTDProfit(IList<SimulationState> history)
         {
             var latestState = history.Last();
-            var yearOpenDay = history.FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
+            var yearOpenDay = history.ToList().FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
             var strategyOpenWorth = history[yearOpenDay].Worth;
             var investment = GetInvestmentSince(yearOpenDay, history);
             return (latestState.Worth - strategyOpenWorth) - investment;
         }
 
-        private decimal GetInvestmentSince(int index, List<SimulationState> history)
+        private decimal GetInvestmentSince(int index, IList<SimulationState> history)
         {
             return (history.Count - index) * Configuration.DailyFunds;
         }

@@ -12,10 +12,11 @@ namespace MarketAnalysis.Caching
 
         public static MarketDataCache Instance => _instance.Value;
         public int Count => _cache.Count;
+        public int BacktestingIndex => Count - _cache.Values.TakeWhile(x => x.Date < Configuration.BacktestingDate).Count();
 
         public IEnumerable<MarketData> GetLastSince(DateTime date, int count)
         {
-            var results = new List<MarketData>();
+            var results = new List<MarketData>(5000);
             var remaining = count;
             foreach (var (dateKey, row) in _cache.Reverse())
             {

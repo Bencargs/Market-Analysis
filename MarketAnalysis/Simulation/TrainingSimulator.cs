@@ -1,22 +1,32 @@
-﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 
 namespace MarketAnalysis.Simulation
 {
-    public class TrainingSimulator : StimulationStrategy
+    public class TrainingSimulator : IStimulationStrategy
     {
-        public TrainingSimulator(SimulationCache cache)
-            : base(cache)
+        public TrainingSimulator()
         {
         }
 
-        public override SimulationState SimulateDay(IStrategy strategy, MarketData data)
+        public SimulationState SimulateDay(IStrategy _, MarketData data, SimulationState previousState)
         {
-            var previousState = GetPreviousState(strategy, data);
-            var state = UpdateState(strategy, data, previousState);
+            var state = UpdateState(data, previousState);
 
             return state;
+        }
+
+        private SimulationState UpdateState(MarketData data, SimulationState previousState)
+        {
+            return new SimulationState
+            {
+                Date = data.Date,
+                SharePrice = data.Price,
+                ShouldBuy = false,
+                Funds = previousState.Funds,
+                Shares = previousState.Shares,
+                BuyCount = previousState.BuyCount,
+            };
         }
     }
 }

@@ -11,7 +11,7 @@ namespace MarketAnalysis.Simulation
     {
         private MarketDataCache _dataCache;
         private SimulationCache _simulationCache;
-        private Dictionary<SimulationStatus, StimulationStrategy> _simulator;
+        private Dictionary<SimulationStatus, IStimulationStrategy> _simulator;
 
         private enum SimulationStatus
         {
@@ -24,28 +24,27 @@ namespace MarketAnalysis.Simulation
             _dataCache = dataCache;
             _simulationCache = simulationCache;
 
-            _simulator = new Dictionary<SimulationStatus, StimulationStrategy>
+            _simulator = new Dictionary<SimulationStatus, IStimulationStrategy>
             {
-                {SimulationStatus.Training, new TrainingSimulator(simulationCache) },
-                {SimulationStatus.Backtesting, new BacktestingSimulator(simulationCache, this) }
+                {SimulationStatus.Training, new TrainingSimulator() },
+                {SimulationStatus.Backtesting, new BacktestingSimulator(this) }
             };
         }
 
-        public List<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null)
+        public IEnumerable<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null, bool showProgress = true)
         {
-            var history = new List<SimulationState>();
-            using (var progress = InitialiseProgressBar(strategy))
+            var history = new List<SimulationState>(5000);
+            using (var progress = InitialiseProgressBar(strategy, showProgress))
             {
-                foreach (var d in _dataCache.TakeUntil(endDate))
+                foreach (var data in _dataCache.TakeUntil(endDate))
                 {
-                    var date = d.Date;
-                    var key = (strategy, date);
-                    var latestState = _simulationCache.GetOrCreate(key, () =>
+                    var key = (strategy, data.Date);
+                    var latest = _simulationCache.GetOrCreate(key, prev =>
                     {
-                        var state = GetSimulationState(date);
-                        return _simulator[state].SimulateDay(strategy, d);
+                        var state = GetSimulationState(data.Date);
+                        return _simulator[state].SimulateDay(strategy, data, prev);
                     });
-                    history.Add(latestState);
+                    history.Add(latest);
 
                     progress?.Tick();
                 }
@@ -62,12 +61,11 @@ namespace MarketAnalysis.Simulation
             return state;
         }
 
-        private ProgressBar InitialiseProgressBar(IStrategy strategy)
+        private ProgressBar InitialiseProgressBar(IStrategy strategy, bool showProgress)
         {
-            //return _showProgress
-            //    ? ProgressBarReporter.StartProgressBar(_data.Count(), strategy.GetType().Name)
-            //    : null;
-            return null;
+            return showProgress
+                ? ProgressBarReporter.StartProgressBar(_dataCache.Count, strategy.GetType().Name)
+                : null;
         }
     }
 }

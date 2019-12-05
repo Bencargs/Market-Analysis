@@ -9,23 +9,27 @@ namespace MarketAnalysis.Strategy
     public class DeltaStrategy : IStrategy
     {
         private readonly decimal _threshold;
-        private readonly bool _shouldOptimise;
-        private const int OptimisePeriod = 1024;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
         private DateTime _latestDate;
+        private DateTime? _lastOptimised;
 
         public object Key => _threshold;
 
         public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
         {
             _threshold = threshold;
-            _shouldOptimise = shouldOptimise;
+            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
         public bool ShouldOptimise()
         {
-            var count = MarketDataCache.Instance.Count;
-            return _shouldOptimise &&
-                   count % OptimisePeriod == 0;
+            if (_lastOptimised != null &&
+                _latestDate > (_lastOptimised + OptimisePeriod))
+            {
+                _lastOptimised = _latestDate;
+                return true;
+            }
+            return false;
         }
 
         public IEnumerable<IStrategy> Optimise()

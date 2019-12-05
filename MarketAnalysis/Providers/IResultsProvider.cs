@@ -7,7 +7,7 @@ namespace MarketAnalysis.Providers
     public interface IResultsProvider
     {
         void Initialise();
-        void AddResults(IStrategy strategy, List<SimulationState> history);
+        void AddResults(IStrategy strategy, IEnumerable<SimulationState> history);
         IEnumerable<SimulationResult> GetResults();
         bool ShouldBuy();
         decimal TotalProfit();

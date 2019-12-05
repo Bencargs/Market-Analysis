@@ -9,23 +9,27 @@ namespace MarketAnalysis.Strategy
     public class LinearRegressionStrategy : IStrategy
     {
         private readonly int _window;
-        private readonly bool _shouldOptimise;
-        private const int _optimisePeriod = 1024;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
         private DateTime _latestDate;
+        private DateTime? _lastOptimised;
 
         public object Key => _window;
 
         public LinearRegressionStrategy(int window, bool shouldOptimise = true)
         {
             _window = window;
-            _shouldOptimise = shouldOptimise;
+            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
         public bool ShouldOptimise()
         {
-            var count = MarketDataCache.Instance.Count;
-            return _shouldOptimise &&
-                   count % _optimisePeriod == 0;
+            if (_lastOptimised != null &&
+                _latestDate > (_lastOptimised + OptimisePeriod))
+            {
+                _lastOptimised = _latestDate;
+                return true;
+            }
+            return false;
         }
 
         public IEnumerable<IStrategy> Optimise()

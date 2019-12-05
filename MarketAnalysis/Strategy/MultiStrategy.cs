@@ -11,22 +11,27 @@ namespace MarketAnalysis.Strategy
     {
         private readonly IStrategy[] _strategies;
         private readonly IStrategy _combinationRule;
-        private readonly bool _shouldOptimise;
-        private const int OptimisePeriod = 524;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(524);
         private DateTime _latestDate;
+        private DateTime? _lastOptimised;
 
         public object Key => new { _combinationRule?.Key };
 
         public MultiStrategy(IStrategy[] strategies, bool shouldOptimise = true)
         {
             _strategies = strategies;
-            _shouldOptimise = shouldOptimise;
+            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
         public bool ShouldOptimise()
         {
-            return _shouldOptimise &&
-                   MarketDataCache.Instance.Count % OptimisePeriod == 0;
+            if (_lastOptimised != null &&
+                _latestDate > (_lastOptimised + OptimisePeriod))
+            {
+                _lastOptimised = _latestDate;
+                return true;
+            }
+            return false;
         }
 
         public IEnumerable<IStrategy> Optimise()

@@ -37,7 +37,7 @@ namespace MarketAnalysis.Providers
 
         private IEnumerable<MarketData> ConvertToRow(DailyPriceData response)
         {
-            var results = new List<MarketData>();
+            var results = new List<MarketData>(2000);
             foreach (var row in response?.TimeSeriesDaily)
             {
                 var price = row.Value.Open;

@@ -10,16 +10,16 @@ namespace MarketAnalysis.Strategy
     {
         private readonly double _threshold;
         private readonly Image _average;
-        private readonly bool _shouldOptimise;
-        private const int OptimisePeriod = 30;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
         private DateTime _latestDate;
+        private DateTime? _lastOptimised;
 
         public object Key => _average;
 
         public PatternRecognitionStrategy(double threshold, Image average = null, bool shouldOptimise = true)
         {
             _threshold = threshold;
-            _shouldOptimise = shouldOptimise;
+            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?) null;
             _average = average ?? new Func<Image>(() =>
             {
                 var averagePath = Configuration.PatternRecognitionImagePath;
@@ -29,11 +29,15 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldOptimise()
         {
-            var count = MarketDataCache.Instance.Count;
-            return _shouldOptimise &&
-                   count % OptimisePeriod == 0;
+            if (_lastOptimised != null &&
+                _latestDate > (_lastOptimised + OptimisePeriod))
+            {
+                _lastOptimised = _latestDate;
+                return true;
+            }
+            return false;
         }
-
+        
         public IEnumerable<IStrategy> Optimise()
         {
             //var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();

@@ -7,6 +7,6 @@ namespace MarketAnalysis.Simulation
 {
     public interface ISimulator
     {
-        List<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null);
+        IEnumerable<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null, bool showProgress = true);
     }
 }

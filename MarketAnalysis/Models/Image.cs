@@ -6,7 +6,7 @@ namespace MarketAnalysis.Models
 {
     public class Image
     {
-        private byte[,] _data;
+        private readonly byte[,] _data;
 
         public int Width { get; private set; }
         public int Height { get; private set; }
@@ -74,10 +74,11 @@ namespace MarketAnalysis.Models
 
         public void ComputeHash()
         {
-            var md5 = new MD5CryptoServiceProvider();
+            
             var flattened = new byte[Width * Height];
             Buffer.BlockCopy(_data, 0, flattened, 0, Width * Width);
-            _hash = md5.ComputeHash(flattened);
+            using (var md5 = new MD5CryptoServiceProvider())
+                _hash = md5.ComputeHash(flattened);
         }
 
         public override bool Equals(object obj)
