@@ -55,7 +55,7 @@ namespace MarketAnalysis.Strategy
 
             GenerateLinearBestFit(latestPoints, out double m, out double b);
             var prediction = (decimal) (m * MarketDataCache.Instance.Count - b);
-            return (data.Price > prediction);
+            return (data.Price < prediction);
         }
 
         private void GenerateLinearBestFit(XYPoint[] points, out double m, out double b)

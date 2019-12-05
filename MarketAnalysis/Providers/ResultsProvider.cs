@@ -30,10 +30,9 @@ namespace MarketAnalysis.Providers
 
         private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator)
         {
-            var marketData = _cache.TakeUntil().ToArray();
             using (var progress = ProgressBarReporter.StartProgressBar(_cache.BacktestingIndex, "Initialising..."))
             {
-                var buyDates = marketData.Select(x => x.Date).ToDictionary(k => k, v => true);
+                var buyDates = _cache.TakeUntil().Select(x => x.Date).ToDictionary(k => k, v => true);
                 var strategy = new StaticDatesStrategy(buyDates);
                 var history = simulator.Evaluate(strategy, showProgress: false);
                 var worth = history.LastOrDefault()?.Worth ?? 0m;
