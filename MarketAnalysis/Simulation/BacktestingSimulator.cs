@@ -1,6 +1,7 @@
 ﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Simulation
@@ -59,21 +60,28 @@ namespace MarketAnalysis.Simulation
             state.Funds += Configuration.DailyFunds;
         }
 
-        private IStrategy Optimise(IStrategy strategy, DateTime endDate)
+        private void Optimise(IStrategy strategy, DateTime endDate)
         {
-            var potentials = strategy.Optimise().ToArray();
+            var potentials = strategy.GetOptimisations();
+            
+            var optimal = FindOptimum(potentials, endDate);
+
+            strategy.SetParameters(optimal);
+        }
+
+        private IStrategy FindOptimum(IEnumerable<IStrategy> potentials, DateTime endDate)
+        {
             using (var progress = ProgressBarReporter.SpawnChild(potentials.Count(), "Optimising..."))
             {
-                var optimal = potentials.Select(strat =>
+                return potentials.Select(strat =>
                 {
                     var result = _simulator.Evaluate(strat, endDate, false).Last();
                     progress.Tick();
                     return new { result.Worth, result.BuyCount, strat };
-                }).OrderByDescending(x => x.Worth)
+                })
+                .OrderByDescending(x => x.Worth)
                 .ThenBy(x => x.BuyCount)
-                .FirstOrDefault();
-            
-                return optimal?.strat ?? strategy;
+                .FirstOrDefault()?.strat;
             }
         }
     }

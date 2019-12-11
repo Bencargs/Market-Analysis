@@ -1,5 +1,4 @@
-﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +7,8 @@ namespace MarketAnalysis.Strategy
 {
     public class DeltaStrategy : IStrategy
     {
-        private readonly decimal _threshold;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
+        private decimal _threshold;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
 
@@ -32,13 +31,18 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public IEnumerable<IStrategy> Optimise()
+        public IEnumerable<IStrategy> GetOptimisations()
         {
-            return Enumerable.Range(1, 200).Select(x =>
+            return Enumerable.Range(1, 100).Select(x =>
             {
                 var parameter = (decimal)x / 1000;
                 return new DeltaStrategy(parameter, false);
             });
+        }
+
+        public void SetParameters(IStrategy strategy)
+        {
+            _threshold = ((DeltaStrategy)strategy)._threshold;
         }
 
         public bool ShouldAddFunds()
@@ -51,7 +55,7 @@ namespace MarketAnalysis.Strategy
             if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
-            return Math.Abs(data.Delta) < _threshold;
+            return data.Delta < _threshold;
         }
 
         public override bool Equals(object obj)

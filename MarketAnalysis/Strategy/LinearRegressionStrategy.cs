@@ -8,8 +8,8 @@ namespace MarketAnalysis.Strategy
 {
     public class LinearRegressionStrategy : IStrategy
     {
-        private readonly int _window;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
+        private int _window;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
 
@@ -32,10 +32,15 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public IEnumerable<IStrategy> Optimise()
+        public IEnumerable<IStrategy> GetOptimisations()
         {
-            return Enumerable.Range(30, 200).Select(x => 
+            return Enumerable.Range(30, 200).Select(x =>
                 new LinearRegressionStrategy(x, false));
+        }
+
+        public void SetParameters(IStrategy strategy)
+        {
+            _window = ((LinearRegressionStrategy)strategy)._window;
         }
 
         public bool ShouldAddFunds()

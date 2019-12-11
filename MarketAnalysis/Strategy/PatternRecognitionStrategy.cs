@@ -8,8 +8,8 @@ namespace MarketAnalysis.Strategy
 {
     public class PatternRecognitionStrategy : IStrategy
     {
-        private readonly double _threshold;
-        private readonly Image _average;
+        private Image _average;
+        private double _threshold;
         private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
@@ -37,8 +37,8 @@ namespace MarketAnalysis.Strategy
             }
             return false;
         }
-        
-        public IEnumerable<IStrategy> Optimise()
+
+        public IEnumerable<IStrategy> GetOptimisations()
         {
             //var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();
             //using (var progress = ProgressBarReporter.SpawnChild(history.Count / OptimisePeriod, "Optimising..."))
@@ -64,28 +64,26 @@ namespace MarketAnalysis.Strategy
                 new PatternRecognitionStrategy(x, _average, false));
 
             // this approach is ideal, but prohibitively slow
-            //using (var progress = ProgressBarReporter.SpawnChild(_average.Width * _average.Height, "Optimising..."))
+            //var potentials = Enumerable.Range(0, _average.Width).SelectMany(x =>
             //{
-            //    var simulator = new Simulator(_history);
-            //    var clone = new Image(_average);
-            //    var width = _average.Width - Math.Min(OptimisePeriod, _average.Width - 1);
-            //    for (int x = width; x < _average.Width; x++)
+            //    return Enumerable.Range(0, _average.Height).SelectMany(y =>
             //    {
-            //        for (int y = 0; y < _average.Height; y++)
+            //        return Enumerable.Range(0, 25).Select(i =>
             //        {
-            //            var optimal = Enumerable.Range(0, 255).Select(i =>
-            //            {
-            //                clone.SetPixel(x, y, i);
-            //                var result = simulator.Evaluate(new PatternRecognitionStrategy(_threshold, clone, false)).Last();
-            //                return new { i, result.Worth, result.BuyCount };
-            //            }).OrderByDescending(v => v.Worth).ThenBy(v => v.BuyCount).First();
+            //            var candidate = new Image(_average);
+            //            candidate.SetPixel(x, y, i * 10);
 
-            //            clone.SetPixel(x, y, optimal.i);
-            //            progress.Tick($"Optimising... x: {x} y: {y}");
-            //        }
-            //    }
-            //    _average = clone;
-            //}
+            //            return new PatternRecognitionStrategy(_threshold, candidate, false);
+            //        });
+            //    });
+            //});
+        }
+
+        public void SetParameters(IStrategy strategy)
+        {
+            var optimal = (PatternRecognitionStrategy)strategy;
+            _threshold = optimal._threshold;
+            _average = optimal._average;
         }
 
         private Image CreateAverage(List<Image> images)
@@ -185,16 +183,18 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            var key = (obj as PatternRecognitionStrategy)?.Key;
-            if (key == null)
+            var strategy = (obj as PatternRecognitionStrategy);
+            var key = strategy?.Key;
+            var threshold = strategy?._threshold;
+            if (key == null || threshold == null)
                 return false;
-                 
-            return Key.Equals(key);
+
+            return threshold == _threshold && Key.Equals(key);
         }
 
         public override int GetHashCode()
         {
-            return Key.GetHashCode();
+            return _threshold.GetHashCode() ^ Key.GetHashCode();
         }
     }
 }

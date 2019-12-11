@@ -34,10 +34,8 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public IEnumerable<IStrategy> Optimise()
+        public IEnumerable<IStrategy> GetOptimisations()
         {
-            return new IStrategy[0];
-
             //todo: fix
             //using (var progress = ProgressBarReporter.SpawnChild(_strategies.Count(), "Optimising..."))
             //{
@@ -66,6 +64,11 @@ namespace MarketAnalysis.Strategy
             //    }
             //    _combinationRule = new OrStrategy(strategyRules.ToArray());
             //}
+            return new IStrategy[0];
+        }
+
+        public void SetParameters(IStrategy strategy)
+        {
         }
 
         public bool ShouldAddFunds()
@@ -133,9 +136,13 @@ namespace MarketAnalysis.Strategy
                 return false;
             }
 
-            public IEnumerable<IStrategy> Optimise()
+            public IEnumerable<IStrategy> GetOptimisations()
             {
                 return new IStrategy[0];
+            }
+
+            public void SetParameters(IStrategy strategy)
+            {
             }
 
             public bool ShouldAddFunds()
@@ -174,9 +181,13 @@ namespace MarketAnalysis.Strategy
                 return false;
             }
 
-            public IEnumerable<IStrategy> Optimise()
+            public IEnumerable<IStrategy> GetOptimisations()
             {
                 return new IStrategy[0];
+            }
+
+            public void SetParameters(IStrategy strategy)
+            {
             }
 
             public bool ShouldAddFunds()

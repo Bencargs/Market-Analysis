@@ -10,7 +10,7 @@ namespace MarketAnalysis.Models
 
         public int Width { get; private set; }
         public int Height { get; private set; }
-        private byte[] _hash = new byte[0];
+        private int _hash;
 
         public Image(int width, int height)
         {
@@ -27,6 +27,7 @@ namespace MarketAnalysis.Models
                 {
                     _data[x, y] = image.GetPixel(x, y);
                 }
+            _hash = image._hash;
         }
 
         public Image(string path)
@@ -50,6 +51,7 @@ namespace MarketAnalysis.Models
         public void SetPixel(int x, int y, int value)
         {
             _data[x, y] = (byte)value;
+            ComputeHash();
         }
 
         public byte GetPixel(int x, int y)
@@ -74,11 +76,10 @@ namespace MarketAnalysis.Models
 
         public void ComputeHash()
         {
-            
             var flattened = new byte[Width * Height];
             Buffer.BlockCopy(_data, 0, flattened, 0, Width * Width);
             using (var md5 = new MD5CryptoServiceProvider())
-                _hash = md5.ComputeHash(flattened);
+                _hash = md5.ComputeHash(flattened).GetHashCode();
         }
 
         public override bool Equals(object obj)

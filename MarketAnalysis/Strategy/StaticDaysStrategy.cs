@@ -1,8 +1,6 @@
 ﻿using MarketAnalysis.Models;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
@@ -24,9 +22,13 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public IEnumerable<IStrategy> Optimise()
+        public IEnumerable<IStrategy> GetOptimisations()
         {
             return new IStrategy[0];
+        }
+
+        public void SetParameters(IStrategy strategy)
+        {
         }
 
         public bool ShouldAddFunds()

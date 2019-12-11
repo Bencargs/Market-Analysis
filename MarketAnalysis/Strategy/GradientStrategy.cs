@@ -9,9 +9,9 @@ namespace MarketAnalysis.Strategy
 {
     public class GradientStrategy : IStrategy
     {
-        private readonly int _window;
-        private readonly decimal _threshold;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
+        private int _window;
+        private decimal _threshold;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
 
@@ -35,7 +35,7 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public IEnumerable<IStrategy> Optimise()
+        public IEnumerable<IStrategy> GetOptimisations()
         {
             return Enumerable.Range(1, 10).SelectMany(x =>
             {
@@ -45,6 +45,13 @@ namespace MarketAnalysis.Strategy
                     return new GradientStrategy(window, threshold, false);
                 });
             });
+        }
+
+        public void SetParameters(IStrategy strategy)
+        {
+            var optimal = (GradientStrategy)strategy;
+            _window = optimal._window;
+            _threshold = optimal._threshold;
         }
 
         public bool ShouldAddFunds()

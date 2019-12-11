@@ -1,5 +1,4 @@
-﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +7,9 @@ namespace MarketAnalysis.Strategy
 {
     public class VolumeStrategy : IStrategy
     {
-        private readonly int _threshold;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
+        private int _threshold;
+        private decimal _previousVolume;
+        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
 
@@ -32,9 +32,15 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public IEnumerable<IStrategy> Optimise()
+        public IEnumerable<IStrategy> GetOptimisations()
         {
-            return Enumerable.Range(1, 800).Select(x => new VolumeStrategy(x, false));
+            return Enumerable.Range(1, 800).Select(x => 
+                new VolumeStrategy(x, false));
+        }
+
+        public void SetParameters(IStrategy strategy)
+        {
+            _threshold = ((VolumeStrategy)strategy)._threshold;
         }
 
         public bool ShouldAddFunds()
@@ -47,7 +53,11 @@ namespace MarketAnalysis.Strategy
             if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
-            return data.Volume < _threshold;
+            var shouldBuy = _previousVolume != 0 && 
+                (data.Volume / _previousVolume) < _threshold;
+            
+            _previousVolume = data.Volume;
+            return shouldBuy;
         }
 
         public override bool Equals(object obj)
