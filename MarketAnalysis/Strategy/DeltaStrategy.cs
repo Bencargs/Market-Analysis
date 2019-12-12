@@ -12,8 +12,6 @@ namespace MarketAnalysis.Strategy
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
 
-        public object Key => _threshold;
-
         public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
         {
             _threshold = threshold;
@@ -60,12 +58,15 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            return Equals(Key, (obj as DeltaStrategy)?.Key);
+            if (!(obj is DeltaStrategy strategy))
+                return false;
+
+            return strategy._threshold == _threshold;
         }
 
         public override int GetHashCode()
         {
-            return Key.GetHashCode();
+            return _threshold.GetHashCode();
         }
     }
 }

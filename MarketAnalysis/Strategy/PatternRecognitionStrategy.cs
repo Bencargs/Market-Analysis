@@ -10,11 +10,9 @@ namespace MarketAnalysis.Strategy
     {
         private Image _average;
         private double _threshold;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
-
-        public object Key => _average;
+        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
 
         public PatternRecognitionStrategy(double threshold, Image average = null, bool shouldOptimise = true)
         {
@@ -40,25 +38,17 @@ namespace MarketAnalysis.Strategy
 
         public IEnumerable<IStrategy> GetOptimisations()
         {
-            //var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();
-            //using (var progress = ProgressBarReporter.SpawnChild(history.Count / OptimisePeriod, "Optimising..."))
-            //{
-            //    var minimums = new List<Image>();
-            //    for (int i = OptimisePeriod; i < history.Count - OptimisePeriod; i += OptimisePeriod)
-            //    {
-            //        var batch = history.GetRange(i, OptimisePeriod);
-            //        var minBatchIndex = batch.Select(x => x.Price).ToList().IndexOfMin();
-            //        var minRangeIndex = (i - OptimisePeriod) + minBatchIndex;
-            //        var dataset = history.GetRange(minRangeIndex, OptimisePeriod)
-            //            .Select(x => x.Price)
-            //            .ToList();
-            //        var image = CreateImage(dataset, OptimisePeriod, OptimisePeriod);
-            //        minimums.Add(image);
-            //        progress.Tick($"Optimising... x: {i}");
-            //    }
-            //    if (minimums.Any())
-            //        _average = CreateAverage(minimums);
-            //}
+            var history = MarketDataCache.Instance.TakeUntil(_latestDate).Select(x => x.Price).ToArray();
+            var training = history.Batch(30).Select(b =>
+            {
+                var batch = b.ToArray();
+                var min = batch.Min();
+                var minIndex = Array.IndexOf(batch, min);
+                var range = new ArraySegment<decimal>(history, minIndex, 30).ToList();
+                return CreateImage(range, 30, 30);
+            }).ToList();
+            if (training.Any())
+                _average = CreateAverage(training);
 
             return Enumerable.Range(600, 300).Select(x =>
                 new PatternRecognitionStrategy(x, _average, false));
@@ -116,12 +106,10 @@ namespace MarketAnalysis.Strategy
             if (data.Date > _latestDate)
                 _latestDate = data.Date;
 
-            var history = MarketDataCache.Instance.TakeUntil(_latestDate).ToList();
-            if (history.Count < 30)
-                return false;
-
-            var dataset = history.GetRange(history.Count - 30, 30)
+            var dataset = MarketDataCache.Instance.GetLastSince(_latestDate, 30)
                 .Select(x => x.Price).ToList();
+            if (dataset.Count < 30)
+                return false;
 
             var image = CreateImage(dataset, 30, 30);
             if (image == null)
@@ -148,9 +136,9 @@ namespace MarketAnalysis.Strategy
                 for (int y = 0; y < ySize; y++)
                 {
                     if (y == yPos)
-                        image.SetPixel(x, y, 255);
-                    else
                         image.SetPixel(x, y, 0);
+                    else
+                        image.SetPixel(x, y, 255);
                 }
             }
             image.ComputeHash();
@@ -170,8 +158,9 @@ namespace MarketAnalysis.Strategy
                 for (int y = 0; y < testImage.Height; y++)
                 {
                     var pixel = average.GetPixel(x, y);
+
                     if (testImage.GetPixel(x, y) != 255)
-                        sum += 255 - pixel;
+                        sum += (255 - pixel);
 
                     if (pixel < min)
                         min = pixel;
@@ -183,18 +172,17 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            var strategy = (obj as PatternRecognitionStrategy);
-            var key = strategy?.Key;
-            var threshold = strategy?._threshold;
-            if (key == null || threshold == null)
+            if (!(obj is PatternRecognitionStrategy strategy))
                 return false;
 
-            return threshold == _threshold && Key.Equals(key);
+            return strategy._threshold == _threshold && 
+                   _average.Equals(strategy._average);
         }
 
         public override int GetHashCode()
         {
-            return _threshold.GetHashCode() ^ Key.GetHashCode();
+            return _threshold.GetHashCode() ^ 
+                   _average.GetHashCode();
         }
     }
 }

@@ -11,11 +11,9 @@ namespace MarketAnalysis.Strategy
     {
         private readonly IStrategy[] _strategies;
         private readonly IStrategy _combinationRule;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(524);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
-
-        public object Key => new { _combinationRule?.Key };
+        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(524);
 
         public MultiStrategy(IStrategy[] strategies, bool shouldOptimise = true)
         {
@@ -121,10 +119,22 @@ namespace MarketAnalysis.Strategy
             public decimal Value { get; set; }
         }
 
+        public override bool Equals(object obj)
+        {
+            if (!(obj is MultiStrategy strategy))
+                return false;
+
+            return _combinationRule.Equals(strategy);
+        }
+
+        public override int GetHashCode()
+        {
+            return _combinationRule.GetHashCode();
+        }
+
         private class AndStrategy : IStrategy
         {
             private IStrategy[] _strats;
-            public object Key => _strats.Select(x => x.Key);
 
             public AndStrategy(IStrategy[] strats)
             {
@@ -157,19 +167,22 @@ namespace MarketAnalysis.Strategy
 
             public override bool Equals(object obj)
             {
-                return Equals(Key, (obj as AndStrategy)?.Key);
+                if (!(obj is AndStrategy strategy))
+                    return false;
+
+                return _strats.Any(x => !strategy._strats.Contains(x));
             }
 
             public override int GetHashCode()
             {
-                return Key.GetHashCode();
+                return _strats.Select(x => x.GetHashCode())
+                    .Aggregate((item, aggregate) => aggregate ^ item);
             }
         }
 
         private class OrStrategy : IStrategy
         {
             private IStrategy[] _strats;
-            public object Key => _strats.Select(x => x.Key);
 
             public OrStrategy(IStrategy[] strats)
             {
@@ -202,23 +215,17 @@ namespace MarketAnalysis.Strategy
 
             public override bool Equals(object obj)
             {
-                return Equals(Key, (obj as OrStrategy)?.Key);
+                if (!(obj is OrStrategy strategy))
+                    return false;
+
+                return _strats.Any(x => !strategy._strats.Contains(x));
             }
 
             public override int GetHashCode()
             {
-                return Key.GetHashCode();
+                return _strats.Select(x => x.GetHashCode())
+                    .Aggregate((item, aggregate) => aggregate ^ item);
             }
-        }
-
-        public override bool Equals(object obj)
-        {
-            return Equals(Key, (obj as MultiStrategy)?.Key);
-        }
-
-        public override int GetHashCode()
-        {
-            return Key?.GetHashCode() ?? 0;
         }
     }
 }

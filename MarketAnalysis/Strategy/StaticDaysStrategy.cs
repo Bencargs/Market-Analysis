@@ -10,8 +10,6 @@ namespace MarketAnalysis.Strategy
 
         private readonly Dictionary<DateTime, bool> _buyDates;
 
-        public object Key => _buyDates;
-
         public StaticDatesStrategy(Dictionary<DateTime, bool> buyDates)
         {
             _buyDates = buyDates;
@@ -43,7 +41,10 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            return (obj as StaticDatesStrategy)?.Identifier == Identifier;
+            if (!(obj is StaticDatesStrategy strategy))
+                return false;
+
+            return strategy.Identifier == Identifier;
         }
 
         public override int GetHashCode()

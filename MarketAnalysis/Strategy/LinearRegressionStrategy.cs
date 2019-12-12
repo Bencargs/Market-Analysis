@@ -9,11 +9,9 @@ namespace MarketAnalysis.Strategy
     public class LinearRegressionStrategy : IStrategy
     {
         private int _window;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
-
-        public object Key => _window;
+        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
 
         public LinearRegressionStrategy(int window, bool shouldOptimise = true)
         {
@@ -60,7 +58,7 @@ namespace MarketAnalysis.Strategy
 
             GenerateLinearBestFit(latestPoints, out double m, out double b);
             var prediction = (decimal) (m * MarketDataCache.Instance.Count - b);
-            return (data.Price < prediction);
+            return data.Price < prediction;
         }
 
         private void GenerateLinearBestFit(XYPoint[] points, out double m, out double b)
@@ -77,8 +75,8 @@ namespace MarketAnalysis.Strategy
             var mid = numPoints - meanX * ((double)meanY);
             var front = ((double)sumXY);
 
-            m = (front / mid) / back;
-            b = (m * meanX - ((double)meanY));
+            m = front / mid / back;
+            b = m * meanX - ((double)meanY);
         }
 
         private class XYPoint
@@ -89,12 +87,15 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            return Equals(Key, (obj as LinearRegressionStrategy)?.Key);
+            if (!(obj is LinearRegressionStrategy strategy))
+                return false;
+
+            return strategy._window == _window;
         }
 
         public override int GetHashCode()
         {
-            return Key.GetHashCode();
+            return _window.GetHashCode();
         }
     }
 }

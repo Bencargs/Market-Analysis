@@ -51,7 +51,6 @@ namespace MarketAnalysis.Models
         public void SetPixel(int x, int y, int value)
         {
             _data[x, y] = (byte)value;
-            ComputeHash();
         }
 
         public byte GetPixel(int x, int y)

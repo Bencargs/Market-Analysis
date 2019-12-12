@@ -128,7 +128,9 @@ namespace MarketAnalysis.Providers
             var averageSum = excessReturns.Select(x => Math.Pow((double)(x - meanReturn), 2));
             var stdvn = (decimal) Math.Sqrt( averageSum.Average() );
 
-            return riskFreeRate / stdvn;
+            return stdvn != 0 
+                ? riskFreeRate / stdvn
+                : 0;
         }
 
         private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix)

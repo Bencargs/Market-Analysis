@@ -9,11 +9,9 @@ namespace MarketAnalysis.Strategy
     {
         private int _threshold;
         private decimal _previousVolume;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
-
-        public object Key => _threshold;
+        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
 
         public VolumeStrategy(int threshold, bool shouldOptimise = true)
         {
@@ -62,12 +60,15 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            return Key.Equals((obj as VolumeStrategy)?.Key);
+            if (!(obj is VolumeStrategy strategy))
+                return false;
+
+            return _threshold == strategy._threshold;
         }
 
         public override int GetHashCode()
         {
-            return Key.GetHashCode();
+            return _threshold.GetHashCode();
         }
     }
 }

@@ -9,11 +9,9 @@ namespace MarketAnalysis.Strategy
     public class RelativeStrengthStrategy : IStrategy
     {
         private int _threshold;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
         private DateTime _latestDate;
         private DateTime? _lastOptimised;
-
-        public object Key => _threshold;
+        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
 
         public RelativeStrengthStrategy(int threshold, bool shouldOptimise = true)
         {
@@ -77,12 +75,15 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            return Equals(Key, (obj as RelativeStrengthStrategy)?.Key);
+            if (!(obj is RelativeStrengthStrategy strategy))
+                return false;
+
+            return strategy._threshold == _threshold;
         }
 
         public override int GetHashCode()
         {
-            return Key.GetHashCode();
+            return _threshold.GetHashCode();
         }
     }
 }
