@@ -77,11 +77,11 @@ namespace MarketAnalysis.Simulation
                 {
                     var result = _simulator.Evaluate(strat, endDate, false).Last();
                     progress.Tick();
-                    return new { result.Worth, result.BuyCount, strat };
+                    return ( result.Worth, result.BuyCount, strat );
                 })
                 .OrderByDescending(x => x.Worth)
                 .ThenBy(x => x.BuyCount)
-                .FirstOrDefault()?.strat;
+                .FirstOrDefault().strat;
             }
         }
     }

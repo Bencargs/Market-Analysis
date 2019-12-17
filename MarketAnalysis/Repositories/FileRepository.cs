@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Strategy;
@@ -16,6 +17,12 @@ namespace MarketAnalysis.Repositories
     {
         private readonly string _dataFilePath = Configuration.DataPath;
         private readonly string _resultsFilePath = Configuration.ResultsPath;
+        private readonly SimulationCache _cache;
+
+        public FileRepository(SimulationCache cache)
+        {
+            _cache = cache;
+        }
 
         public async Task<IEnumerable<MarketData>> GetHistoricData()
         {
@@ -44,7 +51,7 @@ namespace MarketAnalysis.Repositories
                 new LinearRegressionStrategy(149),
                 new VolumeStrategy(182),
             };
-            var strategies = subStrategies.Concat(new[] { new MultiStrategy(subStrategies) });
+            var strategies = subStrategies.Concat(new[] { new WeightedStrategy(_cache, subStrategies, 0.5d) });
             Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");
 
             return await Task.FromResult(strategies);

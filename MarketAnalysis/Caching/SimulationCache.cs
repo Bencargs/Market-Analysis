@@ -9,6 +9,7 @@ namespace MarketAnalysis.Caching
     public sealed class SimulationCache
     {
         private readonly Dictionary<IStrategy, List<SimulationState>> _cache;
+        private readonly SimulationStateDateComparer _comparer = new SimulationStateDateComparer();
 
         public SimulationCache()
         {
@@ -24,18 +25,34 @@ namespace MarketAnalysis.Caching
             }
 
             var latestState = history.LastOrDefault();
-            if (key.day <= latestState?.Date)
+            if (FindEntry(history, latestState, key.day, out var cacheEntry))
+                return cacheEntry;
+
+            return CreateEntry(history, latestState, createItem);
+        }
+
+        private SimulationState CreateEntry(List<SimulationState> history, SimulationState latestState, Func<SimulationState, SimulationState> createItem)
+        {
+            SimulationState cacheEntry = null;
+            if (createItem != null)
             {
-                var index = history.BinarySearch(new SimulationState { Date = key.day }, new SimulationStateDateComparer());
-                if (index > -1)
-                    return history[index];
+                var previousState = latestState ?? new SimulationState();
+                cacheEntry = createItem(previousState);
+                history.Add(cacheEntry);
             }
-
-            var previousState = latestState ?? new SimulationState();
-            var cacheEntry = createItem(previousState);
-            history.Add(cacheEntry);
-
             return cacheEntry;
+        }
+
+        private bool FindEntry(List<SimulationState> history, SimulationState latestState, DateTime date, out SimulationState simulationState)
+        {
+            simulationState = null;
+            if (date <= latestState?.Date)
+            {
+                var index = history.BinarySearch(new SimulationState { Date = date }, _comparer);
+                if (index > -1)
+                    simulationState = history[index];
+            }
+            return simulationState != null;
         }
 
         private class SimulationStateDateComparer : IComparer<SimulationState>

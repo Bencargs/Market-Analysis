@@ -70,7 +70,7 @@ namespace MarketAnalysis.Strategy
             var yData = Enumerable.Range(0, batch.Length).Select(x => (double)x).ToArray();
             var parameters = Fit.Line(xData, yData);
 
-            return (parameters.Item2 < (double)_threshold);
+            return parameters.Item2 < (double)_threshold;
         }
 
         public override bool Equals(object obj)

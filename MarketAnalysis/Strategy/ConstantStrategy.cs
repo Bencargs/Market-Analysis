@@ -1,6 +1,5 @@
 ﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
-using System;
 using System.Collections.Generic;
 
 namespace MarketAnalysis

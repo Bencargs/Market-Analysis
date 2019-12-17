@@ -52,7 +52,7 @@ namespace MarketAnalysis.Strategy
                 _latestDate = data.Date;
 
             var shouldBuy = _previousVolume != 0 && 
-                (data.Volume / _previousVolume) < _threshold;
+                (data.Volume / _previousVolume) > _threshold;
             
             _previousVolume = data.Volume;
             return shouldBuy;
