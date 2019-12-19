@@ -62,43 +62,30 @@ namespace MarketAnalysis.Providers
         {
             var history = source.ToArray();
             var latestState = history.Last();
-            var currentMarketWorth = _marketAverage.Last().Worth;
-
-            var profitTotal = latestState.Worth - GetInvestmentSince(_cache.BacktestingIndex, history);
-            var profitYTD = CalculateYTDProfit(history);
-
-            var aboveMarketReturn = latestState.Worth - currentMarketWorth;
-
-            var alpha = CalculateAlpha(latestState.Worth);
-            var maximumAlpha = CalculateAlpha(_marketMaximum.Last().Worth);
-
-            var maximumDrawdown = CalculateMaximumDrawdown(history);
-
-            var buyCount = history.Count(x => x.ShouldBuy);
-
-            var sharpeRatio = CalculateSharpeRatio(history);
-
+            var simulationDays = history.Length - _cache.BacktestingIndex;
+            var profitTotal = latestState.Worth - GetInvestmentSince(simulationDays, history);
+            var buySignals = history.Where(x => x.ShouldBuy).ToArray();
             var confusionMatrix = CalculateConfusionMatrix(history);
-            var accuracy = CalculateAccuracy(confusionMatrix, history);
-            var recall = CalculateRecall(confusionMatrix);
-            var precision = CalculatePrecision(confusionMatrix);
+            var excessReturns = GetExcessReturns(history);
 
             _results.Add(new SimulationResult
             {
                 Date = latestState.Date,
+                SimulationDays = simulationDays,
                 ShouldBuy = latestState.ShouldBuy,
                 ProfitTotal = profitTotal,
-                ProfitYTD = profitYTD,
-                AboveMarketReturn = aboveMarketReturn,
-                Alpha = alpha,
-                MaximumAlpha = maximumAlpha,
-                MaximumDrawdown = maximumDrawdown,
-                BuyCount = buyCount,
-                SharpeRatio = sharpeRatio,
-                Accuracy = accuracy,
-                Recall = recall,
-                Precision = precision,
-                ConfusionMatrix = confusionMatrix
+                ProfitYTD = CalculateYTDProfit(history),
+                AboveMarketReturn = excessReturns.Last(),
+                Alpha = CalculateAlpha(latestState.Worth),
+                MaximumAlpha = CalculateAlpha(_marketMaximum.Last().Worth),
+                MaximumDrawdown = excessReturns.Min(),
+                BuyCount = buySignals.Count(),
+                SharpeRatio = CalculateSharpeRatio(history),
+                Accuracy = CalculateAccuracy(confusionMatrix, history),
+                Recall = CalculateRecall(confusionMatrix),
+                Precision = CalculatePrecision(confusionMatrix),
+                ConfusionMatrix = confusionMatrix,
+                AverageReturn = GetAverageReturn(buySignals)
             }.SetStrategy(strategy));
         }
 
@@ -117,12 +104,20 @@ namespace MarketAnalysis.Providers
             return _results.Sum(x => x.ProfitTotal) / _results.Count();
         }
 
+        private decimal GetAverageReturn(SimulationState[] buySignals)
+        {
+            var signalReturns = GetExcessReturns(buySignals);
+            if (!signalReturns.Any())
+                return 0m;
+
+            return signalReturns.Skip(1).Select((x, i) => x - signalReturns[i]).Average();
+        }
+
         private decimal CalculateSharpeRatio(IList<SimulationState> history)
         {
             var riskFreeRate = history.Last().Worth - _marketAverage.Last().Worth;
 
-            var startIndex = Array.FindIndex(_marketAverage, x => x.Date == history.First().Date);
-            var excessReturns = history.Select((x, i) => x.Worth - _marketAverage[startIndex + i].Worth).ToArray();
+            var excessReturns = GetExcessReturns(history);
             var meanReturn = excessReturns.Average();
 
             var averageSum = excessReturns.Select(x => Math.Pow((double)(x - meanReturn), 2));
@@ -131,6 +126,13 @@ namespace MarketAnalysis.Providers
             return stdvn != 0 
                 ? riskFreeRate / stdvn
                 : 0;
+        }
+
+        private decimal[] GetExcessReturns(IList<SimulationState> history)
+        {
+            return history.Select((x, i) => i > 0 
+                ? x.Worth - _marketAverage[i].Worth
+                : x.Worth).ToArray();
         }
 
         private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix)
@@ -180,11 +182,6 @@ namespace MarketAnalysis.Providers
             return confusionMatrix;
         }
 
-        private decimal CalculateMaximumDrawdown(IList<SimulationState> history)
-        {
-            return history.Select((h, i) => h.Worth - _marketAverage.First(x => x.Date == h.Date).Worth).Min();
-        }
-
         private decimal CalculateAlpha(decimal currentWorth)
         {
             var currentMarketWorth = _marketAverage.Last().Worth;
@@ -201,9 +198,9 @@ namespace MarketAnalysis.Providers
             return (latestState.Worth - strategyOpenWorth) - investment;
         }
 
-        private decimal GetInvestmentSince(int index, IList<SimulationState> history)
+        private decimal GetInvestmentSince(int simulationDays, IList<SimulationState> history)
         {
-            return (history.Count - index) * Configuration.DailyFunds;
+            return simulationDays * Configuration.DailyFunds;
         }
     }
 }

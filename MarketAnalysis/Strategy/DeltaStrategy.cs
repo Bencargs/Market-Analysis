@@ -5,31 +5,18 @@ using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class DeltaStrategy : IStrategy
+    public class DeltaStrategy : OptimisableStrategy
     {
         private decimal _threshold;
-        private static TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
-        private DateTime _latestDate;
-        private DateTime? _lastOptimised;
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
+            : base(shouldOptimise)
         {
             _threshold = threshold;
-            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
-        public bool ShouldOptimise()
-        {
-            if (_lastOptimised != null &&
-                _latestDate > (_lastOptimised + OptimisePeriod))
-            {
-                _lastOptimised = _latestDate;
-                return true;
-            }
-            return false;
-        }
-
-        public IEnumerable<IStrategy> GetOptimisations()
+        public override IEnumerable<IStrategy> GetOptimisations()
         {
             return Enumerable.Range(1, 100).Select(x =>
             {
@@ -38,21 +25,18 @@ namespace MarketAnalysis.Strategy
             });
         }
 
-        public void SetParameters(IStrategy strategy)
+        public override void SetParameters(IStrategy strategy)
         {
             _threshold = ((DeltaStrategy)strategy)._threshold;
         }
 
-        public bool ShouldAddFunds()
+        public override bool ShouldAddFunds()
         {
             return true;
         }
 
-        public bool ShouldBuyShares(MarketData data)
+        protected override bool ShouldBuy(MarketData data)
         {
-            if (data.Date > _latestDate)
-                _latestDate = data.Date;
-
             return data.Delta < _threshold;
         }
 

@@ -7,33 +7,20 @@ using MathNet.Numerics;
 
 namespace MarketAnalysis.Strategy
 {
-    public class GradientStrategy : IStrategy
+    public class GradientStrategy : OptimisableStrategy
     {
         private int _window;
         private decimal _threshold;
-        private DateTime _latestDate;
-        private DateTime? _lastOptimised;
-        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public GradientStrategy(int window, decimal threshold, bool shouldOptimise = true)
+            : base(shouldOptimise)
         {
             _window = window;
             _threshold = threshold;
-            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
-        public bool ShouldOptimise()
-        {
-            if (_lastOptimised != null &&
-                _latestDate > (_lastOptimised + OptimisePeriod))
-            {
-                _lastOptimised = _latestDate;
-                return true;
-            }
-            return false;
-        }
-
-        public IEnumerable<IStrategy> GetOptimisations()
+        public override IEnumerable<IStrategy> GetOptimisations()
         {
             return Enumerable.Range(1, 10).SelectMany(x =>
             {
@@ -45,24 +32,21 @@ namespace MarketAnalysis.Strategy
             });
         }
 
-        public void SetParameters(IStrategy strategy)
+        public override void SetParameters(IStrategy strategy)
         {
             var optimal = (GradientStrategy)strategy;
             _window = optimal._window;
             _threshold = optimal._threshold;
         }
 
-        public bool ShouldAddFunds()
+        public override bool ShouldAddFunds()
         {
             return true;
         }
 
-        public bool ShouldBuyShares(MarketData data)
+        protected override bool ShouldBuy(MarketData data)
         {
-            if (data.Date > _latestDate)
-                _latestDate = data.Date;
-
-            var batch = MarketDataCache.Instance.TakeUntil(_latestDate).ToList().Last(_window);
+            var batch = MarketDataCache.Instance.TakeUntil(LatestDate).ToList().Last(_window);
             if (batch.Length < 2)
                 return false;
 

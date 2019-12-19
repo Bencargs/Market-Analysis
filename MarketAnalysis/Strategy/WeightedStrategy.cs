@@ -6,26 +6,24 @@ using MarketAnalysis.Models;
 
 namespace MarketAnalysis.Strategy
 {
-    public class WeightedStrategy : IStrategy
+    public class WeightedStrategy : OptimisableStrategy
     {
         private readonly double _threshold;
-        private SimulationCache _cache;
+        private readonly SimulationCache _cache;
         private Dictionary<IStrategy, double> _weights;
-
-        private DateTime _latestDate;
-        private DateTime? _lastOptimised;
-        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
+        private static Dictionary<DateTime, double> _confidence = new Dictionary<DateTime, double>();
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public WeightedStrategy(
             SimulationCache cache, 
             Dictionary<IStrategy, double> weights, 
             double threshold, 
             bool shouldOptimise = true)
+            : base(shouldOptimise)
         {
             _cache = cache;
             _weights = weights;
             _threshold = threshold;
-            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
         public WeightedStrategy(
@@ -37,25 +35,14 @@ namespace MarketAnalysis.Strategy
         {
         }
 
-        public bool ShouldOptimise()
-        {
-            if (_lastOptimised != null &&
-                _latestDate > (_lastOptimised + OptimisePeriod))
-            {
-                _lastOptimised = _latestDate;
-                return true;
-            }
-            return false;
-        }
-
-        public IEnumerable<IStrategy> GetOptimisations()
+        public override IEnumerable<IStrategy> GetOptimisations()
         {
             return Enumerable.Range(0, 100).SelectMany(x =>
             {
                 return Enumerable.Range(1, 6).SelectMany(threshold =>
                 {
                     var value = x / 100d;
-                    var increment = 0.01d;
+                    var increment = 0.001d;
                     return Enumerable.Range(0, _weights.Count).Select(y =>
                     {
                         var newWeights = _weights.Select((w, j) =>
@@ -70,21 +57,18 @@ namespace MarketAnalysis.Strategy
             });
         }
 
-        public void SetParameters(IStrategy strategy)
+        public override void SetParameters(IStrategy strategy)
         {
             _weights = ((WeightedStrategy)strategy)._weights;
         }
 
-        public bool ShouldAddFunds()
+        public override bool ShouldAddFunds()
         {
             return true;
         }
 
-        public bool ShouldBuyShares(MarketData data)
+        protected override bool ShouldBuy(MarketData data)
         {
-            if (data.Date > _latestDate)
-                _latestDate = data.Date;
-
             var sum = 0d;
             foreach (var s in _weights)
             {
@@ -92,6 +76,9 @@ namespace MarketAnalysis.Strategy
                 var weight = Convert.ToDouble(result.ShouldBuy) * s.Value;
                 sum += weight;
             }
+
+            if (!_confidence.ContainsKey(data.Date))
+                _confidence.Add(data.Date, sum);
 
             return sum > _threshold;
         }

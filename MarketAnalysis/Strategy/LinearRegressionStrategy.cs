@@ -6,52 +6,36 @@ using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class LinearRegressionStrategy : IStrategy
+    public class LinearRegressionStrategy : OptimisableStrategy
     {
         private int _window;
-        private DateTime _latestDate;
-        private DateTime? _lastOptimised;
-        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public LinearRegressionStrategy(int window, bool shouldOptimise = true)
+            : base(shouldOptimise)
         {
             _window = window;
-            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
-        public bool ShouldOptimise()
-        {
-            if (_lastOptimised != null &&
-                _latestDate > (_lastOptimised + OptimisePeriod))
-            {
-                _lastOptimised = _latestDate;
-                return true;
-            }
-            return false;
-        }
-
-        public IEnumerable<IStrategy> GetOptimisations()
+        public override IEnumerable<IStrategy> GetOptimisations()
         {
             return Enumerable.Range(30, 200).Select(x =>
                 new LinearRegressionStrategy(x, false));
         }
 
-        public void SetParameters(IStrategy strategy)
+        public override void SetParameters(IStrategy strategy)
         {
             _window = ((LinearRegressionStrategy)strategy)._window;
         }
 
-        public bool ShouldAddFunds()
+        public override bool ShouldAddFunds()
         {
             return true;
         }
 
-        public bool ShouldBuyShares(MarketData data)
+        protected override bool ShouldBuy(MarketData data)
         {
-            if (data.Date > _latestDate)
-                _latestDate = data.Date;
-
-            var latestPoints = MarketDataCache.Instance.GetLastSince(_latestDate, _window)
+            var latestPoints = MarketDataCache.Instance.GetLastSince(LatestDate, _window)
                 .Select((x, i) => new XYPoint { X = i, Y = x.Price }).ToArray();
             if (latestPoints.Length < 2)
                 return false;

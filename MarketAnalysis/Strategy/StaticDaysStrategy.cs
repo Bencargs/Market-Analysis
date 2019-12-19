@@ -4,37 +4,33 @@ using System.Collections.Generic;
 
 namespace MarketAnalysis.Strategy
 {
-    public class StaticDatesStrategy : IStrategy
+    public class StaticDatesStrategy : OptimisableStrategy
     {
         public int Identifier { get; set; }
-
+        protected override TimeSpan OptimisePeriod => TimeSpan.MaxValue;
         private readonly Dictionary<DateTime, bool> _buyDates;
 
         public StaticDatesStrategy(Dictionary<DateTime, bool> buyDates)
+            : base(false)
         {
             _buyDates = buyDates;
         }
 
-        public bool ShouldOptimise()
-        {
-            return false;
-        }
-
-        public IEnumerable<IStrategy> GetOptimisations()
+        public override IEnumerable<IStrategy> GetOptimisations()
         {
             return new IStrategy[0];
         }
 
-        public void SetParameters(IStrategy strategy)
+        public override void SetParameters(IStrategy strategy)
         {
         }
 
-        public bool ShouldAddFunds()
+        public override bool ShouldAddFunds()
         {
             return true;
         }
 
-        public bool ShouldBuyShares(MarketData data)
+        protected override bool ShouldBuy(MarketData data)
         {
             return _buyDates[data.Date];
         }

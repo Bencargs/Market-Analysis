@@ -6,18 +6,16 @@ using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class PatternRecognitionStrategy : IStrategy
+    public class PatternRecognitionStrategy : OptimisableStrategy
     {
         private Image _average;
         private double _threshold;
-        private DateTime _latestDate;
-        private DateTime? _lastOptimised;
-        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(1024);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(1024);
 
         public PatternRecognitionStrategy(double threshold, Image average = null, bool shouldOptimise = true)
+            : base(shouldOptimise)
         {
             _threshold = threshold;
-            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?) null;
             _average = average ?? new Func<Image>(() =>
             {
                 var averagePath = Configuration.PatternRecognitionImagePath;
@@ -25,20 +23,9 @@ namespace MarketAnalysis.Strategy
             }).Invoke();
         }
 
-        public bool ShouldOptimise()
+        public override IEnumerable<IStrategy> GetOptimisations()
         {
-            if (_lastOptimised != null &&
-                _latestDate > (_lastOptimised + OptimisePeriod))
-            {
-                _lastOptimised = _latestDate;
-                return true;
-            }
-            return false;
-        }
-
-        public IEnumerable<IStrategy> GetOptimisations()
-        {
-            var history = MarketDataCache.Instance.TakeUntil(_latestDate).Select(x => x.Price).ToArray();
+            var history = MarketDataCache.Instance.TakeUntil(LatestDate).Select(x => x.Price).ToArray();
             var training = history.Batch(30).Select(b =>
             {
                 var batch = b.ToArray();
@@ -69,7 +56,7 @@ namespace MarketAnalysis.Strategy
             //});
         }
 
-        public void SetParameters(IStrategy strategy)
+        public override void SetParameters(IStrategy strategy)
         {
             var optimal = (PatternRecognitionStrategy)strategy;
             _threshold = optimal._threshold;
@@ -96,17 +83,14 @@ namespace MarketAnalysis.Strategy
             return average;
         }
 
-        public bool ShouldAddFunds()
+        public override bool ShouldAddFunds()
         {
             return true;
         }
 
-        public bool ShouldBuyShares(MarketData data)
+        protected override bool ShouldBuy(MarketData data)
         {
-            if (data.Date > _latestDate)
-                _latestDate = data.Date;
-
-            var dataset = MarketDataCache.Instance.GetLastSince(_latestDate, 30)
+            var dataset = MarketDataCache.Instance.GetLastSince(LatestDate, 30)
                 .Select(x => x.Price).ToList();
             if (dataset.Count < 30)
                 return false;

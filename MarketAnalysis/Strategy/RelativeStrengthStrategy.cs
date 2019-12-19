@@ -6,52 +6,36 @@ using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class RelativeStrengthStrategy : IStrategy
+    public class RelativeStrengthStrategy : OptimisableStrategy
     {
         private int _threshold;
-        private DateTime _latestDate;
-        private DateTime? _lastOptimised;
-        private static readonly TimeSpan OptimisePeriod = TimeSpan.FromDays(512);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public RelativeStrengthStrategy(int threshold, bool shouldOptimise = true)
+            : base(shouldOptimise)
         {
             _threshold = threshold;
-            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
         }
 
-        public bool ShouldOptimise()
-        {
-            if (_lastOptimised != null &&
-                _latestDate > (_lastOptimised + OptimisePeriod))
-            {
-                _lastOptimised = _latestDate;
-                return true;
-            }
-            return false;
-        }
-
-        public IEnumerable<IStrategy> GetOptimisations()
+        public override IEnumerable<IStrategy> GetOptimisations()
         {
             return Enumerable.Range(1, 101).Select(x =>
                 new RelativeStrengthStrategy(x, false));
         }
 
-        public void SetParameters(IStrategy strategy)
+        public override void SetParameters(IStrategy strategy)
         {
             _threshold = ((RelativeStrengthStrategy)strategy)._threshold;
         }
 
-        public bool ShouldAddFunds()
+        public override bool ShouldAddFunds()
         {
             return true;
         }
 
-        public bool ShouldBuyShares(MarketData data)
+        protected override bool ShouldBuy(MarketData data)
         {
-            if (data.Date > _latestDate)
-                _latestDate = data.Date;
-
-            var batch = MarketDataCache.Instance.GetLastSince(_latestDate, _threshold).ToArray();
+            var batch = MarketDataCache.Instance.GetLastSince(LatestDate, _threshold).ToArray();
             if (batch.Count() < 3)
                 return false;
 
