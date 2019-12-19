@@ -1,7 +1,6 @@
 ﻿using CsvHelper;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
-using MarketAnalysis.Providers;
 using MarketAnalysis.Strategy;
 using Newtonsoft.Json;
 using Serilog;
@@ -13,7 +12,11 @@ using System.Threading.Tasks;
 
 namespace MarketAnalysis.Repositories
 {
-    public class FileRepository : IRepository, IProvider
+    public class FileRepository : 
+        IRepository<MarketData>,
+        IRepository<IStrategy>,
+        IRepository<SimulationResult>,
+        IRepository<EmailTemplate>
     {
         private readonly string _dataFilePath = Configuration.DataPath;
         private readonly string _resultsFilePath = Configuration.ResultsPath;
@@ -24,7 +27,7 @@ namespace MarketAnalysis.Repositories
             _cache = cache;
         }
 
-        public async Task<IEnumerable<MarketData>> GetHistoricData()
+        async Task<IEnumerable<MarketData>> IRepository<MarketData>.Get()
         {
             return await Task.Run(() =>
             {
@@ -36,7 +39,20 @@ namespace MarketAnalysis.Repositories
             });
         }
 
-        public async Task<IEnumerable<IStrategy>> GetStrategies()
+        public async Task Save(IEnumerable<MarketData> data)
+        {
+            using (var writer = new StreamWriter(_dataFilePath, false))
+            using (var csv = new CsvWriter(writer))
+            {
+                foreach (var d in data)
+                {
+                    csv.WriteRecord(d);
+                    await csv.NextRecordAsync();
+                }
+            }
+        }
+
+        async Task<IEnumerable<IStrategy>> IRepository<IStrategy>.Get()
         {
             // todo: this is in the wrong place?
             if (!File.Exists(_resultsFilePath))
@@ -57,46 +73,38 @@ namespace MarketAnalysis.Repositories
             return await Task.FromResult(strategies);
         }
 
-        public async Task<string> GetEmailTemplate()
+        public Task Save(IEnumerable<IStrategy> data)
         {
-            var path = Configuration.EmailTemplatePath;
-            return await File.ReadAllTextAsync(path);
+            throw new NotSupportedException();
         }
 
-        public Task<IEnumerable<RecipientDetails>> GetEmailRecipients()
+        Task<IEnumerable<SimulationResult>> IRepository<SimulationResult>.Get()
         {
-            return Task.FromResult((IEnumerable<RecipientDetails>) new[]
-            {
-                new RecipientDetails
-                {
-                    Date = DateTime.Now,
-                    Name = "Client Name",
-                    Number = "000001",
-                    Email = "client@email.com"
-                }
-            };
-                },
-            });
+            throw new NotSupportedException();
         }
 
-        public async Task SaveData(IEnumerable<MarketData> data)
+        public async Task Save(IEnumerable<SimulationResult> results)
         {
-            using (var writer = new StreamWriter(_dataFilePath, false))
-            using (var csv = new CsvWriter(writer))
-            {
-                foreach (var d in data)
-                {
-                    csv.WriteRecord(d);
-                    await csv.NextRecordAsync();
-                }
-            }
-        }
-
-        public async Task SaveSimulationResults(IResultsProvider resultsProvider)
-        {
-            var results = resultsProvider.GetResults();
             var json = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(results));
             File.WriteAllText(_resultsFilePath, json);
+        }
+
+        async Task<IEnumerable<EmailTemplate>> IRepository<EmailTemplate>.Get()
+        {
+            var path = Configuration.EmailTemplatePath;
+            var body = await File.ReadAllTextAsync(path);
+            return new[]
+            {
+                new EmailTemplate
+                {
+                    Body = body
+                }
+            };
+        }
+
+        public Task Save(IEnumerable<EmailTemplate> data)
+        {
+            throw new NotImplementedException();
         }
     }
 }

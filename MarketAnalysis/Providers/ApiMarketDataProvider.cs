@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MarketAnalysis.Providers
 {
-    public class ApiMarketDataProvider : IApiClient
+    public class ApiMarketDataProvider
     {
         private string _url = Configuration.ApiEndpoint;
         private string  _parameters = $"/query?{Configuration.QueryString}&apikey={Configuration.ApiKey}";

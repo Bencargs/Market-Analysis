@@ -1,19 +1,21 @@
 ﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
 using MarketAnalysis.Services;
 using MarketAnalysis.Simulation;
+using MarketAnalysis.Strategy;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using SerilogTimings;
 using System;
-using System.ServiceProcess;
+using System.Threading.Tasks;
 
 namespace MarketAnalysis
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             try
             {
@@ -21,19 +23,8 @@ namespace MarketAnalysis
                 using (var op = Operation.Begin("Performing market analysis"))
                 using (var provider = RegisterServices())
                 {
-                    if (Environment.UserInteractive)
-                    {
-                        var service = provider.GetService<AnalysisService>();
-                        service.Execute().Wait();
-                    }
-                    else
-                    {
-                        using (var service = provider.GetService<WindowsService>())
-                        {
-                            ServiceBase.Run(service);
-                        }
-                    }
-                    op.Complete();
+                    var service = provider.GetService<AnalysisService>();
+                    await service.Execute();
                 }
             }
             catch (Exception ex)
@@ -46,17 +37,27 @@ namespace MarketAnalysis
         public static ServiceProvider RegisterServices()
         {
             var services = new ServiceCollection();
-            services.AddSingleton(typeof(IProvider), typeof(FileRepository));
-            services.AddSingleton(typeof(IRepository), typeof(FileRepository));
-            services.AddSingleton(typeof(IApiClient), typeof(ApiMarketDataProvider));
-            services.AddSingleton(typeof(ICommunicationService), typeof(EmailCommunicationService));
 
-            services.AddSingleton(typeof(MarketDataCache), MarketDataCache.Instance);
-            services.AddSingleton(typeof(ISimulator), typeof(Simulator));
+            // Repositories
+            services.AddSingleton(typeof(IRepository<MarketData>), typeof(FileRepository));
+            services.AddSingleton(typeof(IRepository<IStrategy>), typeof(FileRepository));
+            services.AddSingleton(typeof(IRepository<EmailTemplate>), typeof(FileRepository));
+            services.AddSingleton(typeof(IRepository<SimulationResult>), typeof(FileRepository));
+
+            // Providers
             services.AddSingleton(typeof(IResultsProvider), typeof(ResultsProvider));
-            services.AddTransient(typeof(WindowsService), typeof(WindowsService));
+            services.AddSingleton<ApiMarketDataProvider>();
+            services.AddSingleton<StrategyProvider>();
+            services.AddSingleton<MarketDataProvider>();
+            services.AddSingleton<EmailTemplateProvider>();
 
+            // Caches
+            services.AddSingleton(typeof(MarketDataCache), MarketDataCache.Instance);
             services.AddSingleton<SimulationCache>();
+
+            // Services
+            services.AddSingleton(typeof(ISimulator), typeof(Simulator));
+            services.AddSingleton(typeof(ICommunicationService), typeof(EmailCommunicationService));
             services.AddTransient<AnalysisService>();
 
             return services.BuildServiceProvider();

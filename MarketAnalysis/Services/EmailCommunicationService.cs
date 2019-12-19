@@ -14,9 +14,9 @@ namespace MarketAnalysis.Services
 {
     public class EmailCommunicationService : ICommunicationService
     {
-        private readonly IProvider _emailTemplateProvider;
+        private readonly EmailTemplateProvider _emailTemplateProvider;
 
-        public EmailCommunicationService(IProvider emailTemplateProvider)
+        public EmailCommunicationService(EmailTemplateProvider emailTemplateProvider)
         {
             _emailTemplateProvider = emailTemplateProvider;
         }
@@ -24,7 +24,7 @@ namespace MarketAnalysis.Services
         public async Task SendCommunication(IResultsProvider resultsProvider)
         {
             var client = new SendGridClient(Configuration.SmtpApiKey);
-            var recipients = (await _emailTemplateProvider.GetEmailRecipients());
+            var recipients = await _emailTemplateProvider.GetEmailRecipients();
             foreach (var recipient in recipients)
             {
                 Log.Information($"Emailing recipient:{recipient.Name}");
