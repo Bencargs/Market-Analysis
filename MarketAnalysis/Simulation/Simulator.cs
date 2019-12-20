@@ -11,7 +11,7 @@ namespace MarketAnalysis.Simulation
     {
         private MarketDataCache _dataCache;
         private SimulationCache _simulationCache;
-        private Dictionary<SimulationStatus, IStimulationStrategy> _simulator;
+        private readonly Dictionary<SimulationStatus, IStimulationStrategy> _simulator;
 
         private enum SimulationStatus
         {

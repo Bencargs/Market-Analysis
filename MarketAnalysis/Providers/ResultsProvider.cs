@@ -60,6 +60,7 @@ namespace MarketAnalysis.Providers
                 MaximumAlpha = CalculateAlpha(_marketMaximum.Last().Worth),
                 MaximumDrawdown = excessReturns.Min(),
                 BuyCount = buySignals.Count(),
+                MaximumHoldingPeriod = GetMaximumHoldPeriod(history, buySignals),
                 SharpeRatio = CalculateSharpeRatio(history),
                 Accuracy = CalculateAccuracy(confusionMatrix, history),
                 Recall = CalculateRecall(confusionMatrix),
@@ -92,6 +93,16 @@ namespace MarketAnalysis.Providers
         public decimal TotalProfit()
         {
             return _results.Sum(x => x.ProfitTotal) / _results.Count();
+        }
+
+        private int GetMaximumHoldPeriod(SimulationState[] history, SimulationState[] buySignals)
+        {
+            if (!buySignals.Any())
+                return history.Length;
+
+            var buyIndexes = buySignals.Select(x => Array.IndexOf(history, x)).ToArray();
+
+            return buyIndexes.Skip(1).Select((x, i) => x > 0 ? x - buyIndexes[i] : x).Max();
         }
 
         private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator)
@@ -157,14 +168,16 @@ namespace MarketAnalysis.Providers
 
         private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix)
         {
-            var denominator = (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalsePostative]);
-            return (decimal) denominator != 0 ? confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
+            var denominator = confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalsePostative];
+
+            return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
         }
 
         private decimal CalculateRecall(Dictionary<ConfusionCategory, int> confusionMatrix)
         {
-            var denominator = (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalseNegative]);
-            return (decimal) denominator != 0 ? confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
+            var denominator = confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalseNegative];
+
+            return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
         }
 
         private decimal CalculateAccuracy(Dictionary<ConfusionCategory, int> confusionMatrix, IList<SimulationState> history)
@@ -215,7 +228,7 @@ namespace MarketAnalysis.Providers
             var yearOpenDay = history.ToList().FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
             var strategyOpenWorth = history[yearOpenDay].Worth;
             var investment = GetInvestmentSince(yearOpenDay, history);
-            return (latestState.Worth - strategyOpenWorth) - investment;
+            return -(latestState.Worth - strategyOpenWorth - investment);
         }
 
         private decimal GetInvestmentSince(int simulationDays, IList<SimulationState> history)

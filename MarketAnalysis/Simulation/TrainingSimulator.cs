@@ -5,10 +5,6 @@ namespace MarketAnalysis.Simulation
 {
     public class TrainingSimulator : IStimulationStrategy
     {
-        public TrainingSimulator()
-        {
-        }
-
         public SimulationState SimulateDay(IStrategy _, MarketData data, SimulationState previousState)
         {
             var state = UpdateState(data, previousState);

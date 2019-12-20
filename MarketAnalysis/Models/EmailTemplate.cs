@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MarketAnalysis.Models
+﻿namespace MarketAnalysis.Models
 {
     public class EmailTemplate
     {

@@ -16,6 +16,7 @@ namespace MarketAnalysis.Models
         public decimal MaximumAlpha { get; set; }
         public decimal MaximumDrawdown { get; set; }
         public int BuyCount { get; set; }
+        public int MaximumHoldingPeriod { get; set; }
         public decimal SharpeRatio { get; set; }
         public decimal Accuracy { get; set; }
         public decimal Recall { get; set; }

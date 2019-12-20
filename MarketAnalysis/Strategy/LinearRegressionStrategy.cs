@@ -55,9 +55,9 @@ namespace MarketAnalysis.Strategy
             decimal sumXY = points.Sum(point => point.X * point.Y);
 
             var meanSqrd = Math.Pow(meanX, 2);
-            var back = (sumXSquared / numPoints - meanSqrd);
+            var back = sumXSquared / numPoints - meanSqrd;
             var mid = numPoints - meanX * ((double)meanY);
-            var front = ((double)sumXY);
+            var front = (double)sumXY;
 
             m = front / mid / back;
             b = m * meanX - ((double)meanY);

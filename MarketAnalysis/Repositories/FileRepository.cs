@@ -60,6 +60,7 @@ namespace MarketAnalysis.Repositories
 
             var subStrategies = new IStrategy[]
             {
+                new EntropyStrategy(30, 5)
                 new PatternRecognitionStrategy(800),
                 new RelativeStrengthStrategy(50),
                 new DeltaStrategy(0.05m),

@@ -1,12 +1,10 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
-using MarketAnalysis.Repositories;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using Serilog;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace MarketAnalysis.Services
