@@ -7,16 +7,16 @@ namespace MarketAnalysis.Providers
 {
     public class StrategyProvider
     {
-        private IRepository<IStrategy> _strategyRepository;
+        private readonly IRepository<IStrategy> _strategyRepository;
 
         public StrategyProvider(IRepository<IStrategy> strategyRepository)
         {
             _strategyRepository = strategyRepository;
         }
 
-        public async Task<IEnumerable<IStrategy>> GetStrategies()
+        public Task<IEnumerable<IStrategy>> GetStrategies()
         {
-            return await _strategyRepository.Get();
+            return _strategyRepository.Get();
         }
     }
 }

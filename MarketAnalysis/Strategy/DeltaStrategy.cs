@@ -8,6 +8,7 @@ namespace MarketAnalysis.Strategy
     public class DeltaStrategy : OptimisableStrategy
     {
         private decimal _threshold;
+        public override StrategyType StrategyType { get; } = StrategyType.Delta;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
@@ -28,11 +29,6 @@ namespace MarketAnalysis.Strategy
         public override void SetParameters(IStrategy strategy)
         {
             _threshold = ((DeltaStrategy)strategy)._threshold;
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

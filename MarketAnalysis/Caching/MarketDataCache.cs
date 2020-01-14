@@ -39,9 +39,8 @@ namespace MarketAnalysis.Caching
             foreach (var data in _cache)
             {
                 if (data.Date <= endDate)
-                {
                     yield return data;
-                }
+                else break;
             }
         }
 

@@ -11,7 +11,7 @@ namespace MarketAnalysis.Strategy
         private readonly double _threshold;
         private readonly SimulationCache _cache;
         private Dictionary<IStrategy, double> _weights;
-        private static Dictionary<DateTime, double> _confidence = new Dictionary<DateTime, double>();
+        public override StrategyType StrategyType { get; } = StrategyType.Weighted;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public WeightedStrategy(
@@ -62,23 +62,15 @@ namespace MarketAnalysis.Strategy
             _weights = ((WeightedStrategy)strategy)._weights;
         }
 
-        public override bool ShouldAddFunds()
-        {
-            return true;
-        }
-
         protected override bool ShouldBuy(MarketData data)
         {
             var sum = 0d;
             foreach (var s in _weights)
             {
-                var result = _cache.GetOrCreate((s.Key, data.Date), null);
+                _cache.TryGet((s.Key, data.Date), out var result);
                 var weight = Convert.ToDouble(result.ShouldBuy) * s.Value;
                 sum += weight;
             }
-
-            if (!_confidence.ContainsKey(data.Date))
-                _confidence.Add(data.Date, sum);
 
             return sum > _threshold;
         }
@@ -88,9 +80,16 @@ namespace MarketAnalysis.Strategy
             if (!(obj is WeightedStrategy strategy))
                 return false;
 
-            return _weights.All(entry => 
-                strategy._weights.TryGetValue(entry.Key, out var value) && 
-                value.Equals(entry.Value));
+            return _weights.All(entry =>
+            {
+                var type = entry.Key.StrategyType;
+                var strat = _weights.FirstOrDefault(x => x.Key.StrategyType == type);
+                if (strat.Key != default(IStrategy))
+                {
+                    return strat.Value.Equals(entry.Value);
+                }
+                return false;
+            });
         }
 
         public override int GetHashCode()

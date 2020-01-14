@@ -11,6 +11,7 @@ namespace MarketAnalysis.Strategy
     {
         private int _window;
         private decimal _threshold;
+        public override StrategyType StrategyType { get; } = StrategyType.Gradient;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public GradientStrategy(int window, decimal threshold, bool shouldOptimise = true)
@@ -37,11 +38,6 @@ namespace MarketAnalysis.Strategy
             var optimal = (GradientStrategy)strategy;
             _window = optimal._window;
             _threshold = optimal._threshold;
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

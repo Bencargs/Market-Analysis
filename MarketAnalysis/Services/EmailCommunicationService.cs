@@ -62,10 +62,10 @@ namespace MarketAnalysis.Services
             template = template.Replace(@"{profit}", totalProfit.ToString("C2"));
 
             var attachments = new List<Attachment>();
-            template = await AddImageAsync(template, "logo", Configuration.LogoImagePath, attachments);
-            template = await AddImageAsync(template, "website", Configuration.WorldImagePath, attachments);
-            template = await AddImageAsync(template, "phone", Configuration.PhoneImagePath, attachments);
-            template = await AddImageAsync(template, "email", Configuration.EmailImagePath, attachments);
+            template = AddImageAsync(template, "logo", Configuration.LogoImagePath, attachments);
+            template = AddImageAsync(template, "website", Configuration.WorldImagePath, attachments);
+            template = AddImageAsync(template, "phone", Configuration.PhoneImagePath, attachments);
+            template = AddImageAsync(template, "email", Configuration.EmailImagePath, attachments);
 
             AddDetailedResults(resultsProvider, attachments);
 
@@ -106,9 +106,9 @@ namespace MarketAnalysis.Services
             return template.Replace(@"{results}", results.ToString());
         }
 
-        private async Task<string> AddImageAsync(string template, string tag, string path, List<Attachment> attachments)
+        private string AddImageAsync(string template, string tag, string path, List<Attachment> attachments)
         {
-            var content = await Base64ImageEncode(path);
+            var content = Base64ImageEncode(path);
             attachments.Add(new Attachment
             {
                 Content = content,
@@ -120,18 +120,11 @@ namespace MarketAnalysis.Services
             return template.Replace($"{{{tag}}}", $"cid:{tag}");
         }
 
-        private async static Task<string> Base64ImageEncode(string path)
+        private static string Base64ImageEncode(string path)
         {
-            return await Task.Run(() =>
-            {
-                using (System.Drawing.Image image = System.Drawing.Image.FromFile(path))
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    image.Save(stream, image.RawFormat);
-                    byte[] imageBytes = stream.ToArray();
-                    return Convert.ToBase64String(imageBytes);
-                }
-            });
+            var image = new Image(path);
+            byte[] imageBytes = image.ToByteArray();
+            return Convert.ToBase64String(imageBytes);
         }
     }
 }

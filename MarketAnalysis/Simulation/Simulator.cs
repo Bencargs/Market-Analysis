@@ -9,8 +9,8 @@ namespace MarketAnalysis.Simulation
 {
     public class Simulator : ISimulator
     {
-        private MarketDataCache _dataCache;
-        private SimulationCache _simulationCache;
+        private readonly MarketDataCache _dataCache;
+        private readonly SimulationCache _simulationCache;
         private readonly Dictionary<SimulationStatus, IStimulationStrategy> _simulator;
 
         private enum SimulationStatus
@@ -34,7 +34,7 @@ namespace MarketAnalysis.Simulation
         public IEnumerable<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null, bool showProgress = true)
         {
             var history = new List<SimulationState>(5000);
-            using (var progress = InitialiseProgressBar(strategy, showProgress))
+            using (var progress = InitialiseProgressBar(strategy.StrategyType, showProgress))
             {
                 foreach (var data in _dataCache.TakeUntil(endDate))
                 {
@@ -61,10 +61,10 @@ namespace MarketAnalysis.Simulation
             return state;
         }
 
-        private ProgressBar InitialiseProgressBar(IStrategy strategy, bool showProgress)
+        private ProgressBar InitialiseProgressBar(StrategyType strategy, bool showProgress)
         {
             return showProgress
-                ? ProgressBarReporter.StartProgressBar(_dataCache.Count, strategy.GetType().Name)
+                ? ProgressBarReporter.StartProgressBar(_dataCache.Count, strategy.GetDescription())
                 : null;
         }
     }

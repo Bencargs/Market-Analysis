@@ -10,6 +10,7 @@ namespace MarketAnalysis.Strategy
     {
         private Image _average;
         private double _threshold;
+        public override StrategyType StrategyType { get; } = StrategyType.PatternRecognition;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(1024);
 
         public PatternRecognitionStrategy(double threshold, Image average = null, bool shouldOptimise = true)
@@ -81,11 +82,6 @@ namespace MarketAnalysis.Strategy
                 }
             average.ComputeHash();
             return average;
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

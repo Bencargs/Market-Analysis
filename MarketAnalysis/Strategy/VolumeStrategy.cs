@@ -9,6 +9,7 @@ namespace MarketAnalysis.Strategy
     {
         private int _threshold;
         private decimal _previousVolume;
+        public override StrategyType StrategyType { get; } = StrategyType.Volume;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public VolumeStrategy(int threshold, bool shouldOptimise = true)
@@ -26,11 +27,6 @@ namespace MarketAnalysis.Strategy
         public override void SetParameters(IStrategy strategy)
         {
             _threshold = ((VolumeStrategy)strategy)._threshold;
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

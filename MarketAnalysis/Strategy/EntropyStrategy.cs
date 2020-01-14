@@ -10,6 +10,7 @@ namespace MarketAnalysis.Strategy
     {
         private double _threshold;
         private int _window;
+        public override StrategyType StrategyType { get; } = StrategyType.Entropy;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public EntropyStrategy(int window, double threshold, bool shouldOptimise = true)
@@ -36,11 +37,6 @@ namespace MarketAnalysis.Strategy
             var optimal = (EntropyStrategy)strategy;
             _window = optimal._window;
             _threshold = optimal._threshold;
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

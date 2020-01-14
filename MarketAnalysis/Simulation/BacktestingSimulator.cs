@@ -19,11 +19,10 @@ namespace MarketAnalysis.Simulation
         {
             var state = UpdateState(strategy, data, previousState);
 
+            AddFunds(state);
+
             if (strategy.ShouldOptimise())
                 Optimise(strategy, data.Date);
-
-            if (strategy.ShouldAddFunds())
-                AddFunds(state);
 
             if (state.ShouldBuy)
                 BuyShares(state);

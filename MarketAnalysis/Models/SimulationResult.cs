@@ -26,7 +26,7 @@ namespace MarketAnalysis.Models
         public bool ShouldBuy { get; set; }
         public string Strategy { get; set; }
         public string StrategyType { get; set; }
-        public string StrategyName => StrategyType.Substring(StrategyType.LastIndexOf(".") + 1).Replace("Strategy", "");
+        public string StrategyName { get; set; }
 
         public IStrategy GetStrategy()
         {
@@ -38,6 +38,7 @@ namespace MarketAnalysis.Models
         {
             StrategyType = strategy.GetType().FullName;
             Strategy = JsonConvert.SerializeObject(strategy);
+            StrategyName = strategy.StrategyType.GetDescription();
             return this;
         }
     }

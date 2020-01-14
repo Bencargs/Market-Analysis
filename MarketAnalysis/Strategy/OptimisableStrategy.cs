@@ -7,6 +7,7 @@ namespace MarketAnalysis.Strategy
     public abstract class OptimisableStrategy : IStrategy
     {
         private DateTime? _lastOptimised;
+        public abstract StrategyType StrategyType { get; }
         protected abstract TimeSpan OptimisePeriod { get; }
         public DateTime LatestDate { get; protected set; }
 
@@ -29,8 +30,6 @@ namespace MarketAnalysis.Strategy
         public abstract IEnumerable<IStrategy> GetOptimisations();
 
         public abstract void SetParameters(IStrategy strategy);
-
-        public abstract bool ShouldAddFunds();
 
         public bool ShouldBuyShares(MarketData data)
         {

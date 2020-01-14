@@ -9,6 +9,7 @@ namespace MarketAnalysis.Strategy
     public class LinearRegressionStrategy : OptimisableStrategy
     {
         private int _window;
+        public override StrategyType StrategyType { get; } = StrategyType.LinearRegression;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public LinearRegressionStrategy(int window, bool shouldOptimise = true)
@@ -26,11 +27,6 @@ namespace MarketAnalysis.Strategy
         public override void SetParameters(IStrategy strategy)
         {
             _window = ((LinearRegressionStrategy)strategy)._window;
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

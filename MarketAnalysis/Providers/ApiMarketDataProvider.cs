@@ -11,8 +11,8 @@ namespace MarketAnalysis.Providers
 {
     public class ApiMarketDataProvider
     {
-        private string _url = Configuration.ApiEndpoint;
-        private string  _parameters = $"/query?{Configuration.QueryString}&apikey={Configuration.ApiKey}";
+        private readonly string _url = Configuration.ApiEndpoint;
+        private readonly string _parameters = $"/query?{Configuration.QueryString}&apikey={Configuration.ApiKey}";
         private static readonly HttpClient HttpClient = new HttpClient();
 
         public async Task<IEnumerable<MarketData>> GetData()

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 
 namespace MarketAnalysis
 {
@@ -42,6 +44,16 @@ namespace MarketAnalysis
                 Array.Resize(ref bucket, count);
                 yield return bucket.Select(x => x);
             }
+        }
+
+        public static string GetDescription<T>(this T source)
+            where T : Enum
+        {
+            FieldInfo field = typeof(T).GetField(source.ToString());
+            return field.GetCustomAttributes(typeof(DescriptionAttribute), false)
+                        .Cast<DescriptionAttribute>()
+                        .Select(x => x.Description)
+                        .FirstOrDefault();
         }
     }
 }

@@ -16,11 +16,24 @@ namespace MarketAnalysis.Caching
             _cache = new Dictionary<IStrategy, List<SimulationState>>();
         }
 
+        public bool TryGet((IStrategy strategy, DateTime day) key, out SimulationState simulation)
+        {
+            simulation = null;
+            if (!_cache.TryGetValue(key.strategy, out var history))
+                return false;
+
+            var latestState = history.LastOrDefault();
+            if (FindEntry(history, latestState, key.day, out var cacheEntry))
+                simulation = cacheEntry;
+
+            return simulation != null;
+        }
+
         public SimulationState GetOrCreate((IStrategy strategy, DateTime day) key, Func<SimulationState, SimulationState> createItem)
         {
             if (!_cache.TryGetValue(key.strategy, out var history))
             {
-                history = new List<SimulationState>(5000);
+                history = new List<SimulationState>();
                 _cache.Add(key.strategy, history);
             }
 
@@ -46,7 +59,10 @@ namespace MarketAnalysis.Caching
         private bool FindEntry(List<SimulationState> history, SimulationState latestState, DateTime date, out SimulationState simulationState)
         {
             simulationState = null;
-            if (date <= latestState?.Date)
+            if (latestState == null)
+                return false;
+
+            if (date <= latestState.Date)
             {
                 var index = history.BinarySearch(new SimulationState { Date = date }, _comparer);
                 if (index > -1)

@@ -9,6 +9,7 @@ namespace MarketAnalysis.Strategy
     public class RelativeStrengthStrategy : OptimisableStrategy
     {
         private int _threshold;
+        public override StrategyType StrategyType { get; } = StrategyType.RelativeStrength;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
         public RelativeStrengthStrategy(int threshold, bool shouldOptimise = true)
@@ -26,11 +27,6 @@ namespace MarketAnalysis.Strategy
         public override void SetParameters(IStrategy strategy)
         {
             _threshold = ((RelativeStrengthStrategy)strategy)._threshold;
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

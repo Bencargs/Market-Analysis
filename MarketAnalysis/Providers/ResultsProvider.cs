@@ -34,8 +34,10 @@ namespace MarketAnalysis.Providers
 
         public void Initialise()
         {
-            _marketAverage = _simulator.Evaluate(new ConstantStrategy(), showProgress: false).ToArray();
-            _marketMaximum = GetMarketMaximum(_simulator).ToArray();
+            var buyDates = _cache.TakeUntil().Select(x => x.Date).ToDictionary(k => k, v => true);
+            var constantStrategy = new StaticDatesStrategy(buyDates);
+            _marketAverage = _simulator.Evaluate(constantStrategy, showProgress: false).ToArray();
+            _marketMaximum = GetMarketMaximum(_simulator, buyDates).ToArray();
         }
 
         public void AddResults(IStrategy strategy, IEnumerable<SimulationState> source)
@@ -80,9 +82,9 @@ namespace MarketAnalysis.Providers
             await _simulationResultsRepository.Save(_results);
         }
 
-        public async Task SaveData(IEnumerable<MarketData> data)
+        public async Task SaveData(Task<IEnumerable<MarketData>> data)
         {
-            await _marketDataRepository.Save(data);
+            await _marketDataRepository.Save(await data);
         }
 
         public bool ShouldBuy()
@@ -105,16 +107,15 @@ namespace MarketAnalysis.Providers
             return buyIndexes.Skip(1).Select((x, i) => x > 0 ? x - buyIndexes[i] : x).Max();
         }
 
-        private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator)
+        private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator, Dictionary<DateTime, bool> buyDates)
         {
             using (var progress = ProgressBarReporter.StartProgressBar(_cache.BacktestingIndex, "Initialising..."))
             {
-                var buyDates = _cache.TakeUntil().Select(x => x.Date).ToDictionary(k => k, v => true);
                 var strategy = new StaticDatesStrategy(buyDates);
                 var history = simulator.Evaluate(strategy, showProgress: false);
                 var worth = history.LastOrDefault()?.Worth ?? 0m;
 
-                var i = 0;
+                var i = 1;
                 foreach (var (date, _) in buyDates.Where(x => x.Key > Configuration.BacktestingDate).Reverse())
                 {
                     buyDates[date] = false;

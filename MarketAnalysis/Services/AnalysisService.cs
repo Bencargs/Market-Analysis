@@ -33,28 +33,32 @@ namespace MarketAnalysis.Services
 
         public async Task Execute()
         {
-            var data = await _marketDataProvider.GetPriceData();
-            var strategies = await _strategyProvider.GetStrategies();
+            var data = _marketDataProvider.GetPriceData();
+            var strategies = _strategyProvider.GetStrategies();
 
-            var results = Simulate(data, strategies);
+            var results = await Simulate(data, strategies);
 
-            if (results.ShouldBuy())
-                await _communicationService.SendCommunication(results);
+            var sendCommunicationTask = results.ShouldBuy()
+                ? _communicationService.SendCommunication(results)
+                : Task.CompletedTask;
+            var saveSimulationsTask = results.SaveSimulationResults();
+            var saveDataTask = results.SaveData(data);
 
-            await results.SaveSimulationResults();
-            await results.SaveData(data);
+            await sendCommunicationTask;
+            await saveSimulationsTask;
+            await saveDataTask;
         }
 
-        private IResultsProvider Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
+        private async Task<IResultsProvider> Simulate(Task<IEnumerable<MarketData>> data, Task<IEnumerable<IStrategy>> strategies)
         {
             using (var cache = MarketDataCache.Instance)
             {
-                cache.Initialise(data);
+                cache.Initialise(await data);
                 _resultsProvider.Initialise();
 
-                foreach (var s in strategies)
+                foreach (var s in await strategies)
                 {
-                    Log.Information($"Evaluating strategy: {s.GetType()}");
+                    Log.Information($"Evaluating strategy: {s.StrategyType.GetDescription()}");
                     var history = _simulator.Evaluate(s);
                     _resultsProvider.AddResults(s, history);
                 }

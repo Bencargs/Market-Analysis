@@ -7,6 +7,7 @@ namespace MarketAnalysis.Strategy
     public class StaticDatesStrategy : OptimisableStrategy
     {
         public int Identifier { get; set; }
+        public override StrategyType StrategyType { get; } = StrategyType.StaticDates;
         protected override TimeSpan OptimisePeriod => TimeSpan.MaxValue;
         private readonly Dictionary<DateTime, bool> _buyDates;
 
@@ -23,11 +24,6 @@ namespace MarketAnalysis.Strategy
 
         public override void SetParameters(IStrategy strategy)
         {
-        }
-
-        public override bool ShouldAddFunds()
-        {
-            return true;
         }
 
         protected override bool ShouldBuy(MarketData data)

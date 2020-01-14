@@ -5,10 +5,10 @@ namespace MarketAnalysis.Strategy
 {
     public interface IStrategy
     {
+        StrategyType StrategyType { get; }
         bool ShouldOptimise();
         IEnumerable<IStrategy> GetOptimisations();
         void SetParameters(IStrategy strategy);
-        bool ShouldAddFunds();
         bool ShouldBuyShares(MarketData data);
     }
 }

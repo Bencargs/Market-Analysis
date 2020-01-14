@@ -1,16 +1,16 @@
-﻿using System;
-using System.Drawing;
+﻿using SkiaSharp;
+using System;
+using System.IO;
 using System.Security.Cryptography;
 
 namespace MarketAnalysis.Models
 {
     public class Image
     {
+        private int _hash;
         private readonly byte[,] _data;
-
         public int Width { get; private set; }
         public int Height { get; private set; }
-        private int _hash;
 
         public Image(int width, int height)
         {
@@ -32,7 +32,9 @@ namespace MarketAnalysis.Models
 
         public Image(string path)
         {
-            using (var bitmap = new Bitmap(path))
+            using (var input = File.OpenRead(path))
+            using (var inputStream = new SKManagedStream(input))
+            using (var bitmap = SKBitmap.Decode(inputStream))
             {
                 Width = bitmap.Width;
                 Height = bitmap.Height;
@@ -41,8 +43,8 @@ namespace MarketAnalysis.Models
                 for (int x = 0; x < Width; x++)
                     for (int y = 0; y < Height; y++)
                     {
-                        var value = bitmap.GetPixel(x, y).ToArgb();
-                        _data[x, y] = (byte)value;
+                        var value = bitmap.GetPixel(x, y).Red;
+                        _data[x, y] = value;
                     }
             }
             ComputeHash();
@@ -60,17 +62,33 @@ namespace MarketAnalysis.Models
 
         public void Save(string path)
         {
-            using (var bitmap = new Bitmap(Width, Height))
+            using (var bitmap = new SKBitmap(Width, Height))
             {
                 for (int x = 0; x < Width; x++)
                     for (int y = 0; y < Height; y++)
                     {
                         var value = _data[x, y];
-                        var colour = Color.FromArgb(value, value, value);
+                        var colour = new SKColor(value, value, value);
                         bitmap.SetPixel(x, y, colour);
                     }
-                bitmap.Save(path);
+
+                using (var canvas = new SKCanvas(bitmap))
+                {
+                    canvas.DrawBitmap(bitmap, 0, 0);
+                }
             }
+        }
+
+        public byte[] ToByteArray()
+        {
+            var array = new byte[Width * Height];
+            for (int x = 0; x < Width; x++)
+                for (int y = 0; y < Height ; y++)
+                {
+                    array[(y * Width) + y] = _data[x, y];
+                }
+
+            return array;
         }
 
         public void ComputeHash()
