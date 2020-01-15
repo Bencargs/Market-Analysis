@@ -8,5 +8,6 @@ namespace MarketAnalysis.Simulation
     public interface ISimulator
     {
         IEnumerable<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null, bool showProgress = true);
+        void RemoveCache(IEnumerable<IStrategy> strategies);
     }
 }

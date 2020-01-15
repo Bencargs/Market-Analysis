@@ -82,9 +82,9 @@ namespace MarketAnalysis.Providers
             await _simulationResultsRepository.Save(_results);
         }
 
-        public async Task SaveData(Task<IEnumerable<MarketData>> data)
+        public async Task SaveData(IEnumerable<MarketData> data)
         {
-            await _marketDataRepository.Save(await data);
+            await _marketDataRepository.Save(data);
         }
 
         public bool ShouldBuy()

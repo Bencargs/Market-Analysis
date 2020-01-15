@@ -67,5 +67,14 @@ namespace MarketAnalysis.Simulation
                 ? ProgressBarReporter.StartProgressBar(_dataCache.Count, strategy.GetDescription())
                 : null;
         }
+
+        public void RemoveCache(IEnumerable<IStrategy> strategies)
+        {
+            if (_simulationCache.Count < Configuration.CacheSize)
+                return;
+
+            foreach (var strategy in strategies)
+                _simulationCache.Remove(strategy);
+        }
     }
 }

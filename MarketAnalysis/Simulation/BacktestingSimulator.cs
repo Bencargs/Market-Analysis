@@ -1,4 +1,5 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 using System;
 using System.Collections.Generic;
@@ -65,6 +66,9 @@ namespace MarketAnalysis.Simulation
             
             var optimal = FindOptimum(potentials, endDate);
 
+            var redundantStrategies = potentials.Except(new[] { optimal });
+            _simulator.RemoveCache(redundantStrategies);
+
             strategy.SetParameters(optimal);
         }
 
@@ -80,7 +84,7 @@ namespace MarketAnalysis.Simulation
                 })
                 .OrderByDescending(x => x.Worth)
                 .ThenBy(x => x.BuyCount)
-                .FirstOrDefault().strat;
+                .First().strat;
             }
         }
     }

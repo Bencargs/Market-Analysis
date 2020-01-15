@@ -11,7 +11,7 @@ namespace MarketAnalysis.Providers
         void AddResults(IStrategy strategy, IEnumerable<SimulationState> history);
         IEnumerable<SimulationResult> GetResults();
         Task SaveSimulationResults();
-        Task SaveData(Task<IEnumerable<MarketData>> data);
+        Task SaveData(IEnumerable<MarketData> data);
         bool ShouldBuy();
         decimal TotalProfit();
     }

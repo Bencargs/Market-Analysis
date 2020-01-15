@@ -33,30 +33,32 @@ namespace MarketAnalysis.Services
 
         public async Task Execute()
         {
-            var data = _marketDataProvider.GetPriceData();
-            var strategies = _strategyProvider.GetStrategies();
+            (var data, var strategies) = await GetSimulationData();
 
-            var results = await Simulate(data, strategies);
+            var results = Simulate(data, strategies);
 
-            var sendCommunicationTask = results.ShouldBuy()
-                ? _communicationService.SendCommunication(results)
-                : Task.CompletedTask;
-            var saveSimulationsTask = results.SaveSimulationResults();
-            var saveDataTask = results.SaveData(data);
+            if (results.ShouldBuy())
+                await _communicationService.SendCommunication(results);
 
-            await sendCommunicationTask;
-            await saveSimulationsTask;
-            await saveDataTask;
+            await SaveResults(data, results);
         }
 
-        private async Task<IResultsProvider> Simulate(Task<IEnumerable<MarketData>> data, Task<IEnumerable<IStrategy>> strategies)
+        private async Task<(IEnumerable<MarketData>, IEnumerable<IStrategy>)> GetSimulationData()
+        {
+            var dataTask = _marketDataProvider.GetPriceData();
+            var strategiesTask = _strategyProvider.GetStrategies();
+
+            return (await dataTask, await strategiesTask);
+        }
+
+        private IResultsProvider Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
         {
             using (var cache = MarketDataCache.Instance)
             {
-                cache.Initialise(await data);
+                cache.Initialise(data);
                 _resultsProvider.Initialise();
 
-                foreach (var s in await strategies)
+                foreach (var s in strategies)
                 {
                     Log.Information($"Evaluating strategy: {s.StrategyType.GetDescription()}");
                     var history = _simulator.Evaluate(s);
@@ -64,6 +66,14 @@ namespace MarketAnalysis.Services
                 }
             }
             return _resultsProvider;
+        }
+
+        private async Task SaveResults(IEnumerable<MarketData> data, IResultsProvider resultsProvider)
+        {
+            var saveSimulationsTask = resultsProvider.SaveSimulationResults();
+            var saveDataTask = resultsProvider.SaveData(data);
+
+            await Task.WhenAll(new Task[] { saveSimulationsTask, saveDataTask });
         }
     }
 }

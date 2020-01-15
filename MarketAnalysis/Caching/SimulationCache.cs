@@ -16,6 +16,8 @@ namespace MarketAnalysis.Caching
             _cache = new Dictionary<IStrategy, List<SimulationState>>();
         }
 
+        public int Count => _cache.Values.Count;
+
         public bool TryGet((IStrategy strategy, DateTime day) key, out SimulationState simulation)
         {
             simulation = null;
@@ -42,6 +44,11 @@ namespace MarketAnalysis.Caching
                 return cacheEntry;
 
             return CreateEntry(history, latestState, createItem);
+        }
+
+        public void Remove(IStrategy strategy)
+        {
+            _cache.Remove(strategy);
         }
 
         private SimulationState CreateEntry(List<SimulationState> history, SimulationState latestState, Func<SimulationState, SimulationState> createItem)
