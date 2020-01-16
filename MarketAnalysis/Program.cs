@@ -45,6 +45,7 @@ namespace MarketAnalysis
             services.AddSingleton(typeof(IRepository<SimulationResult>), typeof(FileRepository));
 
             // Providers
+            services.AddSingleton<ProgressBarProvider>();
             services.AddSingleton(typeof(IResultsProvider), typeof(ResultsProvider));
             services.AddSingleton<ApiMarketDataProvider>();
             services.AddSingleton<StrategyProvider>();

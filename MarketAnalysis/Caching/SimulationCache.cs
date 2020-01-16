@@ -13,7 +13,7 @@ namespace MarketAnalysis.Caching
 
         public SimulationCache()
         {
-            _cache = new Dictionary<IStrategy, List<SimulationState>>();
+            _cache = new Dictionary<IStrategy, List<SimulationState>>(5000);
         }
 
         public int Count => _cache.Values.Count;

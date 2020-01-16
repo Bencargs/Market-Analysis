@@ -6,7 +6,7 @@ using MarketAnalysis.Models;
 
 namespace MarketAnalysis.Strategy
 {
-    public class WeightedStrategy : OptimisableStrategy
+    public class WeightedStrategy : OptimisableStrategy, IAggregateStrategy
     {
         private readonly double _threshold;
         private readonly SimulationCache _cache;

@@ -1,6 +1,7 @@
-﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
+using MarketAnalysis.Providers;
 using MarketAnalysis.Strategy;
+using ShellProgressBar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,20 +11,22 @@ namespace MarketAnalysis.Simulation
     public class BacktestingSimulator : IStimulationStrategy
     {
         private readonly ISimulator _simulator;
+        private readonly ProgressBarProvider _progressProvider;
 
-        public BacktestingSimulator(ISimulator simulator)
+        public BacktestingSimulator(ISimulator simulator, ProgressBarProvider progressProvider)
         {
             _simulator = simulator;
+            _progressProvider = progressProvider;
         }
 
-        public SimulationState SimulateDay(IStrategy strategy, MarketData data, SimulationState previousState)
+        public SimulationState SimulateDay(IStrategy strategy, MarketData data, SimulationState previousState, ChildProgressBar progress)
         {
             var state = UpdateState(strategy, data, previousState);
 
             AddFunds(state);
 
             if (strategy.ShouldOptimise())
-                Optimise(strategy, data.Date);
+                Optimise(strategy, data.Date, progress);
 
             if (state.ShouldBuy)
                 BuyShares(state);
@@ -60,26 +63,34 @@ namespace MarketAnalysis.Simulation
             state.Funds += Configuration.DailyFunds;
         }
 
-        private void Optimise(IStrategy strategy, DateTime endDate)
+        private void Optimise(IStrategy strategy, DateTime endDate, ChildProgressBar progress)
         {
             var potentials = strategy.GetOptimisations();
             
-            var optimal = FindOptimum(potentials, endDate);
+            var optimal = FindOptimum(potentials, endDate, progress);
 
-            var redundantStrategies = potentials.Except(new[] { optimal });
-            _simulator.RemoveCache(redundantStrategies);
+            ClearCache(optimal, potentials);
 
             strategy.SetParameters(optimal);
         }
 
-        private IStrategy FindOptimum(IEnumerable<IStrategy> potentials, DateTime endDate)
+        private void ClearCache(IStrategy optimal, IEnumerable<IStrategy> potentials)
         {
-            using (var progress = ProgressBarReporter.SpawnChild(potentials.Count(), "Optimising..."))
+            if (optimal is IAggregateStrategy)
+            {
+                var redundantStrategies = potentials.Except(new[] { optimal });
+                _simulator.RemoveCache(redundantStrategies);
+            }
+        }
+
+        private IStrategy FindOptimum(IEnumerable<IStrategy> potentials, DateTime endDate, ChildProgressBar progress)
+        {
+            using (var childProgress = _progressProvider.Create(progress, potentials.Count(), "Optimising..."))
             {
                 return potentials.Select(strat =>
                 {
-                    var result = _simulator.Evaluate(strat, endDate, false).Last();
-                    progress.Tick();
+                    var result = _simulator.Evaluate(strat, endDate).Last();
+                    childProgress?.Tick();
                     return ( result.Worth, result.BuyCount, strat );
                 })
                 .OrderByDescending(x => x.Worth)

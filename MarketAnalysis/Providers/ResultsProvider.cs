@@ -15,6 +15,7 @@ namespace MarketAnalysis.Providers
         private readonly List<SimulationResult> _results = new List<SimulationResult>(5000);
         private readonly ISimulator _simulator;
         private readonly MarketDataCache _cache;
+        private readonly ProgressBarProvider _progressProvider;
         private readonly IRepository<MarketData> _marketDataRepository;
         private readonly IRepository<SimulationResult> _simulationResultsRepository;
         private SimulationState[] _marketAverage;
@@ -22,12 +23,14 @@ namespace MarketAnalysis.Providers
 
         public ResultsProvider(
             ISimulator simulator, 
-            MarketDataCache cache, 
+            MarketDataCache cache,
+            ProgressBarProvider progressProvider,
             IRepository<MarketData> marketDataRepository,
             IRepository<SimulationResult> simulationResultsRepository)
         {
             _cache = cache;
             _simulator = simulator;
+            _progressProvider = progressProvider;
             _marketDataRepository = marketDataRepository;
             _simulationResultsRepository = simulationResultsRepository;
         }
@@ -36,7 +39,7 @@ namespace MarketAnalysis.Providers
         {
             var buyDates = _cache.TakeUntil().Select(x => x.Date).ToDictionary(k => k, v => true);
             var constantStrategy = new StaticDatesStrategy(buyDates);
-            _marketAverage = _simulator.Evaluate(constantStrategy, showProgress: false).ToArray();
+            _marketAverage = _simulator.Evaluate(constantStrategy).ToArray();
             _marketMaximum = GetMarketMaximum(_simulator, buyDates).ToArray();
         }
 
@@ -109,18 +112,18 @@ namespace MarketAnalysis.Providers
 
         private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator, Dictionary<DateTime, bool> buyDates)
         {
-            using (var progress = ProgressBarReporter.StartProgressBar(_cache.BacktestingIndex, "Initialising..."))
-            {
-                var strategy = new StaticDatesStrategy(buyDates);
-                var history = simulator.Evaluate(strategy, showProgress: false);
-                var worth = history.LastOrDefault()?.Worth ?? 0m;
+            var strategy = new StaticDatesStrategy(buyDates);
+            var history = simulator.Evaluate(strategy);
+            var worth = history.LastOrDefault()?.Worth ?? 0m;
 
-                var i = 1;
+            var i = 1;
+            using (var progressBar = _progressProvider.Create(_cache.BacktestingIndex, "Initialising..."))
+            {
                 foreach (var (date, _) in buyDates.Where(x => x.Key > Configuration.BacktestingDate).Reverse())
                 {
                     buyDates[date] = false;
                     strategy = new StaticDatesStrategy(buyDates) { Identifier = i++ };
-                    var newHistory = simulator.Evaluate(strategy, showProgress: false);
+                    var newHistory = simulator.Evaluate(strategy);
                     var newWorth = newHistory?.LastOrDefault()?.Worth ?? 0m;
                     if (newWorth < worth)
                         buyDates[date] = true;
@@ -129,11 +132,11 @@ namespace MarketAnalysis.Providers
                         worth = newWorth;
                         history = newHistory;
                     }
-                    progress.Tick($"Initialising...");
+                    progressBar.Tick($"Initialising...");
                 }
-
-                return history;
             }
+
+            return history;
         }
 
         private decimal GetAverageReturn(SimulationState[] buySignals)

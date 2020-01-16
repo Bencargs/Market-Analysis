@@ -4,7 +4,9 @@ using MarketAnalysis.Providers;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using Serilog;
+using ShellProgressBar;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MarketAnalysis.Services
@@ -15,6 +17,7 @@ namespace MarketAnalysis.Services
         private readonly IResultsProvider _resultsProvider;
         private readonly StrategyProvider _strategyProvider;
         private readonly MarketDataProvider _marketDataProvider;
+        private readonly ProgressBarProvider _progressBarProvider;
         private readonly ICommunicationService _communicationService;
 
         public AnalysisService(
@@ -22,12 +25,14 @@ namespace MarketAnalysis.Services
             IResultsProvider resultsProvider,
             StrategyProvider strategyProvider,
             MarketDataProvider marketDataProvider,
+            ProgressBarProvider progressBarProvider,
             ICommunicationService communicationService)
         {
             _simulator = simulator;
             _resultsProvider = resultsProvider;
             _strategyProvider = strategyProvider;
             _marketDataProvider = marketDataProvider;
+            _progressBarProvider = progressBarProvider;
             _communicationService = communicationService;
         }
 
@@ -35,7 +40,7 @@ namespace MarketAnalysis.Services
         {
             (var data, var strategies) = await GetSimulationData();
 
-            var results = Simulate(data, strategies);
+            var results = await Simulate(data, strategies);
 
             if (results.ShouldBuy())
                 await _communicationService.SendCommunication(results);
@@ -51,23 +56,37 @@ namespace MarketAnalysis.Services
             return (await dataTask, await strategiesTask);
         }
 
-        private IResultsProvider Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
+        private async Task<IResultsProvider> Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
         {
             using (var cache = MarketDataCache.Instance)
             {
                 cache.Initialise(data);
                 _resultsProvider.Initialise();
 
-                foreach (var s in strategies)
+                var histories = strategies.ToDictionary(k => k, v => (List<SimulationState>)null);
+                var (aggregateStrategies, parralisableStrategies) = strategies.Split(x => x is IAggregateStrategy);
+
+                using (var progress = _progressBarProvider.Create(0, "Evaluating"))
                 {
-                    Log.Information($"Evaluating strategy: {s.StrategyType.GetDescription()}");
-                    var history = _simulator.Evaluate(s);
-                    _resultsProvider.AddResults(s, history);
+                    await Task.WhenAll(parralisableStrategies.Select(s =>
+                    {
+                        return Task.Run(() => SimulateStrategy(s, histories, progress));
+                    }).ToArray());
+                    foreach (var strategy in aggregateStrategies)
+                    {
+                        SimulateStrategy(strategy, histories, progress);
+                    }
                 }
             }
             return _resultsProvider;
-        }
 
+            void SimulateStrategy(IStrategy strategy, Dictionary<IStrategy, List<SimulationState>> histories, ProgressBar progress)
+            {
+                Log.Information($"Evaluating strategy: {strategy.StrategyType.GetDescription()}");
+                var result = _simulator.Evaluate(strategy, progress: progress);
+                histories[strategy] = result.ToList();
+            }
+        }
         private async Task SaveResults(IEnumerable<MarketData> data, IResultsProvider resultsProvider)
         {
             var saveSimulationsTask = resultsProvider.SaveSimulationResults();

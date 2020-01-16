@@ -1,11 +1,12 @@
 ﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
+using ShellProgressBar;
 
 namespace MarketAnalysis.Simulation
 {
     public class TrainingSimulator : IStimulationStrategy
     {
-        public SimulationState SimulateDay(IStrategy _, MarketData data, SimulationState previousState)
+        public SimulationState SimulateDay(IStrategy _, MarketData data, SimulationState previousState, ChildProgressBar __)
         {
             var state = UpdateState(data, previousState);
 
