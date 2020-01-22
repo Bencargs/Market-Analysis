@@ -29,7 +29,7 @@ namespace MarketAnalysis
             }
             catch (Exception ex)
             {
-                Log.Fatal(ex.Message);
+                Log.Fatal(ex, "Fatal exception occured:");
                 throw;
             }
         }

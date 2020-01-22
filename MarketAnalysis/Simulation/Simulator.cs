@@ -36,7 +36,6 @@ namespace MarketAnalysis.Simulation
 
         public IEnumerable<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null, ProgressBar parentProgress = null)
         {
-            var history = new List<SimulationState>(5000);
             using (var progress = InitialiseProgressBar(strategy.StrategyType, parentProgress))
             {
                 foreach (var data in _dataCache.TakeUntil(endDate))
@@ -47,12 +46,11 @@ namespace MarketAnalysis.Simulation
                         var state = GetSimulationState(data.Date);
                         return _simulator[state].SimulateDay(strategy, data, prev, progress);
                     });
-                    history.Add(latest);
 
                     progress?.Tick();
+                    yield return latest;
                 }
             }
-            return history;
         }
 
         private SimulationStatus GetSimulationState(DateTime date)

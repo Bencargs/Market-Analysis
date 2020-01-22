@@ -9,7 +9,7 @@ namespace MarketAnalysis.Strategy
     {
         private decimal _threshold;
         public override StrategyType StrategyType { get; } = StrategyType.Delta;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(128);
 
         public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
             : base(shouldOptimise)

@@ -1,4 +1,5 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Strategy;
 using ShellProgressBar;
@@ -78,7 +79,7 @@ namespace MarketAnalysis.Simulation
         {
             if (optimal is IAggregateStrategy)
             {
-                var redundantStrategies = potentials.Except(new[] { optimal });
+                var redundantStrategies = potentials.Where(x => !x.Equals(optimal));
                 _simulator.RemoveCache(redundantStrategies);
             }
         }

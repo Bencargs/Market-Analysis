@@ -12,7 +12,7 @@ namespace MarketAnalysis.Strategy
         private int _window;
         private decimal _threshold;
         public override StrategyType StrategyType { get; } = StrategyType.Gradient;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
 
         public GradientStrategy(int window, decimal threshold, bool shouldOptimise = true)
             : base(shouldOptimise)

@@ -58,14 +58,20 @@ namespace MarketAnalysis.Services
 
         private async Task<IResultsProvider> Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
         {
+            void SimulateStrategy(IStrategy strategy, Dictionary<IStrategy, SimulationState[]> histories, ProgressBar progress)
+            {
+                Log.Information($"Evaluating strategy: {strategy.StrategyType.GetDescription()}");
+                var result = _simulator.Evaluate(strategy, progress: progress);
+                histories[strategy] = result.ToArray();
+            }
+
             using (var cache = MarketDataCache.Instance)
             {
                 cache.Initialise(data);
                 _resultsProvider.Initialise();
 
-                var histories = strategies.ToDictionary(k => k, v => (List<SimulationState>)null);
                 var (aggregateStrategies, parralisableStrategies) = strategies.Split(x => x is IAggregateStrategy);
-
+                var histories = new Dictionary<IStrategy, SimulationState[]>();
                 using (var progress = _progressBarProvider.Create(0, "Evaluating"))
                 {
                     await Task.WhenAll(parralisableStrategies.Select(s =>
@@ -77,16 +83,11 @@ namespace MarketAnalysis.Services
                         SimulateStrategy(strategy, histories, progress);
                     }
                 }
+                _resultsProvider.AddResults(histories);
             }
             return _resultsProvider;
-
-            void SimulateStrategy(IStrategy strategy, Dictionary<IStrategy, List<SimulationState>> histories, ProgressBar progress)
-            {
-                Log.Information($"Evaluating strategy: {strategy.StrategyType.GetDescription()}");
-                var result = _simulator.Evaluate(strategy, progress: progress);
-                histories[strategy] = result.ToList();
-            }
         }
+
         private async Task SaveResults(IEnumerable<MarketData> data, IResultsProvider resultsProvider)
         {
             var saveSimulationsTask = resultsProvider.SaveSimulationResults();

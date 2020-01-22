@@ -60,13 +60,13 @@ namespace MarketAnalysis.Repositories
 
             var subStrategies = new IStrategy[]
             {
-                new EntropyStrategy(30, 5),
-                new PatternRecognitionStrategy(800),
-                new RelativeStrengthStrategy(50),
-                new DeltaStrategy(0.05m),
-                new GradientStrategy(20, -0.06m),
-                new LinearRegressionStrategy(149),
-                new VolumeStrategy(182),
+                new EntropyStrategy(0, 0),
+                new PatternRecognitionStrategy(0),
+                new RelativeStrengthStrategy(0),
+                new DeltaStrategy(0),
+                new GradientStrategy(0, 0),
+                new LinearRegressionStrategy(0),
+                new VolumeStrategy(0),
             };
             var strategies = subStrategies.Concat(new[] { new WeightedStrategy(_cache, subStrategies, 0.5d) });
             Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");

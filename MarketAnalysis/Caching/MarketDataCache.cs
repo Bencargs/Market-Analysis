@@ -8,7 +8,7 @@ namespace MarketAnalysis.Caching
     public sealed class MarketDataCache : IDisposable
     {
         private static readonly Lazy<MarketDataCache> _instance = new Lazy<MarketDataCache>(() => new MarketDataCache());
-        private readonly List<MarketData> _cache = new List<MarketData>(5000);
+        private readonly List<MarketData> _cache = new List<MarketData>(5120);
 
         public static MarketDataCache Instance => _instance.Value;
         public int Count => _cache.Count;
@@ -16,7 +16,6 @@ namespace MarketAnalysis.Caching
 
         public IEnumerable<MarketData> GetLastSince(DateTime date, int count)
         {
-            var results = new List<MarketData>(5000);
             var remaining = count;
             for (int i = _cache.Count; i -- > 0;)
             {
@@ -26,11 +25,10 @@ namespace MarketAnalysis.Caching
 
                 if (data.Date <= date)
                 {
-                    results.Add(data);
                     remaining--;
+                    yield return data;
                 }
             }
-            return results;
         }
 
         public IEnumerable<MarketData> TakeUntil(DateTime? date = null)
@@ -46,7 +44,6 @@ namespace MarketAnalysis.Caching
 
         public void Initialise(IEnumerable<MarketData> data)
         {
-            _cache.Clear();
             foreach (var d in data.OrderBy(x => x.Date))
                 _cache.Add(d);
         }

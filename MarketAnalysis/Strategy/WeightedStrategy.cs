@@ -80,16 +80,14 @@ namespace MarketAnalysis.Strategy
             if (!(obj is WeightedStrategy strategy))
                 return false;
 
-            return _weights.All(entry =>
+            var self = _weights.Values.ToArray();
+            var other = strategy._weights.Values.ToArray();
+            for (int i = 0; i < self.Length; i++)
             {
-                var type = entry.Key.StrategyType;
-                var strat = _weights.FirstOrDefault(x => x.Key.StrategyType == type);
-                if (strat.Key != default(IStrategy))
-                {
-                    return strat.Value.Equals(entry.Value);
-                }
-                return false;
-            });
+                if (self[i] != other[i])
+                    return false;
+            }
+            return true;
         }
 
         public override int GetHashCode()

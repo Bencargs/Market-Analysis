@@ -10,7 +10,7 @@ namespace MarketAnalysis.Strategy
     {
         private int _window;
         public override StrategyType StrategyType { get; } = StrategyType.LinearRegression;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(128);
 
         public LinearRegressionStrategy(int window, bool shouldOptimise = true)
             : base(shouldOptimise)

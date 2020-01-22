@@ -10,7 +10,7 @@ namespace MarketAnalysis.Strategy
         private int _threshold;
         private decimal _previousVolume;
         public override StrategyType StrategyType { get; } = StrategyType.Volume;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
+        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
 
         public VolumeStrategy(int threshold, bool shouldOptimise = true)
             :base(shouldOptimise)

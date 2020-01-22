@@ -18,6 +18,7 @@ namespace MarketAnalysis.Models
         public int BuyCount { get; set; }
         public int MaximumHoldingPeriod { get; set; }
         public decimal SharpeRatio { get; set; }
+        public double MarketCorrelation { get; set; }
         public decimal Accuracy { get; set; }
         public decimal Recall { get; set; }
         public decimal Precision { get; set; }

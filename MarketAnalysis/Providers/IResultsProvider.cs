@@ -8,7 +8,7 @@ namespace MarketAnalysis.Providers
     public interface IResultsProvider
     {
         void Initialise();
-        void AddResults(IStrategy strategy, IEnumerable<SimulationState> history);
+        void AddResults(Dictionary<IStrategy , SimulationState[]> history);
         IEnumerable<SimulationResult> GetResults();
         Task SaveSimulationResults();
         Task SaveData(IEnumerable<MarketData> data);
