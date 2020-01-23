@@ -66,7 +66,7 @@ namespace MarketAnalysis
 
         public static void RegisterLogger()
         {
-            var logPath = Configuration.LogPath;
+            var logPath = DirectoryManager.GetLatestLogFile();
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .Enrich.FromLogContext()

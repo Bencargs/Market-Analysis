@@ -70,8 +70,8 @@ namespace MarketAnalysis.Services
                 cache.Initialise(data);
                 _resultsProvider.Initialise();
 
-                var (aggregateStrategies, parralisableStrategies) = strategies.Split(x => x is IAggregateStrategy);
                 var histories = new Dictionary<IStrategy, SimulationState[]>();
+                var (aggregateStrategies, parralisableStrategies) = strategies.Split(x => x is IAggregateStrategy);
                 using (var progress = _progressBarProvider.Create(0, "Evaluating"))
                 {
                     await Task.WhenAll(parralisableStrategies.Select(s =>

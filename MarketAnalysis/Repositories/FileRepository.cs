@@ -62,7 +62,7 @@ namespace MarketAnalysis.Repositories
             {
                 new EntropyStrategy(0, 0),
                 new PatternRecognitionStrategy(0),
-                new RelativeStrengthStrategy(0),
+                new RelativeStrengthStrategy(0, new int[0]),
                 new DeltaStrategy(0),
                 new GradientStrategy(0, 0),
                 new LinearRegressionStrategy(0),

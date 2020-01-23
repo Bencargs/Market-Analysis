@@ -7,6 +7,7 @@ namespace MarketAnalysis
     public static class Configuration
     {
         public static string LogPath => GetAbsolutePath(ConfigurationManager.AppSettings["LogPath"]);
+        public static string ReportsPath => GetAbsolutePath(ConfigurationManager.AppSettings["ReportsPath"]);
         public static string DataPath => GetAbsolutePath( ConfigurationManager.AppSettings["DataPath"]);
         public static string ResultsPath => GetAbsolutePath(ConfigurationManager.AppSettings["ResultsPath"]);
         public static string ApiEndpoint => ConfigurationManager.AppSettings["ApiEndpoint"];
