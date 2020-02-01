@@ -25,6 +25,7 @@ namespace MarketAnalysis
                 {
                     var service = provider.GetService<AnalysisService>();
                     await service.Execute();
+                    op.Complete();
                 }
             }
             catch (Exception ex)
@@ -41,7 +42,6 @@ namespace MarketAnalysis
             // Repositories
             services.AddSingleton(typeof(IRepository<MarketData>), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository<IStrategy>), typeof(FileRepository));
-            services.AddSingleton(typeof(IRepository<EmailTemplate>), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository<SimulationResult>), typeof(FileRepository));
 
             // Providers
@@ -50,7 +50,7 @@ namespace MarketAnalysis
             services.AddSingleton<ApiMarketDataProvider>();
             services.AddSingleton<StrategyProvider>();
             services.AddSingleton<MarketDataProvider>();
-            services.AddSingleton<EmailTemplateProvider>();
+            services.AddSingleton<ReportProvider>();
 
             // Caches
             services.AddSingleton(typeof(MarketDataCache), MarketDataCache.Instance);

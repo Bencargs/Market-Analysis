@@ -1,35 +1,36 @@
-﻿using MarketAnalysis.Models;
-using MarketAnalysis.Providers;
+﻿using MarketAnalysis.Providers;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using System.Text;
 using Serilog;
-using Newtonsoft.Json;
+using Attachment = SendGrid.Helpers.Mail.Attachment;
+using MarketAnalysis.Models.Reporting;
 
 namespace MarketAnalysis.Services
 {
     public class EmailCommunicationService : ICommunicationService
     {
-        private readonly EmailTemplateProvider _emailTemplateProvider;
+        private readonly ReportProvider _emailTemplateProvider;
+        private readonly Converter<ReportPage, (string html, List<Attachment> attachments)> _emailConverter;
 
-        public EmailCommunicationService(EmailTemplateProvider emailTemplateProvider)
+        public EmailCommunicationService(ReportProvider emailTemplateProvider)
         {
             _emailTemplateProvider = emailTemplateProvider;
+            _emailConverter = new Converter<ReportPage, (string html, List<Attachment> attachments)>(TemplateToEmail);
         }
 
         public async Task SendCommunication(IResultsProvider resultsProvider)
         {
             var client = new SendGridClient(Configuration.SmtpApiKey);
-            var recipients = await _emailTemplateProvider.GetEmailRecipients();
+            var recipients = _emailTemplateProvider.GetEmailRecipients();
             foreach (var recipient in recipients)
             {
                 Log.Information($"Emailing recipient:{recipient.Name}");
-                var (Body, Attachments) = await GetEmailBody(recipient, resultsProvider);
-                var message = CreateEmailMessage(recipient, Body, Attachments);
+                var report = _emailTemplateProvider.GenerateReports(recipient, resultsProvider);
+                var (html, attachments) = _emailConverter(report.Summary);
+                var message = CreateEmailMessage(recipient, html, attachments);
 
                 await client.SendEmailAsync(message);
             }
@@ -48,83 +49,35 @@ namespace MarketAnalysis.Services
             return msg;
         }
 
-        private async Task<(string Body, List<Attachment> Attachments)> GetEmailBody(RecipientDetails recipient, IResultsProvider resultsProvider)
+        private static (string html, List<Attachment> attachments) TemplateToEmail(ReportPage template)
         {
-            var totalProfit = resultsProvider.TotalProfit();
-            var shouldBuy = resultsProvider.ShouldBuy();
-
-            var template = await _emailTemplateProvider.GetEmailTemplate();
-
-            template = template.Replace(@"{date}", recipient.Date.ToString("dd/MM/yyyy"));
-            template = template.Replace(@"{InvestorName}", recipient.Name);
-            template = template.Replace(@"{InvestorNumber}", recipient.Number);
-            template = template.Replace(@"{recommendation}", ToRecommendation(shouldBuy));
-            template = template.Replace(@"{profit}", totalProfit.ToString("C2"));
-
             var attachments = new List<Attachment>();
-            template = AddImageAsync(template, "logo", Configuration.LogoImagePath, attachments);
-            template = AddImageAsync(template, "website", Configuration.WorldImagePath, attachments);
-            template = AddImageAsync(template, "phone", Configuration.PhoneImagePath, attachments);
-            template = AddImageAsync(template, "email", Configuration.EmailImagePath, attachments);
-
-            AddDetailedResults(resultsProvider, attachments);
-
-            template = AddResults(template, resultsProvider);
-
-            return (template, attachments);
-        }
-
-        private void AddDetailedResults(IResultsProvider resultsProvider, List<Attachment> attachments)
-        {
-            // todo: custom PDF generation for each strategy type
-            var json = JsonConvert.SerializeObject(resultsProvider.GetResults());
-            var bytes = Encoding.ASCII.GetBytes(json);
-            attachments.Add(new Attachment
+            foreach (var a in template.Attachments)
             {
-                Content = Convert.ToBase64String(bytes),
-                Type = "application/json",
-                Filename = "results.json",
-                Disposition = "attachment"
-            });
-        }
-
-        private string ToRecommendation(bool shouldBuy) => shouldBuy ? "Buy" : "Hold";
-
-        private string AddResults(string template, IResultsProvider resultsProvider)
-        {
-            var results = new StringBuilder();
-            foreach (var s in resultsProvider.GetResults())
-            {
-                results.Append("<tr>");
-                results.Append($"<td>{s.StrategyName}</td>");
-                results.Append($"<td>{ToRecommendation(s.ShouldBuy)}</td>");
-                results.Append($"<td>{s.ProfitYTD.ToString("C2")}</td>");
-                results.Append($"<td>{s.ProfitTotal.ToString("C2")}</td>");
-                results.Append($"<td>{s.BuyCount}</td>");
-                results.Append("</tr>");
+                switch (a.AttachmentType)
+                {
+                    case Models.Reporting.Attachment.Type.Image:
+                        attachments.Add(new Attachment
+                        {
+                            Content = Convert.ToBase64String(a.Content),
+                            Type = a.AttachmentType.GetDescription(),
+                            Filename = $"{a.Name}.png",
+                            Disposition = "inline",
+                            ContentId = $"{a.Name}"
+                        });
+                        break;
+                    case Models.Reporting.Attachment.Type.Json:
+                        attachments.Add(new Attachment
+                        {
+                            Content = Convert.ToBase64String(a.Content),
+                            Type = a.AttachmentType.GetDescription(),
+                            Filename = $"{a.Name}.json",
+                            Disposition = "attachment"
+                        });
+                        break;
+                }
             }
-            return template.Replace(@"{results}", results.ToString());
-        }
-
-        private string AddImageAsync(string template, string tag, string path, List<Attachment> attachments)
-        {
-            var content = Base64ImageEncode(path);
-            attachments.Add(new Attachment
-            {
-                Content = content,
-                Type = "image/png",
-                Filename = $"{tag}.png",
-                Disposition = "inline",
-                ContentId = $"{tag}"
-            });
-            return template.Replace($"{{{tag}}}", $"cid:{tag}");
-        }
-
-        private static string Base64ImageEncode(string path)
-        {
-            var image = new Image(path);
-            byte[] imageBytes = image.ToByteArray();
-            return Convert.ToBase64String(imageBytes);
+            return (template.Body, attachments);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MarketAnalysis.Models
+namespace MarketAnalysis.Models.Reporting
 {
     public class RecipientDetails
     {

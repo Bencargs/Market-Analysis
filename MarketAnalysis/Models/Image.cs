@@ -19,17 +19,6 @@ namespace MarketAnalysis.Models
             _data = new byte[width, height];
         }
 
-        public Image(Image image)
-            : this(image.Width, image.Height)
-        {
-            for (int x = 0; x < Width; x++)
-                for (int y = 0; y < Height; y++)
-                {
-                    _data[x, y] = image.GetPixel(x, y);
-                }
-            _hash = image._hash;
-        }
-
         public Image(string path)
         {
             using (var input = File.OpenRead(path))
@@ -79,16 +68,15 @@ namespace MarketAnalysis.Models
             }
         }
 
-        public byte[] ToByteArray()
+        public static byte[] ToByteArray(string filename)
         {
-            var array = new byte[Width * Height];
-            for (int x = 0; x < Width; x++)
-                for (int y = 0; y < Height ; y++)
-                {
-                    array[(y * Width) + y] = _data[x, y];
-                }
-
-            return array;
+            using (var bitmap = SKBitmap.Decode(filename))
+            using (var data = SKImage.FromBitmap(bitmap).Encode(SKEncodedImageFormat.Png, 80))
+            using (var stream = new MemoryStream())
+            {
+                data.SaveTo(stream);
+                return data.ToArray();
+            }
         }
 
         public void ComputeHash()

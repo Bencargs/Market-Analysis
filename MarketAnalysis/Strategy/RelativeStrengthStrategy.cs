@@ -39,7 +39,7 @@ namespace MarketAnalysis.Strategy
 
         public override IEnumerable<IStrategy> GetOptimisations()
         {
-            return new[] { 40, 45, 50, 55, 60 }.SelectMany(lookback =>
+            return new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(lookback =>
             {
                 return OptimisationSets.Value.Select(s => 
                     new RelativeStrengthStrategy(lookback, s, false));

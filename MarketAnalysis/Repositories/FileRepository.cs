@@ -15,8 +15,7 @@ namespace MarketAnalysis.Repositories
     public class FileRepository : 
         IRepository<MarketData>,
         IRepository<IStrategy>,
-        IRepository<SimulationResult>,
-        IRepository<EmailTemplate>
+        IRepository<SimulationResult>
     {
         private readonly string _dataFilePath = Configuration.DataPath;
         private readonly string _resultsFilePath = Configuration.ResultsPath;
@@ -88,24 +87,6 @@ namespace MarketAnalysis.Repositories
         {
             var json = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(results));
             File.WriteAllText(_resultsFilePath, json);
-        }
-
-        async Task<IEnumerable<EmailTemplate>> IRepository<EmailTemplate>.Get()
-        {
-            var path = Configuration.EmailTemplatePath;
-            var body = await File.ReadAllTextAsync(path);
-            return new[]
-            {
-                new EmailTemplate
-                {
-                    Body = body
-                }
-            };
-        }
-
-        public Task Save(IEnumerable<EmailTemplate> data)
-        {
-            throw new NotImplementedException();
         }
     }
 }

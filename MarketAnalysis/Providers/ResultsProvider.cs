@@ -50,7 +50,7 @@ namespace MarketAnalysis.Providers
                 var history = s.Value.ToArray();
                 var latestState = history.Last();
                 var simulationDays = history.Length - _marketDataCache.BacktestingIndex;
-                var profitTotal = latestState.Worth - GetInvestmentSince(simulationDays, history);
+                var profitTotal = latestState.Worth - GetInvestmentSince(simulationDays);
                 var buySignals = history.Where(x => x.ShouldBuy).ToArray();
                 var confusionMatrix = CalculateConfusionMatrix(history);
                 var excessReturns = GetExcessReturns(history);
@@ -243,11 +243,11 @@ namespace MarketAnalysis.Providers
             var latestState = history.Last();
             var yearOpenDay = history.ToList().FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
             var strategyOpenWorth = history[yearOpenDay].Worth;
-            var investment = GetInvestmentSince(yearOpenDay, history);
-            return -(latestState.Worth - strategyOpenWorth - investment);
+            var investment = GetInvestmentSince(history.Count - yearOpenDay);
+            return latestState.Worth - strategyOpenWorth - investment;
         }
 
-        private decimal GetInvestmentSince(int simulationDays, IList<SimulationState> history)
+        private decimal GetInvestmentSince(int simulationDays)
         {
             return simulationDays * Configuration.DailyFunds;
         }
