@@ -36,20 +36,19 @@ namespace MarketAnalysis.Simulation
 
         public IEnumerable<SimulationState> Evaluate(IStrategy strategy, DateTime? endDate = null, ProgressBar parentProgress = null)
         {
-            using (var progress = InitialiseProgressBar(strategy.StrategyType, parentProgress))
+            var queue = new OrderQueue();
+            using var progress = InitialiseProgressBar(strategy.StrategyType, parentProgress);
+            foreach (var data in _dataCache.TakeUntil(endDate))
             {
-                foreach (var data in _dataCache.TakeUntil(endDate))
+                var key = (strategy, data.Date);
+                var latest = _simulationCache.GetOrCreate(key, prev =>
                 {
-                    var key = (strategy, data.Date);
-                    var latest = _simulationCache.GetOrCreate(key, prev =>
-                    {
-                        var state = GetSimulationState(data.Date);
-                        return _simulator[state].SimulateDay(strategy, data, prev, progress);
-                    });
+                    var state = GetSimulationState(data.Date);
+                    return _simulator[state].SimulateDay(strategy, data, queue, prev, progress);
+                });
 
-                    progress?.Tick();
-                    yield return latest;
-                }
+                progress?.Tick();
+                yield return latest;
             }
         }
 

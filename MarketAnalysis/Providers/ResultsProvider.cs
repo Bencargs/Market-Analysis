@@ -103,7 +103,7 @@ namespace MarketAnalysis.Providers
 
         public decimal TotalProfit()
         {
-            return _results.Sum(x => x.ProfitTotal) / _results.Count();
+            return _results.Average(x => x.ProfitTotal);
         }
 
         private int GetMaximumHoldPeriod(SimulationState[] history, SimulationState[] buySignals)

@@ -1,5 +1,4 @@
-﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Strategy;
 using ShellProgressBar;
@@ -20,17 +19,23 @@ namespace MarketAnalysis.Simulation
             _progressProvider = progressProvider;
         }
 
-        public SimulationState SimulateDay(IStrategy strategy, MarketData data, SimulationState previousState, ChildProgressBar progress)
+        public SimulationState SimulateDay(
+            IStrategy strategy, 
+            MarketData data, 
+            OrderQueue queue, 
+            SimulationState previousState, 
+            ChildProgressBar progress)
         {
             var state = UpdateState(strategy, data, previousState);
 
             AddFunds(state);
+            ExecuteOrders(state, queue);
 
             if (strategy.ShouldOptimise())
                 Optimise(strategy, data.Date, progress);
 
             if (state.ShouldBuy)
-                BuyShares(state);
+                AddBuyOrder(state, queue);
 
             return state;
         }
@@ -50,12 +55,29 @@ namespace MarketAnalysis.Simulation
             };
         }
 
-        private void BuyShares(SimulationState state)
+        private void AddBuyOrder(SimulationState state, OrderQueue orderQueue)
         {
-            var newShares = state.Funds / state.SharePrice;
-            state.Shares += newShares;
-            state.Funds = 0;
-            state.BuyCount++;
+            var cost = state.Funds - Configuration.OrderBrokerage;
+            if (cost <= 0)
+                return;
+
+            state.Funds  = 0;
+            var order = new MarketOrder
+            {
+                Funds = cost,
+                ExecutionDate = state.Date.AddDays(Configuration.OrderDelayDays),
+            };
+            orderQueue.Add(order);
+        }
+
+        private void ExecuteOrders(SimulationState state, OrderQueue orderQueue)
+        {
+            foreach (var order in orderQueue.Get(state.Date))
+            {
+                var newShares = order.Funds / state.SharePrice;
+                state.Shares += newShares;
+                state.BuyCount++;
+            }
         }
 
         private void AddFunds(SimulationState state)
@@ -86,18 +108,16 @@ namespace MarketAnalysis.Simulation
 
         private IStrategy FindOptimum(IEnumerable<IStrategy> potentials, DateTime endDate, ChildProgressBar progress)
         {
-            using (var childProgress = _progressProvider.Create(progress, potentials.Count(), "Optimising..."))
+            using var childProgress = _progressProvider.Create(progress, potentials.Count(), "Optimising...");
+            return potentials.Select(strat =>
             {
-                return potentials.Select(strat =>
-                {
-                    var result = _simulator.Evaluate(strat, endDate).Last();
-                    childProgress?.Tick();
-                    return ( result.Worth, result.BuyCount, strat );
-                })
-                .OrderByDescending(x => x.Worth)
-                .ThenBy(x => x.BuyCount)
-                .First().strat;
-            }
+                var result = _simulator.Evaluate(strat, endDate).Last();
+                childProgress?.Tick();
+                return (result.Worth, result.BuyCount, strat);
+            })
+            .OrderByDescending(x => x.Worth)
+            .ThenBy(x => x.BuyCount)
+            .First().strat;
         }
     }
 }

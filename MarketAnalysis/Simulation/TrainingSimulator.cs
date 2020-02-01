@@ -6,7 +6,12 @@ namespace MarketAnalysis.Simulation
 {
     public class TrainingSimulator : IStimulationStrategy
     {
-        public SimulationState SimulateDay(IStrategy _, MarketData data, SimulationState previousState, ChildProgressBar __)
+        public SimulationState SimulateDay(
+            IStrategy _, 
+            MarketData data, 
+            OrderQueue __, 
+            SimulationState previousState, 
+            ChildProgressBar ___)
         {
             var state = UpdateState(data, previousState);
 

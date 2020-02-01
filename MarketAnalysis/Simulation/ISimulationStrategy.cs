@@ -6,6 +6,11 @@ namespace MarketAnalysis.Simulation
 {
     public interface IStimulationStrategy
     {
-        SimulationState SimulateDay(IStrategy strategy, MarketData data, SimulationState previousState, ChildProgressBar progress);
+        SimulationState SimulateDay(
+            IStrategy strategy, 
+            MarketData data,
+            OrderQueue queue,
+            SimulationState previousState, 
+            ChildProgressBar progress);
     }
 }

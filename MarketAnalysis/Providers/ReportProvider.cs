@@ -5,16 +5,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MarketAnalysis.Providers
 {
     public class ReportProvider
     {
-        public Report GenerateReports(RecipientDetails recipient, IResultsProvider results)
+        public async Task<Report> GenerateReports(RecipientDetails recipient, IResultsProvider results)
         {
             var date = recipient.Date.ToString("dd MMM yyyy");
             var coverPage = GetCoverPage();
-            var summary = new SummaryReport(recipient, results);
+            var summary = await new SummaryReport(recipient, results).Build();
             var marketReport = GetMarketReport();
             var strategyReports = GetStrategyReports(results);
 

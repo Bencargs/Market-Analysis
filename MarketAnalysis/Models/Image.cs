@@ -49,42 +49,22 @@ namespace MarketAnalysis.Models
             return _data[x, y];
         }
 
-        public void Save(string path)
-        {
-            using (var bitmap = new SKBitmap(Width, Height))
-            {
-                for (int x = 0; x < Width; x++)
-                    for (int y = 0; y < Height; y++)
-                    {
-                        var value = _data[x, y];
-                        var colour = new SKColor(value, value, value);
-                        bitmap.SetPixel(x, y, colour);
-                    }
-
-                using (var canvas = new SKCanvas(bitmap))
-                {
-                    canvas.DrawBitmap(bitmap, 0, 0);
-                }
-            }
-        }
-
         public static byte[] ToByteArray(string filename)
         {
-            using (var bitmap = SKBitmap.Decode(filename))
-            using (var data = SKImage.FromBitmap(bitmap).Encode(SKEncodedImageFormat.Png, 80))
-            using (var stream = new MemoryStream())
-            {
-                data.SaveTo(stream);
-                return data.ToArray();
-            }
+            using var bitmap = SKBitmap.Decode(filename);
+            using var data = SKImage.FromBitmap(bitmap).Encode(SKEncodedImageFormat.Png, 80);
+            using var stream = new MemoryStream();
+            data.SaveTo(stream);
+            return data.ToArray();
         }
 
         public void ComputeHash()
         {
             var flattened = new byte[Width * Height];
             Buffer.BlockCopy(_data, 0, flattened, 0, Width * Width);
-            using (var md5 = new MD5CryptoServiceProvider())
-                _hash = md5.ComputeHash(flattened).GetHashCode();
+
+            using var md5 = new MD5CryptoServiceProvider();
+            _hash = md5.ComputeHash(flattened).GetHashCode();
         }
 
         public override bool Equals(object obj)

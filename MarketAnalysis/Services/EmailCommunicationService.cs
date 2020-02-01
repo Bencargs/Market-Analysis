@@ -28,7 +28,7 @@ namespace MarketAnalysis.Services
             foreach (var recipient in recipients)
             {
                 Log.Information($"Emailing recipient:{recipient.Name}");
-                var report = _emailTemplateProvider.GenerateReports(recipient, resultsProvider);
+                var report = await _emailTemplateProvider.GenerateReports(recipient, resultsProvider);
                 var (html, attachments) = _emailConverter(report.Summary);
                 var message = CreateEmailMessage(recipient, html, attachments);
 

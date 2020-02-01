@@ -1,42 +1,48 @@
-﻿using MarketAnalysis.Models;
-using MarketAnalysis.Models.Reporting;
+﻿using MarketAnalysis.Models.Reporting;
 using MarketAnalysis.Providers;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MarketAnalysis.Reports
 {
-    public class SummaryReport : ReportPage
+    public class SummaryReport
     {
+        private RecipientDetails _recipient;
+        private IResultsProvider _resultsProvider;
+
         public SummaryReport(RecipientDetails recipient, IResultsProvider resultsProvider)
         {
-            AddTemplate();
-            AddBody(recipient, resultsProvider.TotalProfit(), resultsProvider.ShouldBuy());
-            AddResultsSummary(resultsProvider.GetResults());
-            AddImages();
+            _recipient = recipient;
+            _resultsProvider = resultsProvider;
         }
 
-        private void AddTemplate()
+        public async Task<ReportPage> Build()
         {
             var path = Configuration.EmailTemplatePath;
-            var content = File.ReadAllText(path);
-            Body = content;
+            var content = await File.ReadAllTextAsync(path);
+
+            var report = new ReportPage(content);
+            AddBody(report);
+            AddResultsSummary(report);
+            AddImages(report);
+
+            return report;
         }
 
-        private void AddBody(RecipientDetails recipient, decimal totalProfit, bool shouldBuy)
+        private void AddBody(ReportPage template)
         {
-            Replace("date", recipient.Date.ToString("dd/MM/yyyy"));
-            Replace("InvestorName", recipient.Name);
-            Replace("InvestorNumber", recipient.Number);
-            Replace("recommendation", ToRecommendation(shouldBuy));
-            Replace("profit", totalProfit.ToString("C2"));
+            template.Replace("date", _recipient.Date.ToString("dd/MM/yyyy"));
+            template.Replace("InvestorName", _recipient.Name);
+            template.Replace("InvestorNumber", _recipient.Number);
+            template.Replace("recommendation", ToRecommendation(_resultsProvider.ShouldBuy()));
+            template.Replace("profit", _resultsProvider.TotalProfit().ToString("C2"));
         }
 
-        private string AddResultsSummary(IEnumerable<SimulationResult> results)
+        private void AddResultsSummary(ReportPage template)
         {
             var summary = new StringBuilder();
-            foreach (var s in results)
+            foreach (var s in _resultsProvider.GetResults())
             {
                 summary.Append("<tr>");
                 summary.Append($"<td>{s.StrategyName}</td>");
@@ -46,15 +52,15 @@ namespace MarketAnalysis.Reports
                 summary.Append($"<td>{s.BuyCount}</td>");
                 summary.Append("</tr>");
             }
-            return summary.ToString();
+            template.Replace("results", summary.ToString());
         }
 
-        public void AddImages()
+        private void AddImages(ReportPage template)
         {
-            AddImage("logo", Configuration.LogoImagePath);
-            AddImage("website", Configuration.WorldImagePath);
-            AddImage("phone", Configuration.PhoneImagePath);
-            AddImage("email", Configuration.EmailImagePath);
+            template.AddImage("logo", Configuration.LogoImagePath);
+            template.AddImage("website", Configuration.WorldImagePath);
+            template.AddImage("phone", Configuration.PhoneImagePath);
+            template.AddImage("email", Configuration.EmailImagePath);
         }
 
         private static string ToRecommendation(bool shouldBuy) => shouldBuy ? "Buy" : "Hold";

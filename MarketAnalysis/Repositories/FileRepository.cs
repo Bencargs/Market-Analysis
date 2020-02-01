@@ -30,24 +30,20 @@ namespace MarketAnalysis.Repositories
         {
             return await Task.Run(() =>
             {
-                using (var reader = new StreamReader(_dataFilePath))
-                using (var csv = new CsvReader(reader, new CsvHelper.Configuration.Configuration { HasHeaderRecord = false }))
-                {
-                    return csv.GetRecords<MarketData>().ToArray();
-                }
+                using var reader = new StreamReader(_dataFilePath);
+                using var csv = new CsvReader(reader, new CsvHelper.Configuration.Configuration { HasHeaderRecord = false });
+                return csv.GetRecords<MarketData>().ToArray();
             });
         }
 
         public async Task Save(IEnumerable<MarketData> data)
         {
-            using (var writer = new StreamWriter(_dataFilePath, false))
-            using (var csv = new CsvWriter(writer))
+            using var writer = new StreamWriter(_dataFilePath, false);
+            using var csv = new CsvWriter(writer);
+            foreach (var d in data)
             {
-                foreach (var d in data)
-                {
-                    csv.WriteRecord(d);
-                    await csv.NextRecordAsync();
-                }
+                csv.WriteRecord(d);
+                await csv.NextRecordAsync();
             }
         }
 
