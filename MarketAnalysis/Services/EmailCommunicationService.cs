@@ -7,6 +7,8 @@ using SendGrid.Helpers.Mail;
 using Serilog;
 using Attachment = SendGrid.Helpers.Mail.Attachment;
 using MarketAnalysis.Models.Reporting;
+using MarketAnalysis.Models;
+using System.Linq;
 
 namespace MarketAnalysis.Services
 {
@@ -24,23 +26,28 @@ namespace MarketAnalysis.Services
         public async Task SendCommunication(IResultsProvider resultsProvider)
         {
             var client = new SendGridClient(Configuration.SmtpApiKey);
-            var recipients = _emailTemplateProvider.GetEmailRecipients();
-            foreach (var recipient in recipients)
+
+            foreach (var (investor, results) in resultsProvider.GetResults())
             {
-                Log.Information($"Emailing recipient:{recipient.Name}");
-                var report = await _emailTemplateProvider.GenerateReports(recipient, resultsProvider);
+                if (!ResultsProvider.ShouldBuy(results))
+                    continue;
+
+                Log.Information($"Emailing recipient:{investor.Name}");
+
+                var date = results.First().Date;
+                var report = await _emailTemplateProvider.GenerateReports(investor, results);
                 var (html, attachments) = _emailConverter(report.Summary);
-                var message = CreateEmailMessage(recipient, html, attachments);
+                var message = CreateEmailMessage(date, investor, html, attachments);
 
                 await client.SendEmailAsync(message);
             }
         }
 
-        private SendGridMessage CreateEmailMessage(RecipientDetails recipient, string content, List<Attachment> attachments)
+        private SendGridMessage CreateEmailMessage(DateTime date, Investor investor, string content, List<Attachment> attachments)
         {
             var from = new EmailAddress("research@cbc.com", "CBC Market Analysis");
-            var subject = $"Market Report {recipient.Date.ToString("dd MMM yyyy")}";
-            var to = new EmailAddress(recipient.Email, recipient.Name);
+            var subject = $"Market Report {date.ToString("dd MMM yyyy")}";
+            var to = new EmailAddress(investor.Email, investor.Name);
             var plainTextContent = "";
             var htmlContent = content;
             var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);

@@ -5,10 +5,10 @@ using System.Linq;
 
 namespace MarketAnalysis.Caching
 {
-    public sealed class MarketDataCache : IDisposable
+    public sealed class MarketDataCache
     {
         private static readonly Lazy<MarketDataCache> _instance = new Lazy<MarketDataCache>(() => new MarketDataCache());
-        private readonly List<MarketData> _cache = new List<MarketData>(5120);
+        private readonly List<MarketData> _cache = new List<MarketData>(5000);
 
         public static MarketDataCache Instance => _instance.Value;
         public int Count => _cache.Count;
@@ -46,11 +46,6 @@ namespace MarketAnalysis.Caching
         {
             foreach (var d in data.OrderBy(x => x.Date))
                 _cache.Add(d);
-        }
-        
-        public void Dispose()
-        {
-            _cache.Clear();
         }
     }
 }

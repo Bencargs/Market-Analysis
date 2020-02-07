@@ -11,31 +11,37 @@ namespace MarketAnalysis.Simulation
     public class BacktestingSimulator : IStimulationStrategy
     {
         private readonly ISimulator _simulator;
+        private readonly InvestorProvider _investorProvider;
         private readonly ProgressBarProvider _progressProvider;
 
-        public BacktestingSimulator(ISimulator simulator, ProgressBarProvider progressProvider)
+        public BacktestingSimulator(
+            ISimulator simulator, 
+            InvestorProvider investorProvider, 
+            ProgressBarProvider progressProvider)
         {
             _simulator = simulator;
+            _investorProvider = investorProvider;
             _progressProvider = progressProvider;
         }
 
         public SimulationState SimulateDay(
-            IStrategy strategy, 
+            IStrategy strategy,
             MarketData data, 
             OrderQueue queue, 
             SimulationState previousState, 
             ChildProgressBar progress)
         {
+            var investor = _investorProvider.Current;
             var state = UpdateState(strategy, data, previousState);
 
-            AddFunds(state);
+            AddFunds(investor, state);
             ExecuteOrders(state, queue);
 
             if (strategy.ShouldOptimise())
                 Optimise(strategy, data.Date, progress);
 
             if (state.ShouldBuy)
-                AddBuyOrder(state, queue);
+                AddBuyOrder(investor, state, queue);
 
             return state;
         }
@@ -55,9 +61,9 @@ namespace MarketAnalysis.Simulation
             };
         }
 
-        private void AddBuyOrder(SimulationState state, OrderQueue orderQueue)
+        private void AddBuyOrder(Investor investor, SimulationState state, OrderQueue orderQueue)
         {
-            var cost = state.Funds - Configuration.OrderBrokerage;
+            var cost = state.Funds - investor.OrderBrokerage;
             if (cost <= 0)
                 return;
 
@@ -65,7 +71,7 @@ namespace MarketAnalysis.Simulation
             var order = new MarketOrder
             {
                 Funds = cost,
-                ExecutionDate = state.Date.AddDays(Configuration.OrderDelayDays),
+                ExecutionDate = state.Date.AddDays(investor.OrderDelayDays),
             };
             orderQueue.Add(order);
         }
@@ -80,10 +86,10 @@ namespace MarketAnalysis.Simulation
             }
         }
 
-        private void AddFunds(SimulationState state)
+        private void AddFunds(Investor investor, SimulationState state)
         {
             // todo: this should be a property of an individual investor
-            state.Funds += Configuration.DailyFunds;
+            state.Funds += investor.DailyFunds;
         }
 
         private void Optimise(IStrategy strategy, DateTime endDate, ChildProgressBar progress)

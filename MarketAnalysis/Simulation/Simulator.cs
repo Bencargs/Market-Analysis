@@ -12,6 +12,7 @@ namespace MarketAnalysis.Simulation
     {
         private readonly MarketDataCache _dataCache;
         private readonly SimulationCache _simulationCache;
+        private readonly InvestorProvider _investorProvider;
         private readonly ProgressBarProvider _progressProvider;
         private readonly Dictionary<SimulationStatus, IStimulationStrategy> _simulator;
 
@@ -21,16 +22,21 @@ namespace MarketAnalysis.Simulation
             Backtesting,
         }
 
-        public Simulator(MarketDataCache dataCache, SimulationCache simulationCache, ProgressBarProvider progressProvider)
+        public Simulator(
+            MarketDataCache dataCache, 
+            SimulationCache simulationCache, 
+            InvestorProvider investorProvider, 
+            ProgressBarProvider progressProvider)
         {
             _dataCache = dataCache;
             _simulationCache = simulationCache;
+            _investorProvider = investorProvider;
             _progressProvider = progressProvider;
 
             _simulator = new Dictionary<SimulationStatus, IStimulationStrategy>
             {
                 {SimulationStatus.Training, new TrainingSimulator() },
-                {SimulationStatus.Backtesting, new BacktestingSimulator(this, _progressProvider) }
+                {SimulationStatus.Backtesting, new BacktestingSimulator(this, _investorProvider, _progressProvider) }
             };
         }
 

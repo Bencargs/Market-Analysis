@@ -10,8 +10,8 @@ namespace MarketAnalysis.Models
     public class Chart
     {
         private PlotModel _plot;
-        private const int XAxis = 0;
-        private const int YAxis = 1;
+        private const int YAxis = 0;
+        private double _minY;
         private static readonly OxyColor[] _colours = new[]
         {
             OxyColor.FromArgb(255, 149, 196, 235),
@@ -20,7 +20,10 @@ namespace MarketAnalysis.Models
             OxyColor.FromArgb(255, 243, 155, 155),
             OxyColor.FromArgb(255, 79, 141, 228),
             OxyColor.FromArgb(255, 255, 184, 55),
-            OxyColor.FromArgb(255, 151, 137, 242)
+            OxyColor.FromArgb(255, 151, 137, 242),
+            OxyColor.FromArgb(255, 168, 242, 168),
+            OxyColor.FromArgb(255, 155, 155, 155),
+            OxyColor.FromArgb(255, 195, 82, 82),
         };
 
         public Chart(string title, string xAxisTitle, string yAxisTitle)
@@ -56,22 +59,25 @@ namespace MarketAnalysis.Models
                 Title = name,
                 Color = colour
             });
-            _plot.Axes[YAxis].Minimum = 0;
-            _plot.Axes[YAxis].Maximum = points.Max(x => x.X);
-            _plot.Axes[XAxis].Minimum = points.Min(x => x.Y);
-            _plot.Axes[XAxis].Maximum = points.Max(x => x.Y);
+
+            var minY = points.Min(x => x.Y);
+            if (minY < _minY)
+                _minY = minY;
 
             return this;
         }
 
         public void Save(string filepath)
         {
+            _plot.Axes[YAxis].Minimum = _minY;
+
             var exporter = new PngExporter { Width = 1500, Height = 400 };
 
             using var stream = new MemoryStream();
             exporter.Export(_plot, stream);
             var bytes = stream.ToArray();
 
+            File.Delete(filepath);
             using var filestream = new FileStream(filepath, FileMode.Create);
             filestream.Write(bytes, 0, bytes.Length);
         }

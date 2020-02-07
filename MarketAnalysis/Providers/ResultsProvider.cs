@@ -43,14 +43,14 @@ namespace MarketAnalysis.Providers
             _marketMaximum = GetMarketMaximum(_simulator, buyDates).ToArray();
         }
 
-        public void AddResults(Dictionary<IStrategy, SimulationState[]> source)
+        public void AddResults(Investor investor, Dictionary<IStrategy, SimulationState[]> source)
         {
             foreach (var s in source)
             {
                 var history = s.Value.ToArray();
                 var latestState = history.Last();
                 var simulationDays = history.Length - _marketDataCache.BacktestingIndex;
-                var profitTotal = latestState.Worth - GetInvestmentSince(simulationDays);
+                var profitTotal = latestState.Worth - GetInvestmentSince(investor.DailyFunds, simulationDays);
                 var buySignals = history.Where(x => x.ShouldBuy).ToArray();
                 var confusionMatrix = CalculateConfusionMatrix(history);
                 var excessReturns = GetExcessReturns(history);
@@ -60,10 +60,11 @@ namespace MarketAnalysis.Providers
                 _results.Add(new SimulationResult
                 {
                     Date = latestState.Date,
+                    Investor = investor,
                     SimulationDays = simulationDays,
                     ShouldBuy = latestState.ShouldBuy,
                     ProfitTotal = profitTotal,
-                    ProfitYTD = CalculateYTDProfit(history),
+                    ProfitYTD = CalculateYTDProfit(investor, history),
                     AboveMarketReturn = excessReturns.Last(),
                     Alpha = CalculateAlpha(latestState.Worth, currentMarketWorth),
                     MaximumAlpha = CalculateAlpha(maximumReturn, currentMarketWorth),
@@ -81,9 +82,9 @@ namespace MarketAnalysis.Providers
             }
         }
 
-        public IEnumerable<SimulationResult> GetResults()
+        public Dictionary<Investor, IEnumerable<SimulationResult>> GetResults()
         {
-            return _results;
+            return _results.GroupBy(k => k.Investor).ToDictionary(k => k.Key, v => v.AsEnumerable());
         }
 
         public async Task SaveSimulationResults()
@@ -96,14 +97,14 @@ namespace MarketAnalysis.Providers
             await _marketDataRepository.Save(data);
         }
 
-        public bool ShouldBuy()
+        public static bool ShouldBuy(IEnumerable<SimulationResult> results)
         {
-            return _results.Count(x => x.ShouldBuy) > 1;
+            return results.Count(x => x.ShouldBuy) > 1;
         }
 
-        public decimal TotalProfit()
+        public static decimal TotalProfit(IEnumerable<SimulationResult> results)
         {
-            return _results.Average(x => x.ProfitTotal);
+            return results.Average(x => x.ProfitTotal);
         }
 
         private int GetMaximumHoldPeriod(SimulationState[] history, SimulationState[] buySignals)
@@ -238,18 +239,18 @@ namespace MarketAnalysis.Providers
             return excessReturn / currentMarketWorth;
         }
 
-        private decimal CalculateYTDProfit(IList<SimulationState> history)
+        private decimal CalculateYTDProfit(Investor investor, IList<SimulationState> history)
         {
             var latestState = history.Last();
             var yearOpenDay = history.ToList().FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
             var strategyOpenWorth = history[yearOpenDay].Worth;
-            var investment = GetInvestmentSince(history.Count - yearOpenDay);
+            var investment = GetInvestmentSince(investor.DailyFunds, history.Count - yearOpenDay);
             return latestState.Worth - strategyOpenWorth - investment;
         }
 
-        private decimal GetInvestmentSince(int simulationDays)
+        private decimal GetInvestmentSince(decimal dailyFunds, int simulationDays)
         {
-            return simulationDays * Configuration.DailyFunds;
+            return simulationDays * dailyFunds;
         }
     }
 }

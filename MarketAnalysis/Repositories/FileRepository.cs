@@ -15,7 +15,8 @@ namespace MarketAnalysis.Repositories
     public class FileRepository : 
         IRepository<MarketData>,
         IRepository<IStrategy>,
-        IRepository<SimulationResult>
+        IRepository<SimulationResult>,
+        IRepository<Investor>
     {
         private readonly string _dataFilePath = Configuration.DataPath;
         private readonly string _resultsFilePath = Configuration.ResultsPath;

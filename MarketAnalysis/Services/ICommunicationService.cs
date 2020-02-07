@@ -1,4 +1,5 @@
-﻿using MarketAnalysis.Providers;
+﻿using MarketAnalysis.Models;
+using MarketAnalysis.Providers;
 using System.Threading.Tasks;
 
 namespace MarketAnalysis.Services

@@ -40,8 +40,9 @@ namespace MarketAnalysis
             var services = new ServiceCollection();
 
             // Repositories
-            services.AddSingleton(typeof(IRepository<MarketData>), typeof(FileRepository));
+            services.AddSingleton(typeof(IRepository<Investor>), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository<IStrategy>), typeof(FileRepository));
+            services.AddSingleton(typeof(IRepository<MarketData>), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository<SimulationResult>), typeof(FileRepository));
 
             // Providers
@@ -49,6 +50,7 @@ namespace MarketAnalysis
             services.AddSingleton(typeof(IResultsProvider), typeof(ResultsProvider));
             services.AddSingleton<ApiMarketDataProvider>();
             services.AddSingleton<StrategyProvider>();
+            services.AddSingleton<InvestorProvider>();
             services.AddSingleton<MarketDataProvider>();
             services.AddSingleton<ReportProvider>();
 

@@ -8,6 +8,7 @@ namespace MarketAnalysis.Models
     public class SimulationResult
     {
         public DateTime Date { get; set; }
+        public Investor Investor { get; set; }
         public int SimulationDays { get; set; }
         public decimal ProfitYTD { get; set; }
         public decimal ProfitTotal { get; set; }

@@ -1,6 +1,7 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
+using MarketAnalysis.Repositories;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using Serilog;
@@ -16,6 +17,7 @@ namespace MarketAnalysis.Services
         private readonly ISimulator _simulator;
         private readonly IResultsProvider _resultsProvider;
         private readonly StrategyProvider _strategyProvider;
+        private readonly InvestorProvider _investorProvider;
         private readonly MarketDataProvider _marketDataProvider;
         private readonly ProgressBarProvider _progressBarProvider;
         private readonly ICommunicationService _communicationService;
@@ -24,6 +26,7 @@ namespace MarketAnalysis.Services
             ISimulator simulator,
             IResultsProvider resultsProvider,
             StrategyProvider strategyProvider,
+            InvestorProvider investorProvider,
             MarketDataProvider marketDataProvider,
             ProgressBarProvider progressBarProvider,
             ICommunicationService communicationService)
@@ -31,6 +34,7 @@ namespace MarketAnalysis.Services
             _simulator = simulator;
             _resultsProvider = resultsProvider;
             _strategyProvider = strategyProvider;
+            _investorProvider = investorProvider;
             _marketDataProvider = marketDataProvider;
             _progressBarProvider = progressBarProvider;
             _communicationService = communicationService;
@@ -38,25 +42,30 @@ namespace MarketAnalysis.Services
 
         public async Task Execute()
         {
-            (var data, var strategies) = await GetSimulationData();
+            (var strategies, var data) = await Initialise();
 
-            var results = await Simulate(data, strategies);
+            var results = await Simulate(strategies);
 
-            if (results.ShouldBuy())
-                await _communicationService.SendCommunication(results);
+            await _communicationService.SendCommunication(results);
 
-            await SaveResults(data, results);
+            await SaveResults(results, data);
         }
 
-        private async Task<(IEnumerable<MarketData>, IEnumerable<IStrategy>)> GetSimulationData()
+        private async Task<(IEnumerable<IStrategy>, IEnumerable<MarketData>)> Initialise()
         {
-            var dataTask = _marketDataProvider.GetPriceData();
             var strategiesTask = _strategyProvider.GetStrategies();
+            var dataTask = _marketDataProvider.GetPriceData();
+            var investorTask = _investorProvider.Initialise();
+            
+            await Task.WhenAll(strategiesTask, dataTask, investorTask);
+            var strategies = strategiesTask.Result;
+            var data = dataTask.Result;
+            MarketDataCache.Instance.Initialise(data);
 
-            return (await dataTask, await strategiesTask);
+            return (strategies, data);
         }
 
-        private async Task<IResultsProvider> Simulate(IEnumerable<MarketData> data, IEnumerable<IStrategy> strategies)
+        private async Task<IResultsProvider> Simulate(IEnumerable<IStrategy> strategies)
         {
             void SimulateStrategy(IStrategy strategy, Dictionary<IStrategy, SimulationState[]> histories, ProgressBar progress)
             {
@@ -65,32 +74,31 @@ namespace MarketAnalysis.Services
                 histories[strategy] = result.ToArray();
             }
 
-            using (var cache = MarketDataCache.Instance)
-            {
-                cache.Initialise(data);
-                _resultsProvider.Initialise();
+            var histories = new Dictionary<IStrategy, SimulationState[]>();
+            var (aggregateStrategies, parralisableStrategies) = strategies.Split(x => x is IAggregateStrategy);
 
-                var histories = new Dictionary<IStrategy, SimulationState[]>();
-                var (aggregateStrategies, parralisableStrategies) = strategies.Split(x => x is IAggregateStrategy);
-                using (var progress = _progressBarProvider.Create(0, "Evaluating"))
+            using var progress = _progressBarProvider.Create(0, "Evaluating");
+            foreach (var investor in _investorProvider)// these two lines are super fragile - replace with observer pattern
+            {
+                _resultsProvider.Initialise();
+                await Task.WhenAll(parralisableStrategies.Select(s =>
                 {
-                    await Task.WhenAll(parralisableStrategies.Select(s =>
-                    {
-                        return Task.Run(() => SimulateStrategy(s, histories, progress));
-                    }).ToArray());
-                    foreach (var strategy in aggregateStrategies)
-                    {
-                        SimulateStrategy(strategy, histories, progress);
-                    }
+                    return Task.Run(() => SimulateStrategy(s, histories, progress));
+                }).ToArray());
+                foreach (var strategy in aggregateStrategies)
+                {
+                    SimulateStrategy(strategy, histories, progress);
                 }
-                _resultsProvider.AddResults(histories);
+                _resultsProvider.AddResults(investor, histories);
             }
+
             return _resultsProvider;
         }
 
-        private async Task SaveResults(IEnumerable<MarketData> data, IResultsProvider resultsProvider)
+        private async Task SaveResults(IResultsProvider resultsProvider, IEnumerable<MarketData> data)
         {
             var saveSimulationsTask = resultsProvider.SaveSimulationResults();
+
             var saveDataTask = resultsProvider.SaveData(data);
 
             await Task.WhenAll(new Task[] { saveSimulationsTask, saveDataTask });

@@ -20,11 +20,8 @@ namespace MarketAnalysis
         public static string EmailImagePath => GetAbsolutePath(ConfigurationManager.AppSettings["EmailImagePath"]);
         public static string EmailTemplatePath => GetAbsolutePath(ConfigurationManager.AppSettings["EmailTemplatePath"]);
         public static string PatternRecognitionImagePath => GetAbsolutePath(ConfigurationManager.AppSettings["PatternRecognitionImagePath"]);
-        public static decimal DailyFunds { get; } = decimal.Parse(ConfigurationManager.AppSettings["DailyFunds"]);
         public static DateTime BacktestingDate { get; } = DateTime.Parse(ConfigurationManager.AppSettings["BacktestingDate"]);
         public static int CacheSize { get; } = int.Parse(ConfigurationManager.AppSettings["CacheSize"]);
-        public static decimal OrderBrokerage => decimal.Parse(ConfigurationManager.AppSettings["OrderBrokerage"]);
-        public static int OrderDelayDays => int.Parse(ConfigurationManager.AppSettings["OrderDelayDays"]);
 
         private static string GetAbsolutePath(string relativePath)
         {
