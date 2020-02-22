@@ -8,10 +8,10 @@ namespace MarketAnalysis.Caching
 {
     public sealed class SimulationCache
     {
-        private readonly Dictionary<IStrategy, List<SimulationState>> _cache = new Dictionary<IStrategy, List<SimulationState>>(5120);
-        private readonly SimulationStateDateComparer _comparer = new SimulationStateDateComparer();
-
         public int Count => _cache.Values.Count;
+
+        private readonly Dictionary<IStrategy, List<SimulationState>> _cache = new Dictionary<IStrategy, List<SimulationState>>();
+        private readonly SimulationStateDateComparer _comparer = new SimulationStateDateComparer();
 
         public bool TryGet((IStrategy strategy, DateTime day) key, out SimulationState simulation)
         {

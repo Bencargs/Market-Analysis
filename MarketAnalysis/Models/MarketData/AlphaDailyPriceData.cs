@@ -1,9 +1,9 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace MarketAnalysis.Models
+namespace MarketAnalysis.Models.ApiData
 {
-    public class DailyPriceData
+    public class AlphaDailyPriceData
     {
         [JsonProperty("Meta Data")]
         public PriceMetadata MetaData { get; set; }

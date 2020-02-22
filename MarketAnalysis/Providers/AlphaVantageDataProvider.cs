@@ -1,4 +1,5 @@
 ﻿using MarketAnalysis.Models;
+using MarketAnalysis.Models.ApiData;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -9,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace MarketAnalysis.Providers
 {
-    public class ApiMarketDataProvider
+    public class AlphaVantageDataProvider : IApiDataProvider
     {
-        private readonly string _url = Configuration.ApiEndpoint;
-        private readonly string _parameters = $"/query?{Configuration.QueryString}&apikey={Configuration.ApiKey}";
+        private readonly string _url = Configuration.AlphaApiEndpoint;
+        private readonly string _parameters = $"/query?{Configuration.AlphaQueryString}&apikey={Configuration.AlphaApiKey}";
         private static readonly HttpClient HttpClient = new HttpClient();
 
         public async Task<IEnumerable<MarketData>> GetData()
@@ -24,8 +25,8 @@ namespace MarketAnalysis.Providers
             var response = await HttpClient.GetAsync(_parameters);
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadAsAsync<DailyPriceData>();
-                if (result.TimeSeriesDaily != null)
+                var result = await response.Content.ReadAsAsync<AlphaDailyPriceData>();
+                if (result?.TimeSeriesDaily != null)
                 {
                     var rows = ConvertToRow(result);
                     return rows.OrderBy(x => x.Date);
@@ -35,7 +36,7 @@ namespace MarketAnalysis.Providers
             return null;
         }
 
-        private IEnumerable<MarketData> ConvertToRow(DailyPriceData response)
+        private IEnumerable<MarketData> ConvertToRow(AlphaDailyPriceData response)
         {
             var results = new List<MarketData>(2000);
             foreach (var row in response?.TimeSeriesDaily)
@@ -44,12 +45,20 @@ namespace MarketAnalysis.Providers
                 if (price == 0)
                     continue;
 
+                var lastData = results.LastOrDefault();
+                var priceDelta = price - (lastData?.Price ?? 0m);
+                var volumeDelta = row.Value.Volume - (lastData?.Volume ?? 0m);
+
                 results.Add(new MarketData
                 {
                     Date = DateTime.Parse(row.Key),
                     Volume = row.Value.Volume,
                     Price = price,
-                    Delta = price - (results.LastOrDefault()?.Price ?? 0m)
+                    Delta = priceDelta,
+                    DeltaPercent = lastData?.Delta != 0 
+                        ? (priceDelta - lastData.Delta) / lastData.Delta : 0,
+                    VolumePercent = lastData?.Volume != 0 
+                        ? (volumeDelta - lastData.Volume) / lastData.Volume : 0
                 });
             }
             return results;

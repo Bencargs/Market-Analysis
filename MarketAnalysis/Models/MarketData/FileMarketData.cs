@@ -1,14 +1,12 @@
 ﻿using System;
 
-namespace MarketAnalysis.Models
+namespace MarketAnalysis.Models.ApiData
 {
-    public class MarketData
+    public class FileMarketData
     {
         public DateTime Date { get; set; }
         public decimal Price { get; set; }
         public decimal Delta { get; set; }
         public decimal Volume { get; set; }
-        public decimal DeltaPercent { get; set; }
-        public decimal VolumePercent { get; set; }
     }
 }

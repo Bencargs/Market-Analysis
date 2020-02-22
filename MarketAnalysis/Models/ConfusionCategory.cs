@@ -2,8 +2,8 @@
 {
     public enum ConfusionCategory
     {
-        TruePostative,
-        FalsePostative,
+        TruePositive,
+        FalsePositive,
         TrueNegative,
         FalseNegative
     }

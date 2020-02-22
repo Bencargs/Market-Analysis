@@ -8,11 +8,11 @@ namespace MarketAnalysis.Providers
 {
     public class MarketDataProvider
     {
-        private readonly ApiMarketDataProvider _apiDataProvider;
+        private readonly IApiDataProvider _apiDataProvider;
         private readonly IRepository<MarketData> _historicDataRespoitory;
 
         public MarketDataProvider(
-            ApiMarketDataProvider apiDataProvider,
+            IApiDataProvider apiDataProvider,
             IRepository<MarketData> historicDataRespoitory)
         {
             _apiDataProvider = apiDataProvider;
@@ -23,19 +23,19 @@ namespace MarketAnalysis.Providers
         {
             var historicData = _historicDataRespoitory.Get();
             var latestData = _apiDataProvider.GetData();
+            await Task.WhenAll(historicData, latestData);
 
-            return JoinData(await historicData, await latestData);
+            return JoinData(historicData.Result, latestData.Result);
         }
 
         private IEnumerable<MarketData> JoinData(IEnumerable<MarketData> historicData, IEnumerable<MarketData> latestData)
         {
             var firstOnlineDate = latestData.First().Date;
-            historicData = historicData
-                .TakeWhile(x => x.Date < firstOnlineDate);
+            historicData = historicData.TakeWhile(x => x.Date < firstOnlineDate);
             var joinPoint = latestData.First();
             joinPoint.Delta = joinPoint.Price - historicData.Last().Price;
-
-            return historicData.Union(latestData);
+            latestData.Last().Delta = latestData.Last().Price - latestData.ElementAt(latestData.Count() - 2).Price;
+            return historicData.Union(latestData).ToArray();
         }
     }
 }

@@ -52,19 +52,5 @@ namespace MarketAnalysis.Providers
         {
             return new ReportPage[0];
         }
-        
-        public IEnumerable<RecipientDetails> GetEmailRecipients()
-        {
-            return new[]
-            {
-                new RecipientDetails
-                {
-                    Date = DateTime.Now,
-                    Name = "Recipient Name",
-                    Number = "000001",
-                    Email = "client@email.com"
-                },
-            };
-        }
     }
 }

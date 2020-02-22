@@ -88,7 +88,6 @@ namespace MarketAnalysis.Simulation
 
         private void AddFunds(Investor investor, SimulationState state)
         {
-            // todo: this should be a property of an individual investor
             state.Funds += investor.DailyFunds;
         }
 
@@ -105,11 +104,8 @@ namespace MarketAnalysis.Simulation
 
         private void ClearCache(IStrategy optimal, IEnumerable<IStrategy> potentials)
         {
-            if (optimal is IAggregateStrategy)
-            {
-                var redundantStrategies = potentials.Where(x => !x.Equals(optimal));
-                _simulator.RemoveCache(redundantStrategies);
-            }
+            var redundantStrategies = potentials.Where(x => !x.Equals(optimal));
+            _simulator.RemoveCache(redundantStrategies);
         }
 
         private IStrategy FindOptimum(IEnumerable<IStrategy> potentials, DateTime endDate, ChildProgressBar progress)

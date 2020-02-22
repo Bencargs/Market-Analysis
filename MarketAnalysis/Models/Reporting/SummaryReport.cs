@@ -51,7 +51,7 @@ namespace MarketAnalysis.Reports
             foreach (var s in _results)
             {
                 summary.Append("<tr>");
-                summary.Append($"<td>{s.StrategyName}</td>");
+                summary.Append($"<td>{s.StrategyType}</td>");
                 summary.Append($"<td>{GetRecommendation(s.ShouldBuy)}</td>");
                 summary.Append($"<td>{s.ProfitYTD.ToString("C2")}</td>");
                 summary.Append($"<td>{s.ProfitTotal.ToString("C2")}</td>");

@@ -76,7 +76,7 @@ namespace MarketAnalysis.Simulation
 
         public void RemoveCache(IEnumerable<IStrategy> strategies)
         {
-            if (_simulationCache.Count < Configuration.CacheSize)
+            if (_simulationCache.Count > Configuration.CacheSize)
                 return;
 
             foreach (var strategy in strategies)

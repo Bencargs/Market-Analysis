@@ -46,7 +46,7 @@ namespace MarketAnalysis.Strategy
                 .ToArray();
 
             var entropy = ShannonEntropy(batch);
-            if (entropy < _threshold)
+            if (entropy > _threshold)
                 return true;
             return false;
         }

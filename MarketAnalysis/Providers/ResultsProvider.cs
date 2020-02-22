@@ -45,9 +45,9 @@ namespace MarketAnalysis.Providers
 
         public void AddResults(Investor investor, Dictionary<IStrategy, SimulationState[]> source)
         {
-            foreach (var s in source)
+            foreach (var (strategy, simulationResults) in source)
             {
-                var history = s.Value.ToArray();
+                var history = simulationResults.ToArray();
                 var latestState = history.Last();
                 var simulationDays = history.Length - _marketDataCache.BacktestingIndex;
                 var profitTotal = latestState.Worth - GetInvestmentSince(investor.DailyFunds, simulationDays);
@@ -77,8 +77,9 @@ namespace MarketAnalysis.Providers
                     Recall = CalculateRecall(confusionMatrix),
                     Precision = CalculatePrecision(confusionMatrix),
                     ConfusionMatrix = confusionMatrix,
-                    AverageReturn = GetAverageReturn(buySignals)
-                }.SetStrategy(s.Key));
+                    AverageReturn = GetAverageReturn(buySignals),
+                    StrategyType = strategy.StrategyType.GetDescription()
+                });
             }
         }
 

@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace MarketAnalysis.Models
+namespace MarketAnalysis.Models.ApiData
 {
     public class PriceMetadata
     {

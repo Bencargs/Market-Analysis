@@ -30,5 +30,8 @@ namespace MarketAnalysis.Models
 
         [Description("Weighted")]
         Weighted,
+
+        [Description("Clustering")]
+        Cluster,
     }
 }

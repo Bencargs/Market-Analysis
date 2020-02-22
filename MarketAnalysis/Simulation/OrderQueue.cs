@@ -2,13 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace MarketAnalysis.Simulation
 {
     public class OrderQueue
     {
-        private Queue<MarketOrder> _orders = new Queue<MarketOrder>();
+        private readonly Queue<MarketOrder> _orders = new Queue<MarketOrder>();
 
         public void Add(MarketOrder order)
         {

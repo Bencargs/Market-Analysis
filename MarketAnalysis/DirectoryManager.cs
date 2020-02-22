@@ -28,6 +28,15 @@ namespace MarketAnalysis
             return GetLatestFile(directory, extension, filename);
         }
 
+        public static string GetLatestResultsFile()
+        {
+            const string extension = "json";
+            var directory = Configuration.ResultsPath;
+            var filename = $"{DateTime.Now.ToString("yyyy-MM-dd")}";
+
+            return CreateNewFile(directory, filename, extension).FullName;
+        }
+
         private static string GetLatestFile(string directory, string extension, string filename)
         {
             var files = GetFiles(directory, $"*.{extension}");
