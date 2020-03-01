@@ -7,6 +7,8 @@ namespace MarketAnalysis.Models.Reporting
         public string Body { get; protected set; }
         public List<Attachment> Attachments { get; private set; }
 
+        public string GetRecommendation(bool shouldBuy) => shouldBuy ? "Buy" : "Hold";
+
         protected ReportPage()
         {
             Attachments = new List<Attachment>();

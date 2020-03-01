@@ -92,7 +92,7 @@ namespace MarketAnalysis.Services
                 _resultsProvider.AddResults(investor, histories);
             }
 
-            return _resultsProvider;
+            return await Task.FromResult(_resultsProvider);
         }
 
         private async Task SaveResults(IResultsProvider resultsProvider, IEnumerable<MarketData> data)

@@ -1,169 +1,122 @@
 <table style="height: 300px; width: 800px; margin-left: auto; margin-right: auto;">
 <tbody>
-  <tr>
-	<td>
-	  <img src="{logo}" alt="CBC Market Analysis" width="240" height="200">
-	</td>
-	<td style="text-align: right; float: right;">
-	  <p style="text-align: left;"><strong>CBC Market Analysis</strong>
-		<br>Mount Lawley
-		<br>Perth W.A., 6050
-		<br>Australia
-	  </p>
-	  <table>
-		<tbody>
-		  <tr>
-			<td style="text-align: right;">
-			  <img src="{website}">
-			</td>
-			<td style="text-align: left;">
-			  <a href="http://www.cbc.com.au">www.cbc.com.au</a>
-			</td>
-		  </tr>
-		  <tr>
-			<td style="text-align: right;">
-			  <img src="{phone}">
-			</td>
-			<td style="text-align: left;">+61 450 307 000</td>
-		  </tr>
-		  <tr>
-			<td style="text-align: right;">
-			  <img src="{email}">
-			</td>
-			<td style="text-align: left;">
-			  <a href="mailto:research@cbc.com.au">Research@cbc.com.au</a>
-			</td>
-		  </tr>
-		</tbody>
-	  </table>
-	</td>
-  </tr>
-  <tr>
-	<td colspan="2">
-	  <hr>&nbsp;
-	</td>
-  </tr>
-</tbody>
-</table>
-<p>
-<br>
-</p>
-<p><u>Strategy: {strategy}</u>
-<br><u>Recommendation: {shouldBuy}</u></p>
-<table border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td><img src="{logo}" alt="CBC Market Analysis" width="240" height="200" /></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td style="text-align: right; float: right;">
+<p style="text-align: left;"><strong>CBC Market Analysis</strong> <br />Mount Lawley <br />Perth W.A., 6050 <br />Australia</p>
+<table>
 <tbody>
-  <tr>
-	<td>
-	  <p>Performance:&nbsp;</p>
-	</td>
-	<td>
-	  <p>{profitTotal} Total&nbsp;</p>
-	</td>
-	<td>{profitYTD} YTD</td>
-	<td>{aboveMarket} Above Market Return</td>
-  </tr>
-  <tr>
-	<td>
-	  <p>Profit:</p>
-	</td>
-	<td>
-	  <p>{alpha} Alpha</p>
-	</td>
-	<td>{marketAlpha} Market Alpha</td>
-	<td>{maximumAlpha} Maximum Alpha</td>
-  </tr>
-  <tr>
-	<td>
-	  <p>Activity:</p>
-	</td>
-	<td>
-	  <p>{buyCount} Buy Count</p>
-	</td>
-	<td>{drawdown} Maximum Drawdown&nbsp;</td>
-	<td>{holdingPeriod} Maximum Holding Period</td>
-  </tr>
-  <tr>
-	<td>
-	  <p>Risk:</p>
-	</td>
-	<td>
-	  <p>{sharpeRatio} Sharpe Ratio&nbsp;</p>
-	</td>
-	<td>{correlation} R² Correlation</td>
-	<td>{averageReturn} Average Return per Signal&nbsp;</td>
-  </tr>
+<tr>
+<td style="text-align: right;"><img src="{website}" /></td>
+<td style="text-align: left;"><a href="http://www.cbc.com.au">www.cbc.com.au</a></td>
+</tr>
+<tr>
+<td style="text-align: right;"><img src="{phone}" /></td>
+<td style="text-align: left;">+61 450 307 000</td>
+</tr>
+<tr>
+<td style="text-align: right;"><img src="{email}" /></td>
+<td style="text-align: left;"><a href="mailto:research@cbc.com.au">Research@cbc.com.au</a></td>
+</tr>
 </tbody>
 </table>
-<p>
-<br>
-</p>
-<p><u>Confusion Matrix:</u></p>
-<table style="width: 100%;">
+</td>
+</tr>
+<tr>
+<td colspan="5"><hr />
+<table>
 <tbody>
-  <tr>
-	<td style="width: 33.3333%;">
-	  <br>
-	</td>
-	<td style="width: 33.3333%;">True</td>
-	<td style="width: 33.3333%;">False</td>
-  </tr>
-  <tr>
-	<td style="width: 33.3333%;">Positive</td>
-	<td style="width: 33.3333%;">{truePositive}</td>
-	<td style="width: 33.3333%;">{falsePositive}</td>
-  </tr>
-  <tr>
-	<td style="width: 33.3333%;">Negative</td>
-	<td style="width: 33.3333%;">{trueNegative}</td>
-	<td style="width: 33.3333%;">{falseNegative}</td>
-  </tr>
+<tr>
+<td>Strategy:</td>
+<td>{strategy}</td>
+</tr>
+<tr>
+<td>Recommendation:</td>
+<td>{shouldBuy}</td>
+</tr>
 </tbody>
 </table>
-<table style="width: 100%;">
-<tbody>
-  <tr>
-	<td style="width: 33.3333%; text-align: center;"><u>Accuracy:</u> {accuracy}
-	  <br>
-	</td>
-	<td style="width: 33.3333%; text-align: center;"><u>Precision:</u> {precision}
-	  <br>
-	</td>
-	<td style="width: 33.2556%; text-align: center;"><u>Recall:</u> {recall}
-	  <br>
-	</td>
-  </tr>
+<p>&nbsp;</p>
+</td>
+</tr>
+<tr>
+<td>Performance:</td>
+<td>{profitTotal} Total</td>
+<td>{profitYTD} YTD</td>
+<td>aboveMarket} Above Market Return</td>
+</tr>
+<tr>
+<td>Profit:</td>
+<td>{alpha} Alpha</td>
+<td>{marketAlpha} Market Alpha</td>
+<td>{maximumAlpha} Maximum Alpha</td>
+</tr>
+<tr>
+<td>Activity:</td>
+<td>{buyCount} Buy Count</td>
+<td>{drawdown} Maximum Drawdown</td>
+<td>{holdingPeriod} Maximum Holding Period</td>
+</tr>
+<tr>
+<td>Risk:</td>
+<td>{sharpeRatio} Sharpe Ratio</td>
+<td>{correlation} R&sup2; Correlation</td>
+<td>{averageReturn} Average Return per Signal</td>
+</tr>
+<tr>
+<td>
+<p>&nbsp;&nbsp;</p>
+</td>
+</tr>
+<tr>
+<td>Confusion Matrix:</td>
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>True</td>
+<td>False&nbsp;</td>
+</tr>
+<tr>
+<td colspan="2">Positive&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td colspan="2">Negative&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align: center;">Accuracy:&nbsp;{accuracy}</td>
+<td style="text-align: center;">Precision:&nbsp;{precision}</td>
+<td style="text-align: center;">Recall:&nbsp;{recall}</td>
+</tr>
+<tr>
+<td>
+<p>&nbsp;</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><img src="{image1}" /></p>
+</td>
+<td>{generalDescription}</td>
+</tr>
+<tr>
+<td><img src="{image2}" /></td>
+<td><img src="{image3}" /></td>
+</tr>
+<tr>
+<td colspan="5"><hr />&nbsp;</td>
+</tr>
+<tr>
+<td colspan="5">
+<p style="text-align: center;"><strong>CBC Market Analytics<br /></strong>(ABN 00 000 000 000)</p>
+<p style="text-align: center;"><a href="mailto:research@cbc.com.au">Research@cbc.com.au</a></p>
+&nbsp;</td>
+</tr>
 </tbody>
 </table>
-<p>
-<br>
-</p>
-<table border="0" cellpadding="0" cellspacing="0">
-<tbody>
-  <tr>
-	<td>
-	  <p>
-		<br>
-	  </p>
-	  <p>&nbsp;</p>
-	  <p>{imageDescription}</p>
-	  <p>&nbsp;</p>
-	</td>
-	<td>
-	  <p>{generalDescription}</p>
-	  <p>
-		<br>
-	  </p>
-	  <p>&nbsp;</p>
-	</td>
-  </tr>
-  <tr>
-	<td colspan="2">
-	  <p>{detailDescription}</p>
-	</td>
-  </tr>
-</tbody>
-</table>
-<hr>
-<p>
-<br>
-</p>

@@ -17,7 +17,7 @@ namespace MarketAnalysis.Providers
             var coverPage = GetCoverPage();
             var summary = await new SummaryReport(investor, results).Build();
             var marketReport = GetMarketReport();
-            var strategyReports = GetStrategyReports(results);
+            var strategyReports = await GetStrategyReportsAsync(results);
 
             // temporary
             var json = JsonConvert.SerializeObject(results);
@@ -48,9 +48,14 @@ namespace MarketAnalysis.Providers
             return new ReportPage("");
         }
 
-        private ReportPage[] GetStrategyReports(IEnumerable<SimulationResult> results)
+        private async Task<ReportPage[]> GetStrategyReportsAsync(IEnumerable<SimulationResult> results)
         {
-            return new ReportPage[0];
+            var reports = new List<ReportPage>();
+            foreach (var r in results)
+            {
+                reports.Add(await new StrategyReport(r).Build());
+            }
+            return reports.ToArray();
         }
     }
 }

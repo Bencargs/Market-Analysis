@@ -41,7 +41,7 @@ namespace MarketAnalysis.Reports
             template.Replace("date", _date.ToString("dd/MM/yyyy"));
             template.Replace("InvestorName", _investor.Name);
             template.Replace("InvestorNumber", _investor.Number);
-            template.Replace("recommendation", GetRecommendation(ResultsProvider.ShouldBuy(_results)));
+            template.Replace("recommendation", template.GetRecommendation(ResultsProvider.ShouldBuy(_results)));
             template.Replace("profit", ResultsProvider.TotalProfit(_results).ToString("C2"));
         }
 
@@ -52,7 +52,7 @@ namespace MarketAnalysis.Reports
             {
                 summary.Append("<tr>");
                 summary.Append($"<td>{s.StrategyType}</td>");
-                summary.Append($"<td>{GetRecommendation(s.ShouldBuy)}</td>");
+                summary.Append($"<td>{template.GetRecommendation(s.ShouldBuy)}</td>");
                 summary.Append($"<td>{s.ProfitYTD.ToString("C2")}</td>");
                 summary.Append($"<td>{s.ProfitTotal.ToString("C2")}</td>");
                 summary.Append($"<td>{s.BuyCount}</td>");
@@ -68,7 +68,5 @@ namespace MarketAnalysis.Reports
             template.AddImage("phone", Configuration.PhoneImagePath);
             template.AddImage("email", Configuration.EmailImagePath);
         }
-
-        private static string GetRecommendation(bool shouldBuy) => shouldBuy ? "Buy" : "Hold";
     }
 }

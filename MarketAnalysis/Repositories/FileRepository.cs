@@ -72,8 +72,6 @@ namespace MarketAnalysis.Repositories
 
         async Task<IEnumerable<IStrategy>> IRepository<IStrategy>.Get()
         {
-            DirectoryManager.GetLatestResultsFile();
-
             var subStrategies = new IStrategy[]
             {
                 new EntropyStrategy(0, 0),
