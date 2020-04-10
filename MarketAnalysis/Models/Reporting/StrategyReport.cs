@@ -1,15 +1,17 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MarketAnalysis.Models.Reporting
 {
     public class StrategyReport
     {
-        private SimulationResult _strategy;
+        private readonly SimulationResult _results;
 
-        public StrategyReport(SimulationResult strategy)
+        public StrategyReport(SimulationResult results)
         {
-            _strategy = strategy;
+            _results = results;
         }
 
         public async Task<ReportPage> Build()
@@ -19,43 +21,58 @@ namespace MarketAnalysis.Models.Reporting
 
             var report = new ReportPage(content);
             AddBody(report);
-            AddImages(report);
+            AddHeader(report);
+            AddCharts(report);
 
             return report;
         }
 
         private void AddBody(ReportPage template)
         {
-            template.Replace("strategy", _strategy.StrategyType);
-            template.Replace("shouldBuy", template.GetRecommendation(_strategy.ShouldBuy));
+            template.Replace("strategy", _results.StrategyType);
+            template.Replace("shouldBuy", template.GetRecommendation(_results.ShouldBuy));
             
-            template.Replace("profitTotal", $"{_strategy.ProfitTotal:C2}");
-            template.Replace("profitYTD", $"{_strategy.ProfitYTD:C2}");
-            template.Replace("aboveMarket", $"{_strategy.AboveMarketReturn:C2}");
+            template.Replace("profitTotal", $"{_results.ProfitTotal:C2}");
+            template.Replace("profitYTD", $"{_results.ProfitYTD:C2}");
+            template.Replace("aboveMarket", $"{_results.AboveMarketReturn:C2}");
             
-            template.Replace("alpha", $"{_strategy.Alpha:P2}");
-            template.Replace("maximumAlpha", $"{_strategy.MaximumAlpha:P2}");
+            template.Replace("alpha", $"{_results.Alpha:P2}");
+            template.Replace("maximumAlpha", $"{_results.MaximumAlpha:P2}");
 
-            template.Replace("buyCount", $"{_strategy.BuyCount}");
-            template.Replace("drawdown", $"{_strategy.MaximumDrawdown:C2}");
-            template.Replace("holdingPeriod", $"{_strategy.MaximumHoldingPeriod}");
+            template.Replace("buyCount", $"{_results.BuyCount}");
+            template.Replace("drawdown", $"{_results.MaximumDrawdown:C2}");
+            template.Replace("holdingPeriod", $"{_results.MaximumHoldingPeriod}");
 
-            template.Replace("sharpeRatio", $"{_strategy.SharpeRatio:P2}");
-            template.Replace("correlation", $"{_strategy.MarketCorrelation:P2}");
-            template.Replace("averageReturn", $"{_strategy.AverageReturn:C2}");
+            template.Replace("sharpeRatio", $"{_results.SharpeRatio:0.00}");
+            template.Replace("correlation", $"{_results.MarketCorrelation:P2}");
+            template.Replace("averageReturn", $"{_results.AverageReturn:C2}");
 
-            template.Replace("accuracy", $"{_strategy.Accuracy:P2}");
-            template.Replace("precision", $"{_strategy.Precision:P2}");
-            template.Replace("recall", $"{_strategy.Recall:P2}");
+            template.Replace("accuracy", $"{_results.Accuracy:P2}");
+            template.Replace("precision", $"{_results.Precision:P2}");
+            template.Replace("recall", $"{_results.Recall:P2}");
 
             template.Replace("generalDescription", PlaceholderText);
         }
 
-        private void AddImages(ReportPage template)
+        private void AddHeader(ReportPage template)
         {
-            template.AddImage("image1", Configuration.LogoImagePath);
-            template.AddImage("image2", Configuration.LogoImagePath);
-            template.AddImage("image3", Configuration.LogoImagePath);
+            template.AddImage("logo", Configuration.LogoImagePath, true);
+            template.AddImage("website", Configuration.WorldImagePath, true);
+            template.AddImage("phone", Configuration.PhoneImagePath, true);
+            template.AddImage("email", Configuration.EmailImagePath, true);
+        }
+
+        private void AddCharts(ReportPage template)
+        {
+            var returnsChart = new Chart("Strategy returns", "Return ($ AU)", "Time (Days)")
+                .AddSeries(_results.MarketAverage, "Market Average")
+                .AddSeries(_results.History, _results.StrategyType);
+            template.AddChart("image1", returnsChart);
+
+            var relative = _results.MarketAverage.Select((x, i) => (_results.History[i] - x));
+            var profitLossChart = new Chart("Performance vs Market Average", "Profit/Loss ($ AU)", "Time (Days)")
+                .AddSeries(relative, _results.StrategyType);
+            template.AddChart("image2", profitLossChart);
         }
 
         private const string PlaceholderText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";

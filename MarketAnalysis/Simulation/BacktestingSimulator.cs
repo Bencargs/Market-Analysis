@@ -2,9 +2,6 @@
 using MarketAnalysis.Providers;
 using MarketAnalysis.Strategy;
 using ShellProgressBar;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace MarketAnalysis.Simulation
 {
@@ -31,14 +28,15 @@ namespace MarketAnalysis.Simulation
             SimulationState previousState, 
             ChildProgressBar progress)
         {
+            using var childProgress = _progressProvider.Create(progress, 0, "Optimising...");
             var investor = _investorProvider.Current;
             var state = UpdateState(strategy, data, previousState);
 
             AddFunds(investor, state);
             ExecuteOrders(state, queue);
 
-            if (strategy.ShouldOptimise())
-                Optimise(strategy, data.Date, progress);
+            if (strategy is OptimisableStrategy optimisable)
+                optimisable.Optimise(_simulator, childProgress);
 
             if (state.ShouldBuy)
                 AddBuyOrder(investor, state, queue);
@@ -89,37 +87,6 @@ namespace MarketAnalysis.Simulation
         private void AddFunds(Investor investor, SimulationState state)
         {
             state.Funds += investor.DailyFunds;
-        }
-
-        private void Optimise(IStrategy strategy, DateTime endDate, ChildProgressBar progress)
-        {
-            var potentials = strategy.GetOptimisations();
-            
-            var optimal = FindOptimum(potentials, endDate, progress);
-
-            ClearCache(optimal, potentials);
-
-            strategy.SetParameters(optimal);
-        }
-
-        private void ClearCache(IStrategy optimal, IEnumerable<IStrategy> potentials)
-        {
-            var redundantStrategies = potentials.Where(x => !x.Equals(optimal));
-            _simulator.RemoveCache(redundantStrategies);
-        }
-
-        private IStrategy FindOptimum(IEnumerable<IStrategy> potentials, DateTime endDate, ChildProgressBar progress)
-        {
-            using var childProgress = _progressProvider.Create(progress, potentials.Count(), "Optimising...");
-            return potentials.Select(strat =>
-            {
-                var result = _simulator.Evaluate(strat, endDate).Last();
-                childProgress?.Tick();
-                return (result.Worth, result.BuyCount, strat);
-            })
-            .OrderByDescending(x => x.Worth)
-            .ThenBy(x => x.BuyCount)
-            .First().strat;
         }
     }
 }

@@ -48,7 +48,9 @@ namespace MarketAnalysis
             // Providers
             services.AddSingleton<ProgressBarProvider>();
             services.AddSingleton(typeof(IResultsProvider), typeof(ResultsProvider));
-            services.AddSingleton<IApiDataProvider, WorldTradingDataProvider>();
+            //services.AddSingleton<IApiDataProvider, WorldTradingDataProvider>();
+            //services.AddSingleton<IApiDataProvider, AlphaVantageDataProvider>();
+            services.AddSingleton<IApiDataProvider, YahooFinanceProvider>();
             services.AddSingleton<StrategyProvider>();
             services.AddSingleton<InvestorProvider>();
             services.AddSingleton<MarketDataProvider>();

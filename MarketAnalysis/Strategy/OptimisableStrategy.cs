@@ -1,6 +1,7 @@
 ﻿using MarketAnalysis.Models;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 using System;
-using System.Collections.Generic;
 
 namespace MarketAnalysis.Strategy
 {
@@ -11,12 +12,34 @@ namespace MarketAnalysis.Strategy
         protected abstract TimeSpan OptimisePeriod { get; }
         public DateTime LatestDate { get; protected set; }
 
-        public OptimisableStrategy(bool shouldOptimise)
+        protected OptimisableStrategy(bool shouldOptimise)
         {
-            _lastOptimised = shouldOptimise ? DateTime.MinValue : (DateTime?)null;
+            _lastOptimised = shouldOptimise 
+                ? DateTime.MinValue 
+                : (DateTime?)null;
         }
 
-        public bool ShouldOptimise()
+        public void Optimise(ISimulator simulator, IProgressBar progress)
+        {
+            if (!ShouldOptimise())
+                return;
+
+            var optimal = GetOptimum(simulator, progress);
+
+            SetParameters(optimal);
+        }
+
+        protected abstract IStrategy GetOptimum(ISimulator simulator, IProgressBar progress);
+
+        public bool ShouldBuyShares(MarketData data)
+        {
+            if (data.Date > LatestDate)
+                LatestDate = data.Date;
+
+            return ShouldBuy(data);
+        }
+
+        private bool ShouldOptimise()
         {
             if (_lastOptimised != null &&
                 LatestDate > (_lastOptimised + OptimisePeriod))
@@ -27,17 +50,7 @@ namespace MarketAnalysis.Strategy
             return false;
         }
 
-        public abstract IEnumerable<IStrategy> GetOptimisations();
-
-        public abstract void SetParameters(IStrategy strategy);
-
-        public bool ShouldBuyShares(MarketData data)
-        {
-            if (data.Date > LatestDate)
-                LatestDate = data.Date;
-
-            return ShouldBuy(data);
-        }
+        protected abstract void SetParameters(IStrategy strategy);
 
         protected abstract bool ShouldBuy(MarketData data);
     }

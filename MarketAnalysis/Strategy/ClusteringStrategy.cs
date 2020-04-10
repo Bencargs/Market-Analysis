@@ -1,5 +1,8 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +16,14 @@ namespace MarketAnalysis.Strategy
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(1024);
         private (Range Container, Func<MarketData, decimal> Selector)[] _features;
 
+        public ClusteringStrategy()
+            : this (new (Range, Func<MarketData, decimal>)[]
+                {
+                    (new Range(), x => x.DeltaPercent),
+                    (new Range(), x => x.VolumePercent)
+                }.ToArray())
+        { }
+
         public ClusteringStrategy(
             (Range, Func<MarketData, decimal>)[] features, 
             bool shouldOptimise = true)
@@ -21,13 +32,13 @@ namespace MarketAnalysis.Strategy
             _features = features;
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
             var dataset = MarketDataCache.Instance.TakeUntil(LatestDate);
             var feature1 = dataset.Select(d => _features[0].Selector(d));
             var feature2 = dataset.Select(d => _features[1].Selector(d));
 
-            return Enumerable.Range(10, 5).SelectMany(size =>
+            var potentials = Enumerable.Range(10, 5).SelectMany(size =>
             {
                 return Partition(feature1, size).SelectMany(p1 =>
                 {
@@ -42,9 +53,13 @@ namespace MarketAnalysis.Strategy
                     });
                 });
             });
+
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             _features = ((ClusteringStrategy)strategy)._features;
         }

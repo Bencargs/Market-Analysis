@@ -78,6 +78,16 @@ namespace MarketAnalysis.Providers
                     Precision = CalculatePrecision(confusionMatrix),
                     ConfusionMatrix = confusionMatrix,
                     AverageReturn = GetAverageReturn(buySignals),
+                    
+                    MarketAverage = _marketAverage
+                        .Skip(_marketDataCache.BacktestingIndex)
+                        .Select(x => (double) x.Worth)
+                        .ToArray(),
+                    History = history
+                        .Skip(_marketDataCache.BacktestingIndex)
+                        .Select(x => (double)x.Worth)
+                        .ToArray(),
+
                     StrategyType = strategy.StrategyType.GetDescription()
                 });
             }
@@ -187,29 +197,29 @@ namespace MarketAnalysis.Providers
 
         private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix)
         {
-            var denominator = confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalsePostative];
+            var denominator = confusionMatrix[ConfusionCategory.TruePositive] + confusionMatrix[ConfusionCategory.FalsePositive];
 
-            return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
+            return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePositive] / denominator : 0;
         }
 
         private decimal CalculateRecall(Dictionary<ConfusionCategory, int> confusionMatrix)
         {
-            var denominator = confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.FalseNegative];
+            var denominator = confusionMatrix[ConfusionCategory.TruePositive] + confusionMatrix[ConfusionCategory.FalseNegative];
 
-            return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePostative] / denominator : 0;
+            return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePositive] / denominator : 0;
         }
 
         private decimal CalculateAccuracy(Dictionary<ConfusionCategory, int> confusionMatrix, IList<SimulationState> history)
         {
-            return (decimal) (confusionMatrix[ConfusionCategory.TruePostative] + confusionMatrix[ConfusionCategory.TrueNegative]) / history.Count;
+            return (decimal) (confusionMatrix[ConfusionCategory.TruePositive] + confusionMatrix[ConfusionCategory.TrueNegative]) / history.Count;
         }
 
         private Dictionary<ConfusionCategory, int> CalculateConfusionMatrix(IList<SimulationState> history)
         {
             var confusionMatrix = new Dictionary<ConfusionCategory, int>
             {
-                { ConfusionCategory.TruePostative, 0 },
-                { ConfusionCategory.FalsePostative, 0 },
+                { ConfusionCategory.TruePositive, 0 },
+                { ConfusionCategory.FalsePositive, 0 },
                 { ConfusionCategory.TrueNegative, 0 },
                 { ConfusionCategory.FalseNegative, 0 }
             };
@@ -222,11 +232,11 @@ namespace MarketAnalysis.Providers
                 var model = strategyBuys.Contains(h.Date);
 
                 if (model && ideal)
-                    confusionMatrix[ConfusionCategory.TruePostative]++;
+                    confusionMatrix[ConfusionCategory.TruePositive]++;
                 if (!model && !ideal)
                     confusionMatrix[ConfusionCategory.TrueNegative]++;
                 if (model && !ideal)
-                    confusionMatrix[ConfusionCategory.FalsePostative]++;
+                    confusionMatrix[ConfusionCategory.FalsePositive]++;
                 if (!model && ideal)
                     confusionMatrix[ConfusionCategory.FalseNegative]++;
             }

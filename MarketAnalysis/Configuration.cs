@@ -16,6 +16,8 @@ namespace MarketAnalysis
         public static string WorldApiEndpoint => ConfigurationManager.AppSettings["WorldApiEndpoint"];
         public static string WorldQueryString => ConfigurationManager.AppSettings["WorldQueryString"];
         public static string WorldApiKey => Environment.GetEnvironmentVariable("WorldApiKey", EnvironmentVariableTarget.User);
+        public static string YahooApiEndpoint => ConfigurationManager.AppSettings["YahooApiEndpoint"];
+        public static string YahooQueryString => ConfigurationManager.AppSettings["YahooQueryString"];
         public static string SmtpApiKey => Environment.GetEnvironmentVariable("SmptApiKey", EnvironmentVariableTarget.User);
         public static string LogoImagePath => GetAbsolutePath(ConfigurationManager.AppSettings["LogoImagePath"]);
         public static string WorldImagePath => GetAbsolutePath(ConfigurationManager.AppSettings["WorldImagePath"]);

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MarketAnalysis.Models.Reporting
 {
@@ -26,7 +27,22 @@ namespace MarketAnalysis.Models.Reporting
             return this;
         }
 
-        public ReportPage AddImage(string field, string path)
+        public ReportPage AddImage(string field, string path, bool inline = false)
+        {
+            return inline
+                ? AddImageInline(field, path)
+                : AddImageAttachment(field, path);
+        }
+
+        public ReportPage AddChart(string field, Chart chart)
+        {
+            var bytes = chart.ToByteArray();
+            var content = Convert.ToBase64String(bytes);
+            Replace(field, $"data:image/png;base64,{content}");
+            return this;
+        }
+
+        private ReportPage AddImageAttachment(string field, string path)
         {
             Replace(field, $"cid:{field}");
             Attachments.Add(new Attachment
@@ -35,6 +51,14 @@ namespace MarketAnalysis.Models.Reporting
                 Content = Image.ToByteArray(path),
                 AttachmentType = Attachment.Type.Image,
             });
+            return this;
+        }
+
+        private ReportPage AddImageInline(string field, string path)
+        {
+            var bytes = Image.ToByteArray(path);
+            var content = Convert.ToBase64String(bytes);
+            Replace(field, $"data:image/png;base64,{content}");
             return this;
         }
 

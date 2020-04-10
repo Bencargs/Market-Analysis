@@ -1,4 +1,6 @@
 ﻿using MarketAnalysis.Models;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 using System;
 using System.Collections.Generic;
 
@@ -17,12 +19,12 @@ namespace MarketAnalysis.Strategy
             _buyDates = buyDates;
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator _, IProgressBar __)
         {
-            return new IStrategy[0];
+            return null;
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
         }
 

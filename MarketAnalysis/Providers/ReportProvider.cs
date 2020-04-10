@@ -15,14 +15,14 @@ namespace MarketAnalysis.Providers
         {
             var date = results.First().Date.ToString("dd MMM yyyy");
             var coverPage = GetCoverPage();
-            var summary = await new SummaryReport(investor, results).Build();
+            var summary = await GetSummaryReportAsync(investor, results);
             var marketReport = GetMarketReport();
             var strategyReports = await GetStrategyReportsAsync(results);
 
             // temporary
             var json = JsonConvert.SerializeObject(results);
             var bytes = Encoding.ASCII.GetBytes(json);
-            summary.AddJsonFile("reslts.json", bytes);
+            summary.AddJsonFile("reslts", bytes);
 
             return new Report
             {
@@ -41,6 +41,11 @@ namespace MarketAnalysis.Providers
         private ReportPage GetCoverPage()
         {
             return new ReportPage("");
+        }
+
+        private async Task<ReportPage> GetSummaryReportAsync(Investor investor, IEnumerable<SimulationResult> results)
+        {
+            return await new SummaryReport(investor, results).Build();
         }
 
         private ReportPage GetMarketReport()

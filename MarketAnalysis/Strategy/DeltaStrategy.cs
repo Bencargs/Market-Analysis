@@ -1,6 +1,8 @@
 ﻿using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
@@ -11,22 +13,30 @@ namespace MarketAnalysis.Strategy
         public override StrategyType StrategyType { get; } = StrategyType.Delta;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(128);
 
+        public DeltaStrategy()
+            : this (0)
+        { }
+
         public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _threshold = threshold;
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            return Enumerable.Range(1, 100).Select(x =>
+            var potentials = Enumerable.Range(1, 100).Select(x =>
             {
                 var parameter = (decimal)x / 1000;
                 return new DeltaStrategy(parameter, false);
             });
+
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             _threshold = ((DeltaStrategy)strategy)._threshold;
         }

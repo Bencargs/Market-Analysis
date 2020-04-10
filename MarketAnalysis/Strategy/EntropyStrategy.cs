@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 
 namespace MarketAnalysis.Strategy
 {
@@ -13,6 +16,10 @@ namespace MarketAnalysis.Strategy
         public override StrategyType StrategyType { get; } = StrategyType.Entropy;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
+        public EntropyStrategy()
+            : this (0, 0)
+        { }
+
         public EntropyStrategy(int window, double threshold, bool shouldOptimise = true)
             : base(shouldOptimise)
         {
@@ -20,19 +27,23 @@ namespace MarketAnalysis.Strategy
             _threshold = threshold;
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            return Enumerable.Range(1, 30).SelectMany(w =>
+            var potentials = Enumerable.Range(1, 30).SelectMany(w =>
             {
                 return Enumerable.Range(1, 100).Select(e =>
                 {
-                    var threshold = (double) e / 10;
+                    var threshold = (double)e / 10;
                     return new EntropyStrategy(w, threshold, false);
                 });
             });
+
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             var optimal = (EntropyStrategy)strategy;
             _window = optimal._window;

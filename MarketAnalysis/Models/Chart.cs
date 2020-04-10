@@ -106,17 +106,22 @@ namespace MarketAnalysis.Models
 
         public void Save(string filepath)
         {
-            _plot.Axes[YAxis].Minimum = _minY;
-
-            var exporter = new PngExporter { Width = 1500, Height = 400 };
-
-            using var stream = new MemoryStream();
-            exporter.Export(_plot, stream);
-            var bytes = stream.ToArray();
+            var bytes = ToByteArray();
 
             File.Delete(filepath);
             using var filestream = new FileStream(filepath, FileMode.Create);
             filestream.Write(bytes, 0, bytes.Length);
+        }
+
+        public byte[] ToByteArray()
+        {
+            _plot.Axes[YAxis].Minimum = _minY;
+
+            using var stream = new MemoryStream();
+            var exporter = new PngExporter { Width = 1500, Height = 400 };
+            exporter.Export(_plot, stream);
+            
+            return stream.ToArray();
         }
 
         private OxyColor GetColorForIndex(int index)

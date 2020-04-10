@@ -1,5 +1,8 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,23 +11,27 @@ namespace MarketAnalysis.Strategy
 {
     public class PatternRecognitionStrategy : OptimisableStrategy
     {
-        private Image _average;
+        public Image Average { get; private set; }
         private double _threshold;
         public override StrategyType StrategyType { get; } = StrategyType.PatternRecognition;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(1024);
+
+        public PatternRecognitionStrategy()
+            : this (700)
+        { }
 
         public PatternRecognitionStrategy(double threshold, Image average = null, bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _threshold = threshold;
-            _average = average ?? new Func<Image>(() =>
+            Average = average ?? new Func<Image>(() =>
             {
                 var averagePath = Configuration.PatternRecognitionImagePath;
                 return new Image(averagePath);
             }).Invoke();
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
             var history = MarketDataCache.Instance.TakeUntil(LatestDate).Select(x => x.Price).ToArray();
             var training = history.Batch(30).Select(b =>
@@ -36,32 +43,29 @@ namespace MarketAnalysis.Strategy
                 return CreateImage(range, 30, 30);
             }).ToList();
             if (training.Any())
-                _average = CreateAverage(training);
+                Average = CreateAverage(training);
 
-            return Enumerable.Range(600, 300).Select(x =>
-                new PatternRecognitionStrategy(x, _average, false));
+            progress.MaxTicks = 300;
+            var potentials = Enumerable.Range(600, 300).Select(x => new PatternRecognitionStrategy(x, Average, false));
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
 
-            // this approach is ideal, but prohibitively slow
-            //var potentials = Enumerable.Range(0, _average.Width).SelectMany(x =>
-            //{
-            //    return Enumerable.Range(0, _average.Height).SelectMany(y =>
-            //    {
-            //        return Enumerable.Range(0, 25).Select(i =>
-            //        {
-            //            var candidate = new Image(_average);
-            //            candidate.SetPixel(x, y, i * 10);
+            //var potentials = Enumerable.Range(700, 200).Select(t => new PatternRecognitionStrategy(t, Average, false));
+            //var thresholdSearcher = new LinearSearch(simulator, potentials, progress);
+            //var threshold = ((PatternRecognitionStrategy) thresholdSearcher.Maximum(LatestDate))._threshold;
 
-            //            return new PatternRecognitionStrategy(_threshold, candidate, false);
-            //        });
-            //    });
-            //});
+            //var imageSearcher = new PartitionSearch(simulator, Average, threshold, 10, progress);
+            //var optimal = imageSearcher.Maximum(LatestDate);
+
+            //return optimal;
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             var optimal = (PatternRecognitionStrategy)strategy;
             _threshold = optimal._threshold;
-            _average = optimal._average;
+            Average = optimal.Average;
         }
 
         private Image CreateAverage(List<Image> images)
@@ -95,7 +99,7 @@ namespace MarketAnalysis.Strategy
             if (image == null)
                 return false;
 
-            var value = EvaluateImage(_average, image);
+            var value = EvaluateImage(Average, image);
             return value > _threshold;
         }
 
@@ -156,13 +160,13 @@ namespace MarketAnalysis.Strategy
                 return false;
 
             return strategy._threshold == _threshold && 
-                   _average.Equals(strategy._average);
+                   Average.Equals(strategy.Average);
         }
 
         public override int GetHashCode()
         {
             return _threshold.GetHashCode() ^ 
-                   _average.GetHashCode();
+                   Average.GetHashCode();
         }
     }
 }

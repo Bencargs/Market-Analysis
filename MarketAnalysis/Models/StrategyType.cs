@@ -33,5 +33,8 @@ namespace MarketAnalysis.Models
 
         [Description("Clustering")]
         Cluster,
+
+        [Description("Moving Average")]
+        MovingAverage,
     }
 }

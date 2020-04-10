@@ -1,9 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
 using MathNet.Numerics;
+using ShellProgressBar;
 
 namespace MarketAnalysis.Strategy
 {
@@ -14,6 +16,10 @@ namespace MarketAnalysis.Strategy
         public override StrategyType StrategyType { get; } = StrategyType.Gradient;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
 
+        public GradientStrategy()
+            : this (0, 0)
+        { }
+
         public GradientStrategy(int window, decimal threshold, bool shouldOptimise = true)
             : base(shouldOptimise)
         {
@@ -21,9 +27,9 @@ namespace MarketAnalysis.Strategy
             _threshold = threshold;
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            return Enumerable.Range(1, 10).SelectMany(x =>
+            var potentials = Enumerable.Range(1, 10).SelectMany(x =>
             {
                 return Enumerable.Range(20, 20).Select(window =>
                 {
@@ -31,9 +37,13 @@ namespace MarketAnalysis.Strategy
                     return new GradientStrategy(window, threshold, false);
                 });
             });
+
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             var optimal = (GradientStrategy)strategy;
             _window = optimal._window;

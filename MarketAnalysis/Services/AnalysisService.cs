@@ -1,7 +1,6 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
-using MarketAnalysis.Repositories;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using Serilog;
@@ -75,17 +74,11 @@ namespace MarketAnalysis.Services
             }
 
             var histories = new Dictionary<IStrategy, SimulationState[]>();
-            var (aggregateStrategies, parralisableStrategies) = strategies.Split(x => x is IAggregateStrategy);
-
             using var progress = _progressBarProvider.Create(0, "Evaluating");
-            foreach (var investor in _investorProvider)// these two lines are super fragile - replace with observer pattern
+            foreach (var investor in _investorProvider)
             {
                 _resultsProvider.Initialise();
-                await Task.WhenAll(parralisableStrategies.Select(s =>
-                {
-                    return Task.Run(() => SimulateStrategy(s, histories, progress));
-                }).ToArray());
-                foreach (var strategy in aggregateStrategies)
+                foreach (var strategy in strategies)
                 {
                     SimulateStrategy(strategy, histories, progress);
                 }

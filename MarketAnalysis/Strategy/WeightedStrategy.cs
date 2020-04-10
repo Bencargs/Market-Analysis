@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 
 namespace MarketAnalysis.Strategy
 {
@@ -35,9 +38,9 @@ namespace MarketAnalysis.Strategy
         {
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            return Enumerable.Range(0, 100).SelectMany(x =>
+            var potentials = Enumerable.Range(0, 100).SelectMany(x =>
             {
                 return Enumerable.Range(1, 6).SelectMany(threshold =>
                 {
@@ -55,9 +58,13 @@ namespace MarketAnalysis.Strategy
                     });
                 });
             });
+
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             _weights = ((WeightedStrategy)strategy)._weights;
         }

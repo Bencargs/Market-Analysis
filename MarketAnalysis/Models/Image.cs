@@ -8,7 +8,7 @@ namespace MarketAnalysis.Models
     public class Image
     {
         private int _hash;
-        private readonly byte[,] _data;
+        private byte[,] _data;
         public int Width { get; private set; }
         public int Height { get; private set; }
 
@@ -37,6 +37,21 @@ namespace MarketAnalysis.Models
                     }
             }
             ComputeHash();
+        }
+
+        public Image(Image average)
+        {
+            _hash = average._hash;
+            Width = average.Width;
+            Height = average.Height;
+
+            _data = new byte[Width, Height];
+            for (int x = 0; x < Width; x++)
+                for (int y = 0; y < Height; y++)
+                {
+                    var value = average.GetPixel(x, y);
+                    _data[x, y] = value;
+                }
         }
 
         public void SetPixel(int x, int y, int value)

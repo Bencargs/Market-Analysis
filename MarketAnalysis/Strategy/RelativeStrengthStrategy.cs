@@ -1,5 +1,8 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +33,10 @@ namespace MarketAnalysis.Strategy
             return results;
         });
 
+        public RelativeStrengthStrategy()
+            : this (0, new int[0])
+        { }
+
         public RelativeStrengthStrategy(int threshold, int[] testSet, bool shouldOptimise = true)
             : base(shouldOptimise)
         {
@@ -37,16 +44,20 @@ namespace MarketAnalysis.Strategy
             _threshold = threshold;
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            return new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(lookback =>
+            var potentials = new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(lookback =>
             {
-                return OptimisationSets.Value.Select(s => 
+                return OptimisationSets.Value.Select(s =>
                     new RelativeStrengthStrategy(lookback, s, false));
             });
+
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             var optimal = (RelativeStrengthStrategy)strategy;
 

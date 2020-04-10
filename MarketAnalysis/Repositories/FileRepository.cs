@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Range = MarketAnalysis.Models.Range;
 
 namespace MarketAnalysis.Repositories
 {
@@ -74,18 +73,15 @@ namespace MarketAnalysis.Repositories
         {
             var subStrategies = new IStrategy[]
             {
-                new EntropyStrategy(0, 0),
-                new PatternRecognitionStrategy(0),
-                new RelativeStrengthStrategy(0, new int[0]),
-                new DeltaStrategy(0),
-                new GradientStrategy(0, 0),
-                new LinearRegressionStrategy(0),
-                new VolumeStrategy(0),
-                new ClusteringStrategy(new (Range, Func<MarketData, decimal>)[]
-                {
-                    (new Range(), x => x.DeltaPercent),
-                    (new Range(), x => x.VolumePercent)
-                }.ToArray())
+                new EntropyStrategy(),
+                new PatternRecognitionStrategy(),
+                new RelativeStrengthStrategy(),
+                new DeltaStrategy(),
+                new GradientStrategy(),
+                new LinearRegressionStrategy(),
+                new VolumeStrategy(),
+                new MovingAverageStrategy(),
+                new ClusteringStrategy()
             };
             var strategies = subStrategies.Concat(new[] { new WeightedStrategy(_cache, subStrategies, 0.5d) });
             Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");

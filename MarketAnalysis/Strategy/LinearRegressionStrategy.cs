@@ -1,5 +1,8 @@
 ﻿using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Simulation;
+using ShellProgressBar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,19 +15,27 @@ namespace MarketAnalysis.Strategy
         public override StrategyType StrategyType { get; } = StrategyType.LinearRegression;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(128);
 
+        public LinearRegressionStrategy()
+            : this (0)
+        { }
+
         public LinearRegressionStrategy(int window, bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _window = window;
         }
 
-        public override IEnumerable<IStrategy> GetOptimisations()
+        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            return Enumerable.Range(30, 200).Select(x =>
-                new LinearRegressionStrategy(x, false));
+            progress.MaxTicks = 200;
+            var potentials = Enumerable.Range(30, 200).Select(x => new LinearRegressionStrategy(x, false));
+
+            var searcher = new LinearSearch(simulator, potentials, progress);
+            simulator.RemoveCache(potentials.Except(new[] { this }));
+            return searcher.Maximum(LatestDate);
         }
 
-        public override void SetParameters(IStrategy strategy)
+        protected override void SetParameters(IStrategy strategy)
         {
             _window = ((LinearRegressionStrategy)strategy)._window;
         }
@@ -59,7 +70,7 @@ namespace MarketAnalysis.Strategy
             b = m * meanX - ((double)meanY);
         }
 
-        private class XYPoint
+        private struct XYPoint
         {
             public int X;
             public decimal Y;
