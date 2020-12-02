@@ -30,12 +30,15 @@ namespace MarketAnalysis.Providers
 
         private IEnumerable<MarketData> JoinData(IEnumerable<MarketData> historicData, IEnumerable<MarketData> latestData)
         {
-            var firstOnlineDate = latestData.First().Date;
-            historicData = historicData.TakeWhile(x => x.Date < firstOnlineDate);
-            var joinPoint = latestData.First();
+            var lastHistoricData = historicData.Last();
+            var recentData = latestData.Where(x => x.Date > lastHistoricData.Date).ToArray();
+            
+            var joinPoint = recentData.First();
             joinPoint.Delta = joinPoint.Price - historicData.Last().Price;
-            latestData.Last().Delta = latestData.Last().Price - latestData.ElementAt(latestData.Count() - 2).Price;
-            return historicData.Union(latestData).ToArray();
+            joinPoint.DeltaPercent = (lastHistoricData.Delta - joinPoint.Delta) / joinPoint.Delta;
+            joinPoint.VolumePercent = (lastHistoricData.Volume - joinPoint.Volume) / joinPoint.Volume;
+
+            return historicData.Union(recentData).ToArray();
         }
     }
 }

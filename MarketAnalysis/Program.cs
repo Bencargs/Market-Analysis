@@ -39,6 +39,10 @@ namespace MarketAnalysis
         {
             var services = new ServiceCollection();
 
+            // Caches
+            services.AddSingleton<MarketDataCache>();
+            services.AddSingleton<SimulationCache>();
+
             // Repositories
             services.AddSingleton(typeof(IRepository<Investor>), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository<IStrategy>), typeof(FileRepository));
@@ -55,10 +59,6 @@ namespace MarketAnalysis
             services.AddSingleton<InvestorProvider>();
             services.AddSingleton<MarketDataProvider>();
             services.AddSingleton<ReportProvider>();
-
-            // Caches
-            services.AddSingleton(typeof(MarketDataCache), MarketDataCache.Instance);
-            services.AddSingleton<SimulationCache>();
 
             // Services
             services.AddSingleton(typeof(ISimulator), typeof(Simulator));

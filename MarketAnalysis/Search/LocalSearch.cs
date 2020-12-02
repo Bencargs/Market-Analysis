@@ -51,7 +51,14 @@ namespace MarketAnalysis.Search
             maximumValue = optimal.value;
             maximumStrategy = optimal.strategy;
 
+            ClearCache(potentials.Select(x => x.strategy), optimal.strategy);
+
             return maximumStrategy;
+        }
+
+        private void ClearCache(IEnumerable<IStrategy> potentials, IStrategy optimal)
+        {
+            _simulator.RemoveCache(potentials.Except(new[] { optimal }));
         }
     }
 }

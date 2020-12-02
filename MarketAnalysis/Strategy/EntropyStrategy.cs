@@ -13,18 +13,25 @@ namespace MarketAnalysis.Strategy
     {
         private double _threshold;
         private int _window;
+        private readonly MarketDataCache _marketDataCache;
+        
         public override StrategyType StrategyType { get; } = StrategyType.Entropy;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
 
-        public EntropyStrategy()
-            : this (0, 0)
+        public EntropyStrategy(MarketDataCache marketDataCache)
+            : this (marketDataCache, 0, 0)
         { }
 
-        public EntropyStrategy(int window, double threshold, bool shouldOptimise = true)
+        public EntropyStrategy(
+            MarketDataCache marketDataCache, 
+            int window, 
+            double threshold, 
+            bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _window = window;
             _threshold = threshold;
+            _marketDataCache = marketDataCache;
         }
 
         protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
@@ -34,12 +41,11 @@ namespace MarketAnalysis.Strategy
                 return Enumerable.Range(1, 100).Select(e =>
                 {
                     var threshold = (double)e / 10;
-                    return new EntropyStrategy(w, threshold, false);
+                    return new EntropyStrategy(_marketDataCache, w, threshold, false);
                 });
             });
 
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
         }
 
@@ -52,7 +58,7 @@ namespace MarketAnalysis.Strategy
 
         protected override bool ShouldBuy(MarketData data)
         {
-            var batch = MarketDataCache.Instance.GetLastSince(data.Date, _window)
+            var batch = _marketDataCache.GetLastSince(data.Date, _window)
                 .Select(x => x.Delta)
                 .ToArray();
 

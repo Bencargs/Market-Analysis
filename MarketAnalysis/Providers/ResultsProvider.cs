@@ -39,8 +39,10 @@ namespace MarketAnalysis.Providers
         {
             var buyDates = _marketDataCache.TakeUntil().Select(x => x.Date).ToDictionary(k => k, v => true);
             var constantStrategy = new StaticDatesStrategy(buyDates);
-            _marketAverage = _simulator.Evaluate(constantStrategy).ToArray();
-            _marketMaximum = GetMarketMaximum(_simulator, buyDates).ToArray();
+            
+            using var progressBar = _progressProvider.Create(_marketDataCache.BacktestingIndex, "Initialising...");
+            _marketAverage = _simulator.Evaluate(constantStrategy, progress: progressBar).ToArray();
+            _marketMaximum = GetMarketMaximum(_simulator, buyDates, progressBar).ToArray();
         }
 
         public void AddResults(Investor investor, Dictionary<IStrategy, SimulationState[]> source)
@@ -128,30 +130,27 @@ namespace MarketAnalysis.Providers
             return buyIndexes.Skip(1).Select((x, i) => x > 0 ? x - buyIndexes[i] : x).Max();
         }
 
-        private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator, Dictionary<DateTime, bool> buyDates)
+        private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator, Dictionary<DateTime, bool> buyDates, ShellProgressBar.ProgressBar progressBar)
         {
             var strategy = new StaticDatesStrategy(buyDates);
             var history = simulator.Evaluate(strategy);
             var worth = history.LastOrDefault()?.Worth ?? 0m;
 
             var i = 1;
-            using (var progressBar = _progressProvider.Create(_marketDataCache.BacktestingIndex, "Initialising..."))
+            foreach (var (date, _) in buyDates.Where(x => x.Key > Configuration.BacktestingDate).Reverse())
             {
-                foreach (var (date, _) in buyDates.Where(x => x.Key > Configuration.BacktestingDate).Reverse())
+                buyDates[date] = false;
+                strategy = new StaticDatesStrategy(buyDates) { Identifier = i++ };
+                var newHistory = simulator.Evaluate(strategy);
+                var newWorth = newHistory?.LastOrDefault()?.Worth ?? 0m;
+                if (newWorth < worth)
+                    buyDates[date] = true;
+                else
                 {
-                    buyDates[date] = false;
-                    strategy = new StaticDatesStrategy(buyDates) { Identifier = i++ };
-                    var newHistory = simulator.Evaluate(strategy);
-                    var newWorth = newHistory?.LastOrDefault()?.Worth ?? 0m;
-                    if (newWorth < worth)
-                        buyDates[date] = true;
-                    else
-                    {
-                        worth = newWorth;
-                        history = newHistory;
-                    }
-                    progressBar.Tick($"Initialising...");
+                    worth = newWorth;
+                    history = newHistory;
                 }
+                progressBar.Tick($"Initialising...");
             }
             return history;
         }

@@ -33,7 +33,7 @@ namespace MarketAnalysis.Providers
                 {
                     csv.Configuration.RegisterClassMap<YahooTimeSeriesDataMap>();
                     var records = csv.GetRecords<YahooTimeSeriesData>();
-                    return ConvertToRow(records);
+                    return ConvertToRow(records).ToArray();
                 }
             }
             Log.Error("No response recieved from api data provider");
@@ -54,18 +54,17 @@ namespace MarketAnalysis.Providers
 
         private IEnumerable<MarketData> ConvertToRow(IEnumerable<YahooTimeSeriesData> data)
         {
-            var results = new List<MarketData>(2000);
+            MarketData lastData = null;
             foreach (var row in data)
             {
                 var price = row.Close;
                 if (price == 0 || price == null)
                     continue;
-
-                var lastData = results.LastOrDefault();
+                
                 var priceDelta = (lastData?.Price ?? 0m) - price;
                 var volumeDelta = (lastData?.Volume ?? 0m) - row.Volume;
 
-                results.Add(new MarketData
+                var marketDataRow = new MarketData
                 {
                     Date = row.Date,
                     Volume = (decimal)row.Volume,
@@ -75,9 +74,11 @@ namespace MarketAnalysis.Providers
                         ? (lastData.Delta - priceDelta) / priceDelta : 0),
                     VolumePercent = (decimal)(volumeDelta != 0 && lastData?.Volume != null
                         ? (lastData.Volume - volumeDelta) / volumeDelta : 0)
-                });
+                };
+
+                yield return marketDataRow;
+                lastData = marketDataRow;
             }
-            return results.OrderBy(x => x.Date);
         }
 
         public class YahooTimeSeriesData

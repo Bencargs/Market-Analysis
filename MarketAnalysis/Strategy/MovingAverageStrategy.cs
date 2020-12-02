@@ -4,7 +4,6 @@ using MarketAnalysis.Search;
 using MarketAnalysis.Simulation;
 using ShellProgressBar;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
@@ -13,18 +12,24 @@ namespace MarketAnalysis.Strategy
     {
         private int _window;
         private double _threshold;
+        private readonly MarketDataCache _marketDataCache;
         public override StrategyType StrategyType { get; } = StrategyType.MovingAverage;
         protected override TimeSpan OptimisePeriod { get; } = TimeSpan.FromDays(1024);
 
-        public MovingAverageStrategy()
-            : this (0, 0)
+        public MovingAverageStrategy(MarketDataCache marketDataCache)
+            : this (marketDataCache, 0, 0)
         { }
 
-        public MovingAverageStrategy(int window, double threshold, bool shouldOptimise = true)
+        public MovingAverageStrategy(
+            MarketDataCache marketDataCache,
+            int window, 
+            double threshold, 
+            bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _window = window;
             _threshold = threshold;
+            _marketDataCache = marketDataCache;
         }
 
         protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
@@ -34,12 +39,11 @@ namespace MarketAnalysis.Strategy
                 return Enumerable.Range(1, 60).Select(t =>
                 {
                     var threshold = (double)t / 10;
-                    return new MovingAverageStrategy(w, threshold, false);
+                    return new MovingAverageStrategy(_marketDataCache, w, threshold, false);
                 });
             });
 
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
         }
 
@@ -52,7 +56,7 @@ namespace MarketAnalysis.Strategy
 
         protected override bool ShouldBuy(MarketData data)
         {
-            var batch = MarketDataCache.Instance.GetLastSince(LatestDate, _window).Select(x => x.Price).ToArray();
+            var batch = _marketDataCache.GetLastSince(LatestDate, _window).Select(x => x.Price).ToArray();
             if (batch.Length < 2)
                 return false;
 

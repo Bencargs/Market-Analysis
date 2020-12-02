@@ -13,18 +13,24 @@ namespace MarketAnalysis.Strategy
     {
         private int _window;
         private decimal _threshold;
+        private readonly MarketDataCache _marketDataCache;
         public override StrategyType StrategyType { get; } = StrategyType.Gradient;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
 
-        public GradientStrategy()
-            : this (0, 0)
+        public GradientStrategy(MarketDataCache marketDataCache)
+            : this (marketDataCache, 0, 0)
         { }
 
-        public GradientStrategy(int window, decimal threshold, bool shouldOptimise = true)
+        public GradientStrategy(
+            MarketDataCache marketDataCache,
+            int window, 
+            decimal threshold, 
+            bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _window = window;
             _threshold = threshold;
+            _marketDataCache = marketDataCache;
         }
 
         protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
@@ -34,12 +40,11 @@ namespace MarketAnalysis.Strategy
                 return Enumerable.Range(20, 20).Select(window =>
                 {
                     var threshold = -((decimal)x / 100);
-                    return new GradientStrategy(window, threshold, false);
+                    return new GradientStrategy(_marketDataCache, window, threshold, false);
                 });
             });
 
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
         }
 
@@ -52,7 +57,7 @@ namespace MarketAnalysis.Strategy
 
         protected override bool ShouldBuy(MarketData data)
         {
-            var batch = MarketDataCache.Instance.TakeUntil(LatestDate).ToList().Last(_window);
+            var batch = _marketDataCache.TakeUntil(LatestDate).ToList().Last(_window);
             if (batch.Length < 2)
                 return false;
 

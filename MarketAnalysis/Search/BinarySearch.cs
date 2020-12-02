@@ -1,4 +1,5 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using ShellProgressBar;
@@ -12,37 +13,47 @@ namespace MarketAnalysis.Search
 	{
 		private readonly Image _image;
         private readonly double _threshold;
+        private readonly MarketDataCache _marketDataCache;
         private readonly ISimulator _simulator;
         private readonly IProgressBar _progress;
 
-        public BinarySearch(ISimulator simulator, Image image, double threshold, IProgressBar progress)
+        public BinarySearch(
+            MarketDataCache marketDataCache,
+            ISimulator simulator, 
+            Image image, 
+            double threshold, 
+            IProgressBar progress)
         {
             _image = image;
             _progress = progress;
             _threshold = threshold;
             _simulator = simulator;
+            _marketDataCache = marketDataCache;
         }
 
         public IStrategy Maximum(DateTime endDate)
 		{
+            var lookup = new Dictionary<int, (decimal Value, IStrategy Strategy)>();
 			for (int x = 0; x < _image.Width; x++)
 			{
 				for (int y = 0; y < _image.Height; y++)
 				{
-                    var value = ProcessValue(x, y, endDate);
+                    var value = ProcessValue(x, y, endDate, lookup);
                     _progress?.Tick();
                     _image.SetPixel(x, y, value);
                 }
 			}
-            return new PatternRecognitionStrategy(_threshold, _image, false);
+            var optimal = new PatternRecognitionStrategy(_marketDataCache, _threshold, _image, false);
+            
+            ClearCache(lookup.Values.Select(x => x.Strategy), optimal);
+            return optimal;
 		}
 
-        private int ProcessValue(int x, int y, DateTime endDate)
+        private int ProcessValue(int x, int y, DateTime endDate, Dictionary<int, (decimal, IStrategy)> lookup)
         {
             var min = 128;
             var max = 256;
             var range = max - min;
-            var lookup = new Dictionary<int, decimal>();
 
             while (range > 1)
             {
@@ -51,7 +62,7 @@ namespace MarketAnalysis.Search
 
                 if (leftValue == rightValue)
                 {
-                    // Performance oriented escape hatch
+                    // Performance escape hatch
                     // Small odds of meaningfull performance imporvement if both sides are exactly equal
                     return _image.GetPixel(x, y);
                 }
@@ -70,16 +81,22 @@ namespace MarketAnalysis.Search
             return min;
         }
 
-        private decimal GetOrCreate(Image image, int x, int y, int z, DateTime endDate, Dictionary<int, decimal> lookup)
+        private decimal GetOrCreate(Image image, int x, int y, int z, DateTime endDate, Dictionary<int, (decimal Intensity, IStrategy Strategy)> lookup)
         {
             if (!lookup.TryGetValue(z, out var value))
             {
                 image.SetPixel(x, y, z);
-                var left = new PatternRecognitionStrategy(_threshold, image, false);
-                value = _simulator.Evaluate(left, endDate).Last().Worth;
+                var strategy = new PatternRecognitionStrategy(_marketDataCache, _threshold, image, false);
+                var intensity = _simulator.Evaluate(strategy, endDate).Last().Worth;
+                value = (intensity, strategy);
                 lookup[z] = value;
             }
-            return value;
+            return value.Intensity;
         }
-	}
+
+        private void ClearCache(IEnumerable<IStrategy> potentials, IStrategy optimal)
+        {
+            _simulator.RemoveCache(potentials.Except(new[] { optimal }));
+        }
+    }
 }

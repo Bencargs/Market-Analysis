@@ -13,6 +13,7 @@ namespace MarketAnalysis.Strategy
     {
         private int _threshold;
         private int[] _testSet;
+        private readonly MarketDataCache _marketDataCache;
         public override StrategyType StrategyType { get; } = StrategyType.RelativeStrength;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
 
@@ -33,15 +34,20 @@ namespace MarketAnalysis.Strategy
             return results;
         });
 
-        public RelativeStrengthStrategy()
-            : this (0, new int[0])
+        public RelativeStrengthStrategy(MarketDataCache marketDataCache)
+            : this (marketDataCache, 0, new int[0])
         { }
 
-        public RelativeStrengthStrategy(int threshold, int[] testSet, bool shouldOptimise = true)
+        public RelativeStrengthStrategy(
+            MarketDataCache marketDataCache, 
+            int threshold, 
+            int[] testSet, 
+            bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _testSet = testSet;
             _threshold = threshold;
+            _marketDataCache = marketDataCache;
         }
 
         protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
@@ -49,11 +55,10 @@ namespace MarketAnalysis.Strategy
             var potentials = new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(lookback =>
             {
                 return OptimisationSets.Value.Select(s =>
-                    new RelativeStrengthStrategy(lookback, s, false));
+                    new RelativeStrengthStrategy(_marketDataCache, lookback, s, false));
             });
 
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
         }
 
@@ -67,7 +72,7 @@ namespace MarketAnalysis.Strategy
 
         protected override bool ShouldBuy(MarketData data)
         {
-            var batch = MarketDataCache.Instance.GetLastSince(LatestDate, _threshold).ToArray();
+            var batch = _marketDataCache.GetLastSince(LatestDate, _threshold).ToArray();
             if (batch.Count() < 3)
                 return false;
 

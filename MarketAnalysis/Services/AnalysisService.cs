@@ -14,6 +14,7 @@ namespace MarketAnalysis.Services
     public class AnalysisService
     {
         private readonly ISimulator _simulator;
+        private readonly MarketDataCache _marketDataCache;
         private readonly IResultsProvider _resultsProvider;
         private readonly StrategyProvider _strategyProvider;
         private readonly InvestorProvider _investorProvider;
@@ -23,6 +24,7 @@ namespace MarketAnalysis.Services
 
         public AnalysisService(
             ISimulator simulator,
+            MarketDataCache marketDataCache,
             IResultsProvider resultsProvider,
             StrategyProvider strategyProvider,
             InvestorProvider investorProvider,
@@ -31,6 +33,7 @@ namespace MarketAnalysis.Services
             ICommunicationService communicationService)
         {
             _simulator = simulator;
+            _marketDataCache = marketDataCache;
             _resultsProvider = resultsProvider;
             _strategyProvider = strategyProvider;
             _investorProvider = investorProvider;
@@ -59,12 +62,12 @@ namespace MarketAnalysis.Services
             await Task.WhenAll(strategiesTask, dataTask, investorTask);
             var strategies = strategiesTask.Result;
             var data = dataTask.Result;
-            MarketDataCache.Instance.Initialise(data);
+            _marketDataCache.Initialise(data);
 
             return (strategies, data);
         }
 
-        private async Task<IResultsProvider> Simulate(IEnumerable<IStrategy> strategies)
+        private Task<IResultsProvider> Simulate(IEnumerable<IStrategy> strategies)
         {
             void SimulateStrategy(IStrategy strategy, Dictionary<IStrategy, SimulationState[]> histories, ProgressBar progress)
             {
@@ -85,7 +88,7 @@ namespace MarketAnalysis.Services
                 _resultsProvider.AddResults(investor, histories);
             }
 
-            return await Task.FromResult(_resultsProvider);
+            return Task.FromResult(_resultsProvider);
         }
 
         private async Task SaveResults(IResultsProvider resultsProvider, IEnumerable<MarketData> data)
@@ -94,7 +97,7 @@ namespace MarketAnalysis.Services
 
             var saveDataTask = resultsProvider.SaveData(data);
 
-            await Task.WhenAll(new Task[] { saveSimulationsTask, saveDataTask });
+            await Task.WhenAll(saveSimulationsTask, saveDataTask);
         }
     }
 }

@@ -15,26 +15,31 @@ namespace MarketAnalysis.Strategy
         public override StrategyType StrategyType => StrategyType.Cluster;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(1024);
         private (Range Container, Func<MarketData, decimal> Selector)[] _features;
+        private MarketDataCache _marketDataCache;
 
-        public ClusteringStrategy()
-            : this (new (Range, Func<MarketData, decimal>)[]
-                {
-                    (new Range(), x => x.DeltaPercent),
-                    (new Range(), x => x.VolumePercent)
-                }.ToArray())
+        public ClusteringStrategy(MarketDataCache marketDataCache)
+            : this(marketDataCache,
+                  new (Range, Func<MarketData, decimal>)[]
+                  {
+                      (new Range(), x => x.DeltaPercent),
+                      (new Range(), x => x.VolumePercent)
+                  }.ToArray())
         { }
 
         public ClusteringStrategy(
+            MarketDataCache marketDataCache,
             (Range, Func<MarketData, decimal>)[] features, 
             bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _features = features;
+            _marketDataCache = marketDataCache;
         }
 
         protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            var dataset = MarketDataCache.Instance.TakeUntil(LatestDate);
+            //var dataset = MarketDataCache.Instance.TakeUntil(LatestDate);
+            var dataset = _marketDataCache.TakeUntil(LatestDate);
             var feature1 = dataset.Select(d => _features[0].Selector(d));
             var feature2 = dataset.Select(d => _features[1].Selector(d));
 
@@ -49,13 +54,12 @@ namespace MarketAnalysis.Strategy
                             (p1, _features[0].Selector),
                             (p2, _features[1].Selector),
                         };
-                        return new ClusteringStrategy(parameters, false);
+                        return new ClusteringStrategy(_marketDataCache, parameters, false);
                     });
                 });
             });
 
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
         }
 

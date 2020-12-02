@@ -24,7 +24,7 @@ namespace MarketAnalysis.Search
         public IStrategy Maximum(DateTime endDate)
         {
             _progress.MaxTicks = _potentials.Count();
-            return _potentials.Select(strat =>
+            var potentials = _potentials.Select(strat =>
             {
                 var result = _simulator.Evaluate(strat, endDate).Last();
                 _progress?.Tick();
@@ -32,7 +32,17 @@ namespace MarketAnalysis.Search
             })
             .OrderByDescending(x => x.Worth)
             .ThenBy(x => x.BuyCount)
-            .First().strat;
+            .Select(x => x.strat);
+            
+            var optimal = potentials.First();
+            ClearCache(potentials, optimal);
+
+            return optimal;
+        }
+
+        private void ClearCache(IEnumerable<IStrategy> potentials, IStrategy optimal)
+        {
+            _simulator.RemoveCache(potentials.Except(new[] { optimal }));
         }
     }
 }

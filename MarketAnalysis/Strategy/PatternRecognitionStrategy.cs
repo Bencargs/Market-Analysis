@@ -11,19 +11,25 @@ namespace MarketAnalysis.Strategy
 {
     public class PatternRecognitionStrategy : OptimisableStrategy
     {
+        private readonly MarketDataCache _marketDataCache;
         public Image Average { get; private set; }
         private double _threshold;
         public override StrategyType StrategyType { get; } = StrategyType.PatternRecognition;
         protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(1024);
 
-        public PatternRecognitionStrategy()
-            : this (700)
+        public PatternRecognitionStrategy(MarketDataCache marketDataCache)
+            : this (marketDataCache, 700)
         { }
 
-        public PatternRecognitionStrategy(double threshold, Image average = null, bool shouldOptimise = true)
+        public PatternRecognitionStrategy(
+            MarketDataCache marketDataCache,
+            double threshold, 
+            Image average = null, 
+            bool shouldOptimise = true)
             : base(shouldOptimise)
         {
             _threshold = threshold;
+            _marketDataCache = marketDataCache;
             Average = average ?? new Func<Image>(() =>
             {
                 var averagePath = Configuration.PatternRecognitionImagePath;
@@ -33,7 +39,7 @@ namespace MarketAnalysis.Strategy
 
         protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
         {
-            var history = MarketDataCache.Instance.TakeUntil(LatestDate).Select(x => x.Price).ToArray();
+            var history = _marketDataCache.TakeUntil(LatestDate).Select(x => x.Price).ToArray();
             var training = history.Batch(30).Select(b =>
             {
                 var batch = b.ToArray();
@@ -46,9 +52,8 @@ namespace MarketAnalysis.Strategy
                 Average = CreateAverage(training);
 
             progress.MaxTicks = 300;
-            var potentials = Enumerable.Range(600, 300).Select(x => new PatternRecognitionStrategy(x, Average, false));
+            var potentials = Enumerable.Range(600, 300).Select(x => new PatternRecognitionStrategy(_marketDataCache, x, Average, false));
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
 
             //var potentials = Enumerable.Range(700, 200).Select(t => new PatternRecognitionStrategy(t, Average, false));
@@ -90,7 +95,7 @@ namespace MarketAnalysis.Strategy
 
         protected override bool ShouldBuy(MarketData data)
         {
-            var dataset = MarketDataCache.Instance.GetLastSince(LatestDate, 30)
+            var dataset = _marketDataCache.GetLastSince(LatestDate, 30)
                 .Select(x => x.Price).ToList();
             if (dataset.Count < 30)
                 return false;

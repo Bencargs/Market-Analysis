@@ -7,10 +7,8 @@ namespace MarketAnalysis.Caching
 {
     public sealed class MarketDataCache
     {
-        private static readonly Lazy<MarketDataCache> _instance = new Lazy<MarketDataCache>(() => new MarketDataCache());
         private readonly List<MarketData> _cache = new List<MarketData>(5000);
 
-        public static MarketDataCache Instance => _instance.Value;
         public int Count => _cache.Count;
         public int BacktestingIndex => Count - _cache.TakeWhile(x => x.Date < Configuration.BacktestingDate).Count();
 

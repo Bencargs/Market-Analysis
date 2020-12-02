@@ -32,9 +32,8 @@ namespace MarketAnalysis.Strategy
         public WeightedStrategy(
             SimulationCache cache, 
             IStrategy[] strategies, 
-            double threshold, 
             bool shouldOptimise = true)
-            : this(cache, strategies.ToDictionary(k => k, v => 0d), threshold, shouldOptimise)
+            : this(cache, strategies.ToDictionary(k => k, v => 0d), 0, shouldOptimise)
         {
         }
 
@@ -60,7 +59,6 @@ namespace MarketAnalysis.Strategy
             });
 
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
         }
 

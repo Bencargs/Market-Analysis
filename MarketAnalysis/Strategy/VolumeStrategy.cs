@@ -3,7 +3,6 @@ using MarketAnalysis.Search;
 using MarketAnalysis.Simulation;
 using ShellProgressBar;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
@@ -30,7 +29,6 @@ namespace MarketAnalysis.Strategy
             var potentials = Enumerable.Range(1, 800).Select(x => new VolumeStrategy(x, false));
 
             var searcher = new LinearSearch(simulator, potentials, progress);
-            simulator.RemoveCache(potentials.Except(new[] { this }));
             return searcher.Maximum(LatestDate);
         }
 

@@ -20,42 +20,43 @@ namespace MarketAnalysis.Repositories
         IRepository<Investor>
     {
         private readonly string _dataFilePath = Configuration.DataPath;
-        private readonly SimulationCache _cache;
+        private readonly SimulationCache _simulationCache;
+        private readonly MarketDataCache _marketDataCache;
 
-        public FileRepository(SimulationCache cache)
+        public FileRepository(
+            MarketDataCache marketDataCache,
+            SimulationCache simulationCache)
         {
-            _cache = cache;
+            _simulationCache = simulationCache;
+            _marketDataCache = marketDataCache;
         }
 
-        async Task<IEnumerable<MarketData>> IRepository<MarketData>.Get()
+        Task<IEnumerable<MarketData>> IRepository<MarketData>.Get()
         {
-            return await Task.Run(() =>
-            {
-                using var reader = new StreamReader(_dataFilePath);
-                using var csv = new CsvReader(reader, new CsvHelper.Configuration.Configuration { HasHeaderRecord = false });
-                var fileData = csv.GetRecords<FileMarketData>();
+            using var reader = new StreamReader(_dataFilePath);
+            using var csv = new CsvReader(reader, new CsvHelper.Configuration.Configuration { HasHeaderRecord = false });
+            var fileData = csv.GetRecords<FileMarketData>();
                 
-                var results = new List<MarketData>(4000);
-                foreach (var row in fileData)
-                {
-                    var lastData = results.LastOrDefault();
-                    var priceDelta = (lastData?.Price ?? 0m) - row.Price;
-                    var volumeDelta = (lastData?.Volume ?? 0m) - row.Volume;
+            var results = new List<MarketData>(5000);
+            foreach (var row in fileData)
+            {
+                var lastData = results.LastOrDefault();
+                var priceDelta = (lastData?.Price ?? 0m) - row.Price;
+                var volumeDelta = (lastData?.Volume ?? 0m) - row.Volume;
 
-                    results.Add(new MarketData
-                    {
-                        Date = row.Date,
-                        Price = row.Price,
-                        Delta = row.Delta,
-                        Volume = row.Volume,
-                        DeltaPercent = (priceDelta != 0 && lastData?.Delta != null)
-                            ? (lastData.Delta - priceDelta) / priceDelta : 0,
-                        VolumePercent = (volumeDelta != 0 && lastData?.Volume != null)
-                            ? (lastData.Volume - volumeDelta) / volumeDelta : 0
-                    });
-                }
-                return results;
-            });
+                results.Add(new MarketData
+                {
+                    Date = row.Date,
+                    Price = row.Price,
+                    Delta = row.Delta,
+                    Volume = row.Volume,
+                    DeltaPercent = (priceDelta != 0 && lastData?.Delta != null)
+                        ? (lastData.Delta - priceDelta) / priceDelta : 0,
+                    VolumePercent = (volumeDelta != 0 && lastData?.Volume != null)
+                        ? (lastData.Volume - volumeDelta) / volumeDelta : 0
+                });
+            }
+            return Task.FromResult(results.OrderBy(x => x.Date).AsEnumerable());
         }
 
         public async Task Save(IEnumerable<MarketData> data)
@@ -73,17 +74,17 @@ namespace MarketAnalysis.Repositories
         {
             var subStrategies = new IStrategy[]
             {
-                new EntropyStrategy(),
-                new PatternRecognitionStrategy(),
-                new RelativeStrengthStrategy(),
+                //new EntropyStrategy(_marketDataCache),
+                //new PatternRecognitionStrategy(_marketDataCache),
+                new RelativeStrengthStrategy(_marketDataCache),
                 new DeltaStrategy(),
-                new GradientStrategy(),
-                new LinearRegressionStrategy(),
+                new GradientStrategy(_marketDataCache),
+                new LinearRegressionStrategy(_marketDataCache),
                 new VolumeStrategy(),
-                new MovingAverageStrategy(),
-                new ClusteringStrategy()
+                //new MovingAverageStrategy(_marketDataCache),
+                //new ClusteringStrategy(_marketDataCache)
             };
-            var strategies = subStrategies.Concat(new[] { new WeightedStrategy(_cache, subStrategies, 0.5d) });
+            var strategies = subStrategies.Concat(new[] { new WeightedStrategy(_simulationCache, subStrategies) });
             Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");
 
             return await Task.FromResult(strategies);
@@ -112,13 +113,20 @@ namespace MarketAnalysis.Repositories
             {
                     new Investor
                     {
-                        Name = "Recipient Name",
+                        Name = "Benjamin Cargill",
                         Number = "000001",
-                        Email = "client@email.com",
+                        Email = "benjamin.d.cargill@gmail.com",
                         DailyFunds = 10m,
                         OrderBrokerage = 0m,
                         OrderDelayDays = 3
                     },
+                    //new RecipientDetails
+                    //{
+                    //    Date = DateTime.Now,
+                    //    Name = "Cyndi Chen",
+                    //    Number = "000002",
+                    //    Email = "annsn12@hotmail.com"
+                    //}
             });
         }
 
