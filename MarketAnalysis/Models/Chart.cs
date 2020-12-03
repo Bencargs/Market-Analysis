@@ -55,13 +55,13 @@ namespace MarketAnalysis.Models
             });
         }
 
-        public Chart AddSeries(IEnumerable<double> series, string name = "", Type type = Type.Line)
+        public Chart AddSeries(IEnumerable<double> series, string name = "", Type type = Type.Line, OxyColor? colour = null)
         {
-            var colour = GetColorForIndex(_plot.Series.Count);
+            colour ??= GetColorForIndex(_plot.Series.Count);
             return type switch
             {
-                Type.Point => AddPointSeries(series, colour, name),
-                _          => AddLineSeries(series, colour, name),
+                Type.Point => AddPointSeries(series, colour.Value, name),
+                _          => AddLineSeries(series, colour.Value, name),
             };
         }
 

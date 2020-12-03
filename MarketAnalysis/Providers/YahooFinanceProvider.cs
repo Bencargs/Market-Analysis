@@ -6,10 +6,10 @@ using MarketAnalysis.Models;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MarketAnalysis.Providers
@@ -29,7 +29,7 @@ namespace MarketAnalysis.Providers
             {
                 var response = await request.Content.ReadAsStreamAsync();
                 using (var reader = new StreamReader(response))
-                using (var csv = new CsvReader(reader))
+                using (var csv = new CsvReader(reader, CultureInfo.CurrentCulture))
                 {
                     csv.Configuration.RegisterClassMap<YahooTimeSeriesDataMap>();
                     var records = csv.GetRecords<YahooTimeSeriesData>();

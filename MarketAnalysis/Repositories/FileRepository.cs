@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using CsvHelper.Configuration;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Models.ApiData;
@@ -7,6 +8,7 @@ using Newtonsoft.Json;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -34,7 +36,7 @@ namespace MarketAnalysis.Repositories
         Task<IEnumerable<MarketData>> IRepository<MarketData>.Get()
         {
             using var reader = new StreamReader(_dataFilePath);
-            using var csv = new CsvReader(reader, new CsvHelper.Configuration.Configuration { HasHeaderRecord = false });
+            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.CurrentCulture) { HasHeaderRecord = false });
             var fileData = csv.GetRecords<FileMarketData>();
                 
             var results = new List<MarketData>(5000);
@@ -62,7 +64,7 @@ namespace MarketAnalysis.Repositories
         public async Task Save(IEnumerable<MarketData> data)
         {
             using var writer = new StreamWriter(_dataFilePath, false);
-            using var csv = new CsvWriter(writer);
+            using var csv = new CsvWriter(writer, CultureInfo.CurrentCulture);
             foreach (var d in data)
             {
                 csv.WriteRecord(d);

@@ -32,6 +32,8 @@ namespace MarketAnalysis.Providers
         {
             var lastHistoricData = historicData.Last();
             var recentData = latestData.Where(x => x.Date > lastHistoricData.Date).ToArray();
+            if (!recentData.Any())
+                return historicData;
             
             var joinPoint = recentData.First();
             joinPoint.Delta = joinPoint.Price - historicData.Last().Price;
