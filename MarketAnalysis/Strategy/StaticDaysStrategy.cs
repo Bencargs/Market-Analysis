@@ -1,36 +1,30 @@
 ﻿using MarketAnalysis.Models;
-using MarketAnalysis.Simulation;
-using ShellProgressBar;
+using MarketAnalysis.Strategy.Parameters;
 using System;
-using System.Collections.Generic;
 
 namespace MarketAnalysis.Strategy
 {
-    public class StaticDatesStrategy : OptimisableStrategy
+    public class StaticDatesStrategy : IStrategy
     {
-        public int Identifier { get; set; }
-        public override StrategyType StrategyType { get; } = StrategyType.StaticDates;
-        protected override TimeSpan OptimisePeriod => TimeSpan.MaxValue;
-        private readonly Dictionary<DateTime, bool> _buyDates;
+        private StaticDatesParameters _parameters;
 
-        public StaticDatesStrategy(Dictionary<DateTime, bool> buyDates)
-            : base(false)
+        public IParameters Parameters 
         {
-            _buyDates = buyDates;
+            get => _parameters;
+            private set => _parameters = (StaticDatesParameters)value; 
+        }
+        public StrategyType StrategyType { get; } = StrategyType.StaticDates;
+
+        public StaticDatesStrategy(StaticDatesParameters parameters)
+        {
+            Parameters = parameters;
         }
 
-        protected override IStrategy GetOptimum(ISimulator _, IProgressBar __)
-        {
-            return null;
-        }
+        public void Optimise(DateTime latestDate) { }
 
-        protected override void SetParameters(IStrategy strategy)
+        public bool ShouldBuy(MarketData data)
         {
-        }
-
-        protected override bool ShouldBuy(MarketData data)
-        {
-            return _buyDates[data.Date];
+            return _parameters.BuyDates[data.Date];
         }
 
         public override bool Equals(object obj)
@@ -38,12 +32,12 @@ namespace MarketAnalysis.Strategy
             if (!(obj is StaticDatesStrategy strategy))
                 return false;
 
-            return strategy.Identifier == Identifier;
+            return strategy._parameters.Identifier == _parameters.Identifier;
         }
 
         public override int GetHashCode()
         {
-            return Identifier;
+            return _parameters.Identifier;
         }
     }
 }

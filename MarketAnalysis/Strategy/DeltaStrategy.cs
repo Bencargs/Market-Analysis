@@ -1,48 +1,52 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Factories;
+using MarketAnalysis.Models;
 using MarketAnalysis.Search;
-using MarketAnalysis.Simulation;
-using ShellProgressBar;
+using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class DeltaStrategy : OptimisableStrategy
+    public class DeltaStrategy : IStrategy
     {
-        private decimal _threshold;
-        public override StrategyType StrategyType { get; } = StrategyType.Delta;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(128);
+        private readonly StrategyFactory _strategyFactory;
+        private readonly ISearcher _searcher;
+        private DeltaParameters _parameters;
 
-        public DeltaStrategy()
-            : this (0)
-        { }
-
-        public DeltaStrategy(decimal threshold, bool shouldOptimise = true)
-            : base(shouldOptimise)
+        public IParameters Parameters
         {
-            _threshold = threshold;
+            get => _parameters;
+            private set => _parameters = (DeltaParameters)value;
+        }
+        public StrategyType StrategyType { get; } = StrategyType.Delta;
+
+        public DeltaStrategy(
+            StrategyFactory strategyFactory,
+            ISearcher searcher,
+            DeltaParameters parameters)
+        {
+            _strategyFactory = strategyFactory;
+            _searcher = searcher;
+
+            Parameters = parameters;
         }
 
-        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
+        public void Optimise(DateTime latestDate)
         {
             var potentials = Enumerable.Range(1, 100).Select(x =>
             {
-                var parameter = (decimal)x / 1000;
-                return new DeltaStrategy(parameter, false);
+                var threshold = (decimal)x / 1000;
+                return _strategyFactory.Create(new DeltaParameters { Threshold = threshold });
             });
 
-            var searcher = new LinearSearch(simulator, potentials, progress);
-            return searcher.Maximum(LatestDate);
+            var optimum = _searcher.Maximum(potentials, latestDate);
+
+            Parameters = optimum.Parameters;
         }
 
-        protected override void SetParameters(IStrategy strategy)
+        public bool ShouldBuy(MarketData data)
         {
-            _threshold = ((DeltaStrategy)strategy)._threshold;
-        }
-
-        protected override bool ShouldBuy(MarketData data)
-        {
-            return data.Delta < _threshold;
+            return data.Delta < _parameters.Threshold;
         }
 
         public override bool Equals(object obj)
@@ -50,12 +54,12 @@ namespace MarketAnalysis.Strategy
             if (!(obj is DeltaStrategy strategy))
                 return false;
 
-            return strategy._threshold == _threshold;
+            return strategy._parameters.Threshold == _parameters.Threshold;
         }
 
         public override int GetHashCode()
         {
-            return _threshold.GetHashCode();
+            return _parameters.Threshold.GetHashCode();
         }
     }
 }

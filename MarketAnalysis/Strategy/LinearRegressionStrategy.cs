@@ -1,51 +1,53 @@
 ﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
-using MarketAnalysis.Simulation;
-using ShellProgressBar;
+using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class LinearRegressionStrategy : OptimisableStrategy
+    public class LinearRegressionStrategy : IStrategy
     {
-        private int _window;
+        private readonly ISearcher _searcher;
         private readonly MarketDataCache _marketDataCache;
-        public override StrategyType StrategyType { get; } = StrategyType.LinearRegression;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(128);
+        private readonly StrategyFactory _strategyFactory;
+        private LinearRegressionParameters _parameters;
 
-        public LinearRegressionStrategy(MarketDataCache marketDataCache)
-            : this (marketDataCache, 0)
-        { }
+        public IParameters Parameters
+        {
+            get => _parameters;
+            private set => _parameters = (LinearRegressionParameters)value;
+        }
+        public StrategyType StrategyType { get; } = StrategyType.LinearRegression;
 
         public LinearRegressionStrategy(
-            MarketDataCache marketDataCache, 
-            int window, 
-            bool shouldOptimise = true)
-            : base(shouldOptimise)
+            StrategyFactory strategyFactory,
+            MarketDataCache marketDataCache,
+            ISearcher searcher,
+            LinearRegressionParameters parameters)
         {
-            _window = window;
+            _searcher = searcher;
+            _strategyFactory = strategyFactory;
             _marketDataCache = marketDataCache;
+
+            Parameters = parameters;
         }
 
-        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
+        public void Optimise(DateTime latestDate)
         {
-            progress.MaxTicks = 200;
-            var potentials = Enumerable.Range(30, 200).Select(x => new LinearRegressionStrategy(_marketDataCache, x, false));
+            var potentials = Enumerable.Range(30, 200).Select(x => 
+                _strategyFactory.Create(new LinearRegressionParameters{ Lookback = x }));
 
-            var searcher = new LinearSearch(simulator, potentials, progress);
-            return searcher.Maximum(LatestDate);
+            var optimum = _searcher.Maximum(potentials, latestDate);
+
+            Parameters = optimum.Parameters;
         }
 
-        protected override void SetParameters(IStrategy strategy)
+        public bool ShouldBuy(MarketData data)
         {
-            _window = ((LinearRegressionStrategy)strategy)._window;
-        }
-
-        protected override bool ShouldBuy(MarketData data)
-        {
-            var latestPoints = _marketDataCache.GetLastSince(LatestDate, _window)
+            var latestPoints = _marketDataCache.GetLastSince(data.Date, _parameters.Lookback)
                 .Select((x, i) => new XYPoint { X = i, Y = x.Price }).ToArray();
             if (latestPoints.Length < 2)
                 return false;
@@ -55,7 +57,7 @@ namespace MarketAnalysis.Strategy
             return data.Price < prediction;
         }
 
-        private void GenerateLinearBestFit(XYPoint[] points, out double m, out double b)
+        private static void GenerateLinearBestFit(XYPoint[] points, out double m, out double b)
         {
             int numPoints = points.Length;
             double meanX = points.Average(point => point.X);
@@ -84,12 +86,12 @@ namespace MarketAnalysis.Strategy
             if (!(obj is LinearRegressionStrategy strategy))
                 return false;
 
-            return strategy._window == _window;
+            return strategy._parameters.Lookback == _parameters.Lookback;
         }
 
         public override int GetHashCode()
         {
-            return _window.GetHashCode();
+            return _parameters.Lookback.GetHashCode();
         }
     }
 }

@@ -1,71 +1,67 @@
 ﻿using System;
 using System.Linq;
 using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
-using MarketAnalysis.Simulation;
+using MarketAnalysis.Strategy.Parameters;
 using MathNet.Numerics;
-using ShellProgressBar;
 
 namespace MarketAnalysis.Strategy
 {
-    public class GradientStrategy : OptimisableStrategy
+    public class GradientStrategy : IStrategy
     {
-        private int _window;
-        private decimal _threshold;
+        private readonly StrategyFactory _strategyFactory;
         private readonly MarketDataCache _marketDataCache;
-        public override StrategyType StrategyType { get; } = StrategyType.Gradient;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
+        private readonly ISearcher _searcher;
+        private GradientParameters _parameters;
 
-        public GradientStrategy(MarketDataCache marketDataCache)
-            : this (marketDataCache, 0, 0)
-        { }
+        public IParameters Parameters
+        {
+            get => _parameters;
+            private set => _parameters = (GradientParameters)value;
+        }
+        public StrategyType StrategyType { get; } = StrategyType.Gradient;
 
         public GradientStrategy(
+            StrategyFactory strategyFactory,
             MarketDataCache marketDataCache,
-            int window, 
-            decimal threshold, 
-            bool shouldOptimise = true)
-            : base(shouldOptimise)
+            ISearcher searcher,
+            GradientParameters parameters)
         {
-            _window = window;
-            _threshold = threshold;
+            _strategyFactory = strategyFactory;
             _marketDataCache = marketDataCache;
+            _searcher = searcher;
+            Parameters = parameters;
         }
 
-        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
+        public void Optimise(DateTime latestDate)
         {
             var potentials = Enumerable.Range(1, 10).SelectMany(x =>
             {
                 return Enumerable.Range(20, 20).Select(window =>
                 {
                     var threshold = -((decimal)x / 100);
-                    return new GradientStrategy(_marketDataCache, window, threshold, false);
+                    return _strategyFactory.Create(new GradientParameters { Threshold = threshold, Window = window });
                 });
             });
 
-            var searcher = new LinearSearch(simulator, potentials, progress);
-            return searcher.Maximum(LatestDate);
+            var optimum = _searcher.Maximum(potentials, latestDate);
+
+            Parameters = optimum.Parameters;
         }
 
-        protected override void SetParameters(IStrategy strategy)
+        public bool ShouldBuy(MarketData data)
         {
-            var optimal = (GradientStrategy)strategy;
-            _window = optimal._window;
-            _threshold = optimal._threshold;
-        }
-
-        protected override bool ShouldBuy(MarketData data)
-        {
-            var batch = _marketDataCache.TakeUntil(LatestDate).ToList().Last(_window);
+            var batch = _marketDataCache.TakeUntil(data.Date).ToList().Last(_parameters.Window);
             if (batch.Length < 2)
                 return false;
 
             var xData = batch.Select(x => (double)x.Price).ToArray();
             var yData = Enumerable.Range(0, batch.Length).Select(x => (double)x).ToArray();
-            var parameters = Fit.Line(xData, yData);
+            var (intercept, gradient) = Fit.Line(xData, yData);
 
-            return parameters.Item2 < (double)_threshold;
+            return gradient < (double)_parameters.Threshold;
         }
 
         public override bool Equals(object obj)
@@ -73,13 +69,13 @@ namespace MarketAnalysis.Strategy
             if (!(obj is GradientStrategy strategy))
                 return false;
 
-            return strategy._window == _window &&
-                   strategy._threshold == _threshold;
+            return strategy._parameters.Window == _parameters.Window &&
+                   strategy._parameters.Threshold == _parameters.Threshold;
         }
 
         public override int GetHashCode()
         {
-            return _window.GetHashCode() ^ _threshold.GetHashCode();
+            return _parameters.Window.GetHashCode() ^ _parameters.Threshold.GetHashCode();
         }
     }
 }

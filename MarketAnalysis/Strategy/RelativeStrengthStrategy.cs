@@ -1,21 +1,28 @@
 ﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
-using MarketAnalysis.Simulation;
-using ShellProgressBar;
+using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class RelativeStrengthStrategy : OptimisableStrategy
+    public class RelativeStrengthStrategy : IStrategy
     {
-        private int _threshold;
-        private int[] _testSet;
+        private readonly StrategyFactory _strategyFactory;
         private readonly MarketDataCache _marketDataCache;
-        public override StrategyType StrategyType { get; } = StrategyType.RelativeStrength;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
+        private readonly ISearcher _searcher;
+        private RelativeStrengthParameters _parameters;
+
+        public IParameters Parameters 
+        {
+            get => _parameters;
+            private set => _parameters = (RelativeStrengthParameters)value; 
+        }
+        public StrategyType StrategyType { get; } = StrategyType.RelativeStrength;
+        
 
         private static readonly Lazy<List<int[]>> OptimisationSets = new Lazy<List<int[]>>(() =>
         {
@@ -34,54 +41,44 @@ namespace MarketAnalysis.Strategy
             return results;
         });
 
-        public RelativeStrengthStrategy(MarketDataCache marketDataCache)
-            : this (marketDataCache, 0, new int[0])
-        { }
-
         public RelativeStrengthStrategy(
-            MarketDataCache marketDataCache, 
-            int threshold, 
-            int[] testSet, 
-            bool shouldOptimise = true)
-            : base(shouldOptimise)
+            StrategyFactory strategyFactory,
+            MarketDataCache marketDataCache,
+            ISearcher searcher,
+            RelativeStrengthParameters parameters)
         {
-            _testSet = testSet;
-            _threshold = threshold;
+            _searcher = searcher;
+            _strategyFactory = strategyFactory;
             _marketDataCache = marketDataCache;
+
+            Parameters = parameters;
         }
 
-        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
+        public void Optimise(DateTime latestDate)
         {
-            var potentials = new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(lookback =>
+            var potentials = new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(t =>
             {
                 return OptimisationSets.Value.Select(s =>
-                    new RelativeStrengthStrategy(_marketDataCache, lookback, s, false));
+                    _strategyFactory.Create(new RelativeStrengthParameters { Threshold = t, TestSet = s }));
             });
 
-            var searcher = new LinearSearch(simulator, potentials, progress);
-            return searcher.Maximum(LatestDate);
+            var optimum = _searcher.Maximum(potentials, latestDate);
+
+            Parameters = optimum.Parameters;
         }
 
-        protected override void SetParameters(IStrategy strategy)
+        public bool ShouldBuy(MarketData data)
         {
-            var optimal = (RelativeStrengthStrategy)strategy;
-
-            _threshold = optimal._threshold;
-            _testSet = optimal._testSet;
-        }
-
-        protected override bool ShouldBuy(MarketData data)
-        {
-            var batch = _marketDataCache.GetLastSince(LatestDate, _threshold).ToArray();
+            var batch = _marketDataCache.GetLastSince(data.Date, _parameters.Threshold).ToArray();
             if (batch.Count() < 3)
                 return false;
 
             var strength = GetRelativeStrength(data.Price, batch);
 
-            return _testSet.Contains(strength);
+            return _parameters.TestSet.Contains(strength);
         }
-        
-        private int GetRelativeStrength(decimal price, MarketData[] data)
+
+        private static int GetRelativeStrength(decimal price, MarketData[] data)
         {
             var min = data.Min(y => y.Price);
             var max = data.Max(y => y.Price);
@@ -122,12 +119,12 @@ namespace MarketAnalysis.Strategy
             if (!(obj is RelativeStrengthStrategy strategy))
                 return false;
 
-            return strategy._threshold == _threshold;
+            return strategy._parameters.Threshold == _parameters.Threshold;
         }
 
         public override int GetHashCode()
         {
-            return _threshold.GetHashCode();
+            return _parameters.Threshold.GetHashCode();
         }
     }
 }

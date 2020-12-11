@@ -1,48 +1,52 @@
-﻿using MarketAnalysis.Models;
+﻿using MarketAnalysis.Factories;
+using MarketAnalysis.Models;
 using MarketAnalysis.Search;
-using MarketAnalysis.Simulation;
-using ShellProgressBar;
+using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class VolumeStrategy : OptimisableStrategy
+    public class VolumeStrategy : IStrategy
     {
-        private int _threshold;
-        private decimal _previousVolume;
-        public override StrategyType StrategyType { get; } = StrategyType.Volume;
-        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(256);
+        private readonly ISearcher _searcher;
+        private readonly StrategyFactory _strategyFactory;
+        private VolumeParameters _parameters;
 
-        public VolumeStrategy()
-            : this (0)
-        { }
-
-        public VolumeStrategy(int threshold, bool shouldOptimise = true)
-            :base(shouldOptimise)
+        public IParameters Parameters 
         {
-            _threshold = threshold;
+            get => _parameters;
+            private set => _parameters = (VolumeParameters)value; 
+        }
+        public StrategyType StrategyType { get; } = StrategyType.Volume;
+
+        public VolumeStrategy(
+            StrategyFactory strategyFactory,
+            ISearcher searcher,
+            VolumeParameters parameters)
+        {
+            _strategyFactory = strategyFactory;
+            _searcher = searcher;
+
+            Parameters = parameters;
         }
 
-        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
+        public void Optimise(DateTime latestDate)
         {
-            var potentials = Enumerable.Range(1, 800).Select(x => new VolumeStrategy(x, false));
+            var potentials = Enumerable.Range(1, 800).Select(x =>
+                _strategyFactory.Create(new VolumeParameters { Threshold = x }));
 
-            var searcher = new LinearSearch(simulator, potentials, progress);
-            return searcher.Maximum(LatestDate);
+            var optimum = _searcher.Maximum(potentials, latestDate);
+
+            Parameters = ((VolumeStrategy)optimum).Parameters;
         }
 
-        protected override void SetParameters(IStrategy strategy)
+        public bool ShouldBuy(MarketData data)
         {
-            _threshold = ((VolumeStrategy)strategy)._threshold;
-        }
+            var shouldBuy = _parameters.PreviousVolume != 0 &&
+                (data.Volume / _parameters.PreviousVolume) > _parameters.Threshold;
 
-        protected override bool ShouldBuy(MarketData data)
-        {
-            var shouldBuy = _previousVolume != 0 && 
-                (data.Volume / _previousVolume) > _threshold;
-            
-            _previousVolume = data.Volume;
+            _parameters.PreviousVolume = data.Volume;
             return shouldBuy;
         }
 
@@ -51,12 +55,12 @@ namespace MarketAnalysis.Strategy
             if (!(obj is VolumeStrategy strategy))
                 return false;
 
-            return _threshold == strategy._threshold;
+            return _parameters.Threshold == strategy._parameters.Threshold;
         }
 
         public override int GetHashCode()
         {
-            return _threshold.GetHashCode();
+            return _parameters.Threshold.GetHashCode();
         }
     }
 }

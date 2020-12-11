@@ -1,9 +1,13 @@
 ﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Repositories;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
+using MarketAnalysis.Strategy.Parameters;
+using OxyPlot;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,24 +17,27 @@ namespace MarketAnalysis.Providers
     public class ResultsProvider : IResultsProvider
     {
         private readonly List<SimulationResult> _results = new List<SimulationResult>(5000);
-        private readonly ISimulator _simulator;
         private readonly MarketDataCache _marketDataCache;
-        private readonly ProgressBarProvider _progressProvider;
+        private readonly StrategyFactory _strategyFactory;
+        private readonly SimulatorFactory _simulatorFactory;
+        private readonly InvestorProvider _investorProvider;
         private readonly IRepository<MarketData> _marketDataRepository;
         private readonly IRepository<SimulationResult> _simulationResultsRepository;
         private SimulationState[] _marketAverage;
         private SimulationState[] _marketMaximum;
 
         public ResultsProvider(
-            ISimulator simulator, 
             MarketDataCache marketDataCache,
-            ProgressBarProvider progressProvider,
+            StrategyFactory strategyFactory,
+            SimulatorFactory simulatorFactory,
+            InvestorProvider investorProvider,
             IRepository<MarketData> marketDataRepository,
             IRepository<SimulationResult> simulationResultsRepository)
         {
             _marketDataCache = marketDataCache;
-            _simulator = simulator;
-            _progressProvider = progressProvider;
+            _strategyFactory = strategyFactory;
+            _simulatorFactory = simulatorFactory;
+            _investorProvider = investorProvider;
             _marketDataRepository = marketDataRepository;
             _simulationResultsRepository = simulationResultsRepository;
         }
@@ -38,15 +45,16 @@ namespace MarketAnalysis.Providers
         public void Initialise()
         {
             var buyDates = _marketDataCache.TakeUntil().Select(x => x.Date).ToDictionary(k => k, v => true);
-            var constantStrategy = new StaticDatesStrategy(buyDates);
-            
-            using var progressBar = _progressProvider.Create(_marketDataCache.BacktestingIndex, "Initialising...");
-            _marketAverage = _simulator.Evaluate(constantStrategy, progress: progressBar).ToArray();
-            _marketMaximum = GetMarketMaximum(_simulator, buyDates, progressBar).ToArray();
+            var constantStrategy = _strategyFactory.Create(new StaticDatesParameters { BuyDates = buyDates });
+
+            using var progressBar = ProgressBarProvider.Create(_marketDataCache.BacktestingIndex, "Initialising...");
+            _marketAverage = _simulatorFactory.Create<TrainingSimulator>().Evaluate(constantStrategy, _investorProvider.Current).ToArray();
+            _marketMaximum = GetMarketMaximum(buyDates, progressBar).ToArray();
         }
 
-        public void AddResults(Investor investor, Dictionary<IStrategy, SimulationState[]> source)
+        public void AddResults(Investor investor, ConcurrentDictionary<IStrategy, SimulationState[]> source)
         {
+
             foreach (var (strategy, simulationResults) in source)
             {
                 var history = simulationResults.ToArray();
@@ -130,18 +138,19 @@ namespace MarketAnalysis.Providers
             return buyIndexes.Skip(1).Select((x, i) => x > 0 ? x - buyIndexes[i] : x).Max();
         }
 
-        private IEnumerable<SimulationState> GetMarketMaximum(ISimulator simulator, Dictionary<DateTime, bool> buyDates, ShellProgressBar.ProgressBar progressBar)
+        private IEnumerable<SimulationState> GetMarketMaximum(Dictionary<DateTime, bool> buyDates, ShellProgressBar.ProgressBar progressBar)
         {
-            var strategy = new StaticDatesStrategy(buyDates);
-            var history = simulator.Evaluate(strategy);
+            var investor = _investorProvider.Current;
+            var strategy = _strategyFactory.Create(new StaticDatesParameters { BuyDates = buyDates });
+            var history = _simulatorFactory.Create<TrainingSimulator>().Evaluate(strategy, investor);
             var worth = history.LastOrDefault()?.Worth ?? 0m;
 
             var i = 1;
             foreach (var (date, _) in buyDates.Where(x => x.Key > Configuration.BacktestingDate).Reverse())
             {
                 buyDates[date] = false;
-                strategy = new StaticDatesStrategy(buyDates) { Identifier = i++ };
-                var newHistory = simulator.Evaluate(strategy);
+                strategy = _strategyFactory.Create(new StaticDatesParameters { BuyDates = buyDates, Identifier = i++ });
+                var newHistory = _simulatorFactory.Create<TrainingSimulator>().Evaluate(strategy, investor);
                 var newWorth = newHistory?.LastOrDefault()?.Worth ?? 0m;
                 if (newWorth < worth)
                     buyDates[date] = true;

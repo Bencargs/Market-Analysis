@@ -1,9 +1,9 @@
 ﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
 using MarketAnalysis.Services;
-using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -44,8 +44,6 @@ namespace MarketAnalysis
             services.AddSingleton<SimulationCache>();
 
             // Repositories
-            services.AddSingleton(typeof(IRepository<Investor>), typeof(FileRepository));
-            services.AddSingleton(typeof(IRepository<IStrategy>), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository<MarketData>), typeof(FileRepository));
             services.AddSingleton(typeof(IRepository<SimulationResult>), typeof(FileRepository));
 
@@ -60,8 +58,12 @@ namespace MarketAnalysis
             services.AddSingleton<MarketDataProvider>();
             services.AddSingleton<ReportProvider>();
 
+            // Factories
+            services.AddSingleton<StrategyFactory>();
+            services.AddSingleton<OptimiserFactory>();
+            services.AddSingleton<SimulatorFactory>();
+
             // Services
-            services.AddSingleton(typeof(ISimulator), typeof(Simulator));
             services.AddSingleton(typeof(ICommunicationService), typeof(EmailCommunicationService));
             services.AddTransient<AnalysisService>();
 

@@ -1,28 +1,38 @@
 ﻿using MarketAnalysis.Models;
-using MarketAnalysis.Repositories;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Linq;
 
 namespace MarketAnalysis.Providers
 {
     public class InvestorProvider : IEnumerator<Investor>
     {
-        private readonly IRepository<Investor> _investorRepository;
         private IEnumerator<Investor> _investors;
         public Investor Current { get; private set; }
 
         object IEnumerator.Current => Current;
 
-        public InvestorProvider(IRepository<Investor> investorRepository)
+        public void Initialise()
         {
-            _investorRepository = investorRepository;
-        }
-
-        public async Task Initialise()
-        {
-            var accessor = await _investorRepository.Get();
-            _investors = accessor.GetEnumerator();
+            _investors = new[]
+            {
+                    new Investor
+                    {
+                        Name = "Benjamin Cargill",
+                        Number = "000001",
+                        Email = "benjamin.d.cargill@gmail.com",
+                        DailyFunds = 10m,
+                        OrderBrokerage = 0m,
+                        OrderDelayDays = 3
+                    },
+                    //new RecipientDetails
+                    //{
+                    //    Date = DateTime.Now,
+                    //    Name = "Cyndi Chen",
+                    //    Number = "000002",
+                    //    Email = "annsn12@hotmail.com"
+                    //}
+            }.Cast<Investor>().GetEnumerator();
         }
 
         public bool MoveNext()

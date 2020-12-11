@@ -28,7 +28,7 @@ namespace MarketAnalysis.Providers
             return JoinData(historicData.Result, latestData.Result);
         }
 
-        private IEnumerable<MarketData> JoinData(IEnumerable<MarketData> historicData, IEnumerable<MarketData> latestData)
+        private static IEnumerable<MarketData> JoinData(IEnumerable<MarketData> historicData, IEnumerable<MarketData> latestData)
         {
             var lastHistoricData = historicData.Last();
             var recentData = latestData.Where(x => x.Date > lastHistoricData.Date).ToArray();

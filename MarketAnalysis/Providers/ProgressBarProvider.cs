@@ -5,7 +5,7 @@ namespace MarketAnalysis.Providers
 {
     public class ProgressBarProvider
     {
-        public ProgressBar Create(int maxCount, string title)
+        public static ProgressBar Create(int maxCount, string title)
         {
             var options = new ProgressBarOptions
             {
@@ -16,7 +16,7 @@ namespace MarketAnalysis.Providers
             return new ProgressBar(maxCount, title, options);
         }
 
-        public ChildProgressBar Create(ProgressBar parent, int maxCount, string title)
+        public static ChildProgressBar Create(ProgressBar parent, int maxCount, string title)
         {
             var options = new ProgressBarOptions
             {

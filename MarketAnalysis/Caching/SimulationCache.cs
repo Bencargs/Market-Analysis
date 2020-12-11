@@ -1,6 +1,7 @@
 ﻿using MarketAnalysis.Models;
 using MarketAnalysis.Strategy;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,7 +11,7 @@ namespace MarketAnalysis.Caching
     {
         public int Count => _cache.Values.Count;
 
-        private readonly Dictionary<IStrategy, List<SimulationState>> _cache = new Dictionary<IStrategy, List<SimulationState>>();
+        private readonly ConcurrentDictionary<IStrategy, List<SimulationState>> _cache = new ConcurrentDictionary<IStrategy, List<SimulationState>>();
         private readonly SimulationStateDateComparer _comparer = new SimulationStateDateComparer();
 
         public bool TryGet((IStrategy strategy, DateTime day) key, out SimulationState simulation)
@@ -31,7 +32,7 @@ namespace MarketAnalysis.Caching
             if (!_cache.TryGetValue(key.strategy, out var history))
             {
                 history = new List<SimulationState>();
-                _cache.Add(key.strategy, history);
+                _cache.TryAdd(key.strategy, history);
             }
 
             var latestState = history.LastOrDefault();
@@ -43,7 +44,7 @@ namespace MarketAnalysis.Caching
 
         public void Remove(IStrategy strategy)
         {
-            _cache.Remove(strategy);
+            _cache.TryRemove(strategy, out var _);
         }
 
         private SimulationState CreateEntry(List<SimulationState> history, SimulationState latestState, Func<SimulationState, SimulationState> createItem)

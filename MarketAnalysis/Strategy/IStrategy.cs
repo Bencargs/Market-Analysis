@@ -1,10 +1,14 @@
 ﻿using MarketAnalysis.Models;
+using MarketAnalysis.Strategy.Parameters;
+using System;
 
 namespace MarketAnalysis.Strategy
 {
     public interface IStrategy
     {
         StrategyType StrategyType { get; }
-        bool ShouldBuyShares(MarketData data);
+        IParameters Parameters { get; }
+        void Optimise(DateTime date);
+        bool ShouldBuy(MarketData data);
     }
 }

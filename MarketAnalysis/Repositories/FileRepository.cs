@@ -1,11 +1,11 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Models.ApiData;
 using MarketAnalysis.Strategy;
 using Newtonsoft.Json;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -17,21 +17,9 @@ namespace MarketAnalysis.Repositories
 {
     public class FileRepository : 
         IRepository<MarketData>,
-        IRepository<IStrategy>,
-        IRepository<SimulationResult>,
-        IRepository<Investor>
+        IRepository<SimulationResult>
     {
         private readonly string _dataFilePath = Configuration.DataPath;
-        private readonly SimulationCache _simulationCache;
-        private readonly MarketDataCache _marketDataCache;
-
-        public FileRepository(
-            MarketDataCache marketDataCache,
-            SimulationCache simulationCache)
-        {
-            _simulationCache = simulationCache;
-            _marketDataCache = marketDataCache;
-        }
 
         Task<IEnumerable<MarketData>> IRepository<MarketData>.Get()
         {
@@ -72,26 +60,6 @@ namespace MarketAnalysis.Repositories
             }
         }
 
-        async Task<IEnumerable<IStrategy>> IRepository<IStrategy>.Get()
-        {
-            var subStrategies = new IStrategy[]
-            {
-                //new EntropyStrategy(_marketDataCache),
-                //new PatternRecognitionStrategy(_marketDataCache),
-                new RelativeStrengthStrategy(_marketDataCache),
-                new DeltaStrategy(),
-                new GradientStrategy(_marketDataCache),
-                new LinearRegressionStrategy(_marketDataCache),
-                new VolumeStrategy(),
-                //new MovingAverageStrategy(_marketDataCache),
-                //new ClusteringStrategy(_marketDataCache)
-            };
-            var strategies = subStrategies.Concat(new[] { new WeightedStrategy(_simulationCache, subStrategies) });
-            Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");
-
-            return await Task.FromResult(strategies);
-        }
-
         public Task Save(IEnumerable<IStrategy> data)
         {
             throw new NotSupportedException();
@@ -107,29 +75,6 @@ namespace MarketAnalysis.Repositories
             var resutlsFile = DirectoryManager.GetLatestResultsFile();
             var json = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(results, Formatting.Indented));
             File.WriteAllText(resutlsFile, json);
-        }
-
-        async Task<IEnumerable<Investor>> IRepository<Investor>.Get()
-        {
-            return await Task.FromResult(new[]
-            {
-                    new Investor
-                    {
-                        Name = "Benjamin Cargill",
-                        Number = "000001",
-                        Email = "benjamin.d.cargill@gmail.com",
-                        DailyFunds = 10m,
-                        OrderBrokerage = 0m,
-                        OrderDelayDays = 3
-                    },
-                    //new RecipientDetails
-                    //{
-                    //    Date = DateTime.Now,
-                    //    Name = "Cyndi Chen",
-                    //    Number = "000002",
-                    //    Email = "annsn12@hotmail.com"
-                    //}
-            });
         }
 
         public Task Save(IEnumerable<Investor> data)
