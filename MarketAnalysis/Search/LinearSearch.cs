@@ -12,14 +12,14 @@ namespace MarketAnalysis.Search
 {
     public class LinearSearch : ISearcher
     {
-        private readonly MarketDataCache _dataCache;
-        private readonly SimulationCache _simulationCache;
-        private readonly InvestorProvider _investorProvider;
+        private readonly IMarketDataCache _dataCache;
+        private readonly ISimulationCache _simulationCache;
+        private readonly IInvestorProvider _investorProvider;
 
         public LinearSearch(
-            MarketDataCache dataCache,
-            SimulationCache simulationCache,
-            InvestorProvider investorProvider)
+            IMarketDataCache dataCache,
+            ISimulationCache simulationCache,
+            IInvestorProvider investorProvider)
         {
             _dataCache = dataCache;
             _simulationCache = simulationCache;
@@ -28,6 +28,7 @@ namespace MarketAnalysis.Search
 
         public T Maximum<T>(
             IEnumerable<T> strategies, 
+            DateTime fromDate,
             DateTime endDate)
             where T : IStrategy
         {
@@ -44,14 +45,10 @@ namespace MarketAnalysis.Search
             .Select(x => x.strat);
             
             var optimal = potentials.First();
-            //ClearCache(potentials, optimal);
+            var toRemove = strategies.Except(new[] { optimal }).Cast<IStrategy>();
+            _simulationCache.Remove(fromDate, endDate, toRemove);
 
             return optimal;
         }
-
-        //private void ClearCache(IEnumerable<IStrategy> potentials, IStrategy optimal)
-        //{
-        //    _simulator.RemoveCache(potentials.Except(new[] { optimal }));
-        //}
     }
 }

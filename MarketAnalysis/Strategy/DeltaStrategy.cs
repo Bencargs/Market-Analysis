@@ -31,7 +31,7 @@ namespace MarketAnalysis.Strategy
             Parameters = parameters;
         }
 
-        public void Optimise(DateTime latestDate)
+        public void Optimise(DateTime fromDate, DateTime endDate)
         {
             var potentials = Enumerable.Range(1, 100).Select(x =>
             {
@@ -39,7 +39,7 @@ namespace MarketAnalysis.Strategy
                 return _strategyFactory.Create(new DeltaParameters { Threshold = threshold });
             });
 
-            var optimum = _searcher.Maximum(potentials, latestDate);
+            var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
             Parameters = optimum.Parameters;
         }

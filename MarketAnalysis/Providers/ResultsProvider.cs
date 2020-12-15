@@ -17,20 +17,20 @@ namespace MarketAnalysis.Providers
     public class ResultsProvider : IResultsProvider
     {
         private readonly List<SimulationResult> _results = new List<SimulationResult>(5000);
-        private readonly MarketDataCache _marketDataCache;
+        private readonly IMarketDataCache _marketDataCache;
         private readonly StrategyFactory _strategyFactory;
         private readonly SimulatorFactory _simulatorFactory;
-        private readonly InvestorProvider _investorProvider;
+        private readonly IInvestorProvider _investorProvider;
         private readonly IRepository<MarketData> _marketDataRepository;
         private readonly IRepository<SimulationResult> _simulationResultsRepository;
         private SimulationState[] _marketAverage;
         private SimulationState[] _marketMaximum;
 
         public ResultsProvider(
-            MarketDataCache marketDataCache,
+            IMarketDataCache marketDataCache,
             StrategyFactory strategyFactory,
             SimulatorFactory simulatorFactory,
-            InvestorProvider investorProvider,
+            IInvestorProvider investorProvider,
             IRepository<MarketData> marketDataRepository,
             IRepository<SimulationResult> simulationResultsRepository)
         {

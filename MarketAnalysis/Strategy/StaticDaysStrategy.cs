@@ -20,7 +20,7 @@ namespace MarketAnalysis.Strategy
             Parameters = parameters;
         }
 
-        public void Optimise(DateTime latestDate) { }
+        public void Optimise(DateTime _, DateTime __) { }
 
         public bool ShouldBuy(MarketData data)
         {

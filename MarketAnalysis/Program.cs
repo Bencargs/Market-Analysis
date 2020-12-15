@@ -4,7 +4,6 @@ using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
 using MarketAnalysis.Services;
-using MarketAnalysis.Strategy;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using SerilogTimings;
@@ -40,21 +39,21 @@ namespace MarketAnalysis
             var services = new ServiceCollection();
 
             // Caches
-            services.AddSingleton<MarketDataCache>();
-            services.AddSingleton<SimulationCache>();
+            services.AddSingleton<IMarketDataCache, MarketDataCache>();
+            services.AddSingleton<ISimulationCache, SimulationCache>();
 
             // Repositories
-            services.AddSingleton(typeof(IRepository<MarketData>), typeof(FileRepository));
-            services.AddSingleton(typeof(IRepository<SimulationResult>), typeof(FileRepository));
+            services.AddSingleton<IRepository<MarketData>, FileRepository>();
+            services.AddSingleton<IRepository<SimulationResult>, FileRepository>();
 
             // Providers
             services.AddSingleton<ProgressBarProvider>();
-            services.AddSingleton(typeof(IResultsProvider), typeof(ResultsProvider));
+            services.AddSingleton<IResultsProvider, ResultsProvider>();
             //services.AddSingleton<IApiDataProvider, WorldTradingDataProvider>();
             //services.AddSingleton<IApiDataProvider, AlphaVantageDataProvider>();
-            services.AddSingleton<IApiDataProvider, YahooFinanceProvider>();
+            services.AddTransient<IApiDataProvider, YahooFinanceProvider>();
             services.AddSingleton<StrategyProvider>();
-            services.AddSingleton<InvestorProvider>();
+            services.AddSingleton<IInvestorProvider, InvestorProvider>();
             services.AddSingleton<MarketDataProvider>();
             services.AddSingleton<ReportProvider>();
 
@@ -64,7 +63,7 @@ namespace MarketAnalysis
             services.AddSingleton<SimulatorFactory>();
 
             // Services
-            services.AddSingleton(typeof(ICommunicationService), typeof(EmailCommunicationService));
+            services.AddSingleton<ICommunicationService, EmailCommunicationService>();
             services.AddTransient<AnalysisService>();
 
             return services.BuildServiceProvider();

@@ -31,12 +31,12 @@ namespace MarketAnalysis.Strategy
             Parameters = parameters;
         }
 
-        public void Optimise(DateTime latestDate)
+        public void Optimise(DateTime fromDate, DateTime endDate)
         {
             var potentials = Enumerable.Range(1, 800).Select(x =>
                 _strategyFactory.Create(new VolumeParameters { Threshold = x }));
 
-            var optimum = _searcher.Maximum(potentials, latestDate);
+            var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
             Parameters = ((VolumeStrategy)optimum).Parameters;
         }

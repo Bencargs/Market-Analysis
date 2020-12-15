@@ -14,19 +14,19 @@ namespace MarketAnalysis.Services
 {
     public class AnalysisService
     {
-        private readonly MarketDataCache _marketDataCache;
+        private readonly IMarketDataCache _marketDataCache;
         private readonly IResultsProvider _resultsProvider;
         private readonly StrategyProvider _strategyProvider;
-        private readonly InvestorProvider _investorProvider;
+        private readonly IInvestorProvider _investorProvider;
         private readonly SimulatorFactory _simulatorFactory;
         private readonly MarketDataProvider _marketDataProvider;
         private readonly ICommunicationService _communicationService;
 
         public AnalysisService(
-            MarketDataCache marketDataCache,
+            IMarketDataCache marketDataCache,
             IResultsProvider resultsProvider,
             StrategyProvider strategyProvider,
-            InvestorProvider investorProvider,
+            IInvestorProvider investorProvider,
             SimulatorFactory simulatorFactory,
             MarketDataProvider marketDataProvider,
             ICommunicationService communicationService)
@@ -70,8 +70,7 @@ namespace MarketAnalysis.Services
                 _resultsProvider.Initialise();
                 var histories = new ConcurrentDictionary<IStrategy, SimulationState[]>();
                 using var progress = ProgressBarProvider.Create(0, "Evaluating...");
-                //Parallel.ForEach(strategies, strategy =>
-                foreach (var strategy in strategies)
+                Parallel.ForEach(strategies, strategy =>
                 {
                     var description = strategy.StrategyType.GetDescription();
                     Log.Information($"Simulating strategy: {description}");
@@ -79,8 +78,7 @@ namespace MarketAnalysis.Services
                     var simulator = _simulatorFactory.Create<BacktestingSimulator>();
                     var result = simulator.Evaluate(strategy, _investorProvider.Current, progress: progress);
                     histories[strategy] = result.ToArray();
-                }
-                //);
+                });
                 _resultsProvider.AddResults(investor, histories);
             }
 
@@ -91,7 +89,7 @@ namespace MarketAnalysis.Services
         {
             var saveSimulationsTask = resultsProvider.SaveSimulationResults();
 
-            var saveDataTask = resultsProvider.SaveData(data);
+            var saveDataTask = resultsProvider.SaveData(data);//sus - just use the cache?
 
             await Task.WhenAll(saveSimulationsTask, saveDataTask);
         }

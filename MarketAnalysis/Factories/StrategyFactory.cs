@@ -7,11 +7,11 @@ namespace MarketAnalysis.Factories
 {
     public class StrategyFactory
     {
-        private readonly MarketDataCache _marketDataCache;
+        private readonly IMarketDataCache _marketDataCache;
         private readonly OptimiserFactory _optimiserFactory;
 
         public StrategyFactory(
-            MarketDataCache marketDataCache,
+            IMarketDataCache marketDataCache,
             OptimiserFactory optimiserFactory)
         {
             _marketDataCache = marketDataCache;

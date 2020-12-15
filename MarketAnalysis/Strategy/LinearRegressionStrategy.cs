@@ -11,7 +11,7 @@ namespace MarketAnalysis.Strategy
     public class LinearRegressionStrategy : IStrategy
     {
         private readonly ISearcher _searcher;
-        private readonly MarketDataCache _marketDataCache;
+        private readonly IMarketDataCache _marketDataCache;
         private readonly StrategyFactory _strategyFactory;
         private LinearRegressionParameters _parameters;
 
@@ -24,7 +24,7 @@ namespace MarketAnalysis.Strategy
 
         public LinearRegressionStrategy(
             StrategyFactory strategyFactory,
-            MarketDataCache marketDataCache,
+            IMarketDataCache marketDataCache,
             ISearcher searcher,
             LinearRegressionParameters parameters)
         {
@@ -35,20 +35,23 @@ namespace MarketAnalysis.Strategy
             Parameters = parameters;
         }
 
-        public void Optimise(DateTime latestDate)
+        public void Optimise(DateTime fromDate, DateTime endDate)
         {
             var potentials = Enumerable.Range(30, 200).Select(x => 
                 _strategyFactory.Create(new LinearRegressionParameters{ Lookback = x }));
 
-            var optimum = _searcher.Maximum(potentials, latestDate);
+            var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
             Parameters = optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)
         {
-            var latestPoints = _marketDataCache.GetLastSince(data.Date, _parameters.Lookback)
-                .Select((x, i) => new XYPoint { X = i, Y = x.Price }).ToArray();
+            var latestPoints = _marketDataCache
+                .GetLastSince(data.Date, _parameters.Lookback)
+                .Select((x, i) => new XYPoint { X = i, Y = x.Price })
+                .ToArray();
+
             if (latestPoints.Length < 2)
                 return false;
 

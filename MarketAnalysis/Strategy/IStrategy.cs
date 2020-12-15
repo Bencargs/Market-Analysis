@@ -8,7 +8,7 @@ namespace MarketAnalysis.Strategy
     {
         StrategyType StrategyType { get; }
         IParameters Parameters { get; }
-        void Optimise(DateTime date);
+        void Optimise(DateTime fromDate, DateTime toDate);
         bool ShouldBuy(MarketData data);
     }
 }

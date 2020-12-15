@@ -6,6 +6,6 @@ namespace MarketAnalysis.Strategy.Parameters
     {
         public decimal PreviousVolume { get; set; }
         public int Threshold { get; set; }
-        public TimeSpan OptimisePeriod { get; } = TimeSpan.FromDays(256);
+        public TimeSpan? OptimisePeriod { get; } = TimeSpan.FromDays(256);
     }
 }

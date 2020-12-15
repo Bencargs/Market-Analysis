@@ -7,13 +7,13 @@ namespace MarketAnalysis.Factories
 {
     public class SimulatorFactory
     {
-        private readonly MarketDataCache _marketDataCache;
-        private readonly SimulationCache _simulationCache;
-        private readonly Dictionary<Type, Func<ISimulator>> _typeLookup;
+        private readonly IMarketDataCache _marketDataCache;
+        private readonly ISimulationCache _simulationCache;
+        private readonly IDictionary<Type, Func<ISimulator>> _typeLookup;
 
         public SimulatorFactory(
-            MarketDataCache marketDataCache,
-            SimulationCache simulationCache)
+            IMarketDataCache marketDataCache,
+            ISimulationCache simulationCache)
         {
             _marketDataCache = marketDataCache;
             _simulationCache = simulationCache;

@@ -7,6 +7,6 @@ namespace MarketAnalysis.Strategy.Parameters
     {
         public Dictionary<DateTime, bool> BuyDates;
         public int Identifier;
-        public TimeSpan OptimisePeriod { get; } = TimeSpan.MaxValue;
+        public TimeSpan? OptimisePeriod { get; } = null;
     }
 }

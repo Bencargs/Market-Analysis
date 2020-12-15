@@ -5,7 +5,13 @@ using System.Linq;
 
 namespace MarketAnalysis.Providers
 {
-    public class InvestorProvider : IEnumerator<Investor>
+    public interface IInvestorProvider : IEnumerator<Investor>
+    {
+        void Initialise();
+        IEnumerator<Investor> GetEnumerator();
+    }
+
+    public class InvestorProvider : IInvestorProvider
     {
         private IEnumerator<Investor> _investors;
         public Investor Current { get; private set; }

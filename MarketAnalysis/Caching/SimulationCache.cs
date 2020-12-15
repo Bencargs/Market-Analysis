@@ -7,12 +7,20 @@ using System.Linq;
 
 namespace MarketAnalysis.Caching
 {
-    public sealed class SimulationCache
+    public interface ISimulationCache
     {
-        public int Count => _cache.Values.Count;
+        int Count { get; }
+        bool TryGet((IStrategy strategy, DateTime day) key, out SimulationState simulation);
+        SimulationState GetOrCreate((IStrategy strategy, DateTime day) key, Func<SimulationState, SimulationState> createItem);
+        void Remove(DateTime fromDate, DateTime toDate, IEnumerable<IStrategy> strategies);
+    }
 
+    public sealed class SimulationCache : ISimulationCache
+    {
         private readonly ConcurrentDictionary<IStrategy, List<SimulationState>> _cache = new ConcurrentDictionary<IStrategy, List<SimulationState>>();
         private readonly SimulationStateDateComparer _comparer = new SimulationStateDateComparer();
+
+        public int Count => _cache.Values.Count;
 
         public bool TryGet((IStrategy strategy, DateTime day) key, out SimulationState simulation)
         {
@@ -42,12 +50,25 @@ namespace MarketAnalysis.Caching
             return CreateEntry(history, latestState, createItem);
         }
 
-        public void Remove(IStrategy strategy)
+        public void Remove(DateTime fromDate, DateTime toDate, IEnumerable<IStrategy> strategies)
         {
-            _cache.TryRemove(strategy, out var _);
+            foreach (var strategy in strategies)
+            {
+                if (!_cache.TryGetValue(strategy, out var items))
+                    continue;
+
+                foreach (var item in items.ToArray())
+                {
+                    if (item.Date < fromDate)
+                        continue;
+                    if (item.Date <= toDate)
+                        items.Remove(item);
+                    else break;
+                }
+            }
         }
 
-        private SimulationState CreateEntry(List<SimulationState> history, SimulationState latestState, Func<SimulationState, SimulationState> createItem)
+        private static SimulationState CreateEntry(List<SimulationState> history, SimulationState latestState, Func<SimulationState, SimulationState> createItem)
         {
             SimulationState cacheEntry = null;
             if (createItem != null)

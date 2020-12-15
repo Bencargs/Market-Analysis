@@ -1,92 +1,86 @@
-﻿//using MarketAnalysis.Models;
-//using MarketAnalysis.Providers;
-//using MarketAnalysis.Strategy;
-//using ShellProgressBar;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
+using MarketAnalysis.Providers;
+using MarketAnalysis.Strategy;
+using ShellProgressBar;
+using System;
+using System.Collections.Generic;
 
-//namespace MarketAnalysis.Simulation
-//{
-//    public class BacktestingSimulator : IStimulationStrategy
-//    {
-//        private readonly ISimulator _simulator;
-//        private readonly InvestorProvider _investorProvider;
-//        private readonly ProgressBarProvider _progressProvider;
+namespace MarketAnalysis.Simulation
+{
+    public class BacktestingSimulator : ISimulator
+    {
+        private readonly IMarketDataCache _dataCache;
+        private readonly ISimulationCache _simulationCache;
+        private DateTime _latestDate;
+        private DateTime _lastOptimised;
 
-//        public BacktestingSimulator(
-//            ISimulator simulator, 
-//            InvestorProvider investorProvider, 
-//            ProgressBarProvider progressProvider)
-//        {
-//            _simulator = simulator;
-//            _investorProvider = investorProvider;
-//            _progressProvider = progressProvider;
-//        }
+        public BacktestingSimulator(
+            IMarketDataCache dataCache,
+            ISimulationCache simulationCache)
+        {
+            _dataCache = dataCache;
+            _simulationCache = simulationCache;
+        }
 
-//        public SimulationState SimulateDay(
-//            IStrategy strategy,
-//            MarketData data, 
-//            OrderQueue queue, 
-//            SimulationState previousState, 
-//            ChildProgressBar progress)
-//        {
-//            using var childProgress = _progressProvider.Create(progress, 0, "Optimising...");
-//            var investor = _investorProvider.Current;
-//            var state = UpdateState(strategy, data, previousState);
+        public IEnumerable<SimulationState> Evaluate(
+            IStrategy strategy,
+            Investor investor,
+            DateTime? endDate = null,
+            ProgressBar progress = null)
+        {
+            var queue = new OrderQueue();
+            var backtestingDate = Configuration.BacktestingDate;
+            var trainer = new TrainingSimulator(_dataCache, _simulationCache);
+            foreach (var state in trainer.Evaluate(strategy, investor, backtestingDate, progress))
+            {
+                yield return state;
+            }
 
-//            AddFunds(investor, state);
-//            ExecuteOrders(state, queue);
+            var remaining = _dataCache.Count - _dataCache.BacktestingIndex;
+            using var childProgress = ProgressBarProvider.Create(progress, remaining, $"Evaluating: {strategy.StrategyType.GetDescription()}");
+            foreach (var data in _dataCache.TakeFrom(backtestingDate, endDate))
+            {
+                var latest = _simulationCache.GetOrCreate((strategy, data.Date), previous =>
+                {
+                    Optimise(strategy);
+                    var shouldBuy = ShouldBuy(strategy, data);
 
-//            if (strategy is OptimisableStrategy optimisable)
-//                optimisable.Optimise(_simulator, childProgress);
+                    var state = previous.UpdateState(data, shouldBuy);
+                    state.AddFunds(investor);
+                    state.ExecuteOrders(queue);
 
-//            if (state.ShouldBuy)
-//                AddBuyOrder(investor, state, queue);
+                    if (state.ShouldBuy)
+                        state.AddBuyOrder(investor, queue);
 
-//            return state;
-//        }
+                    return state;
+                });
 
-//        private SimulationState UpdateState(IStrategy strategy, MarketData data, SimulationState previousState)
-//        {
-//            var shouldBuy = strategy.ShouldBuyShares(data);
+                childProgress?.Tick();
+                yield return latest;
+            }
+        }
 
-//            return new SimulationState
-//            {
-//                Date = data.Date,
-//                SharePrice = data.Price,
-//                ShouldBuy = shouldBuy,
-//                Funds = previousState.Funds,
-//                Shares = previousState.Shares,
-//                BuyCount = previousState.BuyCount,
-//            };
-//        }
+        private void Optimise(IStrategy strategy)
+        {
+            if (!strategy.Parameters.OptimisePeriod.HasValue)
+                return;
 
-//        private void AddBuyOrder(Investor investor, SimulationState state, OrderQueue orderQueue)
-//        {
-//            var cost = state.Funds - investor.OrderBrokerage;
-//            if (cost <= 0)
-//                return;
+            var nextOptimisation = _lastOptimised + strategy.Parameters.OptimisePeriod;
+            if (nextOptimisation > _latestDate)
+                return;
 
-//            state.Funds  = 0;
-//            var order = new MarketOrder
-//            {
-//                Funds = cost,
-//                ExecutionDate = state.Date.AddDays(investor.OrderDelayDays),
-//            };
-//            orderQueue.Add(order);
-//        }
+            strategy.Optimise(_lastOptimised, _latestDate);
 
-//        private void ExecuteOrders(SimulationState state, OrderQueue orderQueue)
-//        {
-//            foreach (var order in orderQueue.Get(state.Date))
-//            {
-//                var newShares = order.Funds / state.SharePrice;
-//                state.Shares += newShares;
-//                state.BuyCount++;
-//            }
-//        }
+            _lastOptimised = _latestDate;
+        }
 
-//        private void AddFunds(Investor investor, SimulationState state)
-//        {
-//            state.Funds += investor.DailyFunds;
-//        }
-//    }
-//}
+        private bool ShouldBuy(IStrategy strategy, MarketData data)
+        {
+            if (data.Date >= _latestDate)
+                _latestDate = data.Date;
+
+            return strategy.ShouldBuy(data);
+        }
+    }
+}

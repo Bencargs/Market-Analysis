@@ -5,12 +5,27 @@ using System.Linq;
 
 namespace MarketAnalysis.Caching
 {
-    public sealed class MarketDataCache
+    public interface IMarketDataCache
+    {
+        int Count { get; }
+        int BacktestingIndex { get; }
+        void Initialise(IEnumerable<MarketData> data);
+        IEnumerable<MarketData> GetLastSince(DateTime date, int count);
+        IEnumerable<MarketData> TakeUntil(DateTime? date = null);
+        IEnumerable<MarketData> TakeFrom(DateTime fromDate, DateTime? endDate);
+    }
+
+    public sealed class MarketDataCache : IMarketDataCache
     {
         private MarketData[] _cache;
 
         public int Count => _cache.Length;
         public int BacktestingIndex => Count - _cache.TakeWhile(x => x.Date < Configuration.BacktestingDate).Count();
+
+        public void Initialise(IEnumerable<MarketData> data)
+        {
+            _cache = data.OrderBy(x => x.Date).ToArray();
+        }
 
         public IEnumerable<MarketData> GetLastSince(DateTime date, int count)
         {
@@ -45,17 +60,12 @@ namespace MarketAnalysis.Caching
             var end = endDate ?? DateTime.MaxValue;
             foreach (var data in _cache)
             {
-                if (data.Date < fromDate)
+                if (data.Date <= fromDate)
                     continue;
                 if (data.Date <= end)
                     yield return data;
                 else break;
             }
-        }
-
-        public void Initialise(IEnumerable<MarketData> data)
-        {
-            _cache = data.OrderBy(x => x.Date).ToArray();
         }
     }
 }
