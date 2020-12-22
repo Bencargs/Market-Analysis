@@ -7,14 +7,14 @@ namespace MarketAnalysis
 {
     public static class DirectoryManager
     {
-        private const int Max_File_Count = 10;
-        private const int Max_File_Size = 1000000; // 1 MB
+        private const int MaxFileCount = 10;
+        private const int MaxFileSize = 1000000; // 1 MB
 
         public static string GetLatestReport()
         {
             const string extension = "html";
             var directory = Configuration.ReportsPath;
-            var filename = $"Market Report {DateTime.Now.ToString("yyyy-MM-dd")}";
+            var filename = $"Market Report {DateTime.Now:yyyy-MM-dd}";
 
             return GetLatestFile(directory, extension, filename);
         }
@@ -23,7 +23,7 @@ namespace MarketAnalysis
         {
             const string extension = "log";
             var directory = Configuration.LogPath;
-            var filename = $"{DateTime.Now.ToString("yyyyMMddTHHmmss")}";
+            var filename = $"{DateTime.Now:yyyyMMddTHHmmss}";
 
             return GetLatestFile(directory, extension, filename);
         }
@@ -32,7 +32,7 @@ namespace MarketAnalysis
         {
             const string extension = "json";
             var directory = Configuration.ResultsPath;
-            var filename = $"{DateTime.Now.ToString("yyyy-MM-dd")}";
+            var filename = $"{DateTime.Now:yyyy-MM-dd}";
 
             return CreateNewFile(directory, filename, extension).FullName;
         }
@@ -40,11 +40,11 @@ namespace MarketAnalysis
         private static string GetLatestFile(string directory, string extension, string filename)
         {
             var files = GetFiles(directory, $"*.{extension}");
-            if (files.Length > Max_File_Count)
+            if (files.Length > MaxFileCount)
                 ArchiveFiles(files);
 
             var latestFile = files.FirstOrDefault();
-            if (latestFile == null || latestFile.Length > Max_File_Size)
+            if (latestFile == null || latestFile.Length > MaxFileSize)
                 latestFile = CreateNewFile(directory, filename, extension);
 
             return latestFile.FullName;
@@ -77,7 +77,7 @@ namespace MarketAnalysis
         {
             var surplus = files
                 .OrderByDescending(x => x.CreationTime)
-                .Skip(Max_File_Count)
+                .Skip(MaxFileCount)
                 .ToArray();
 
             foreach (var file in surplus)
@@ -86,7 +86,7 @@ namespace MarketAnalysis
                 using (var fileStream = new FileStream($"{filename}.zip", FileMode.CreateNew))
                 using (var archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
                 {
-                    var entry = archive.CreateEntryFromFile(filename, file.Name);
+                    archive.CreateEntryFromFile(filename, file.Name);
                 }
                 file.Delete();
             }

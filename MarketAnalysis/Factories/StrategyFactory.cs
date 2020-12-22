@@ -1,7 +1,9 @@
 ﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Providers;
 using MarketAnalysis.Search;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
+using System;
 
 namespace MarketAnalysis.Factories
 {
@@ -12,66 +14,87 @@ namespace MarketAnalysis.Factories
 
         public StrategyFactory(
             IMarketDataCache marketDataCache,
-            OptimiserFactory optimiserFactory)
+            ISimulationCache simulationCache,
+            IInvestorProvider investorProvider)
         {
             _marketDataCache = marketDataCache;
-            _optimiserFactory = optimiserFactory;
+            _optimiserFactory = new OptimiserFactory(_marketDataCache, simulationCache, investorProvider, this);
         }
 
-        public IStrategy Create(LinearRegressionParameters parameters)
+        public IStrategy Create(IParameters parameters)
+        {
+            return parameters switch
+            {
+                LinearRegressionParameters p => Create(p),
+                RelativeStrengthParameters p => Create(p),
+                DeltaParameters p => Create(p),
+                VolumeParameters p => Create(p),
+                GradientParameters p => Create(p),
+                EntropyParameters p => Create(p),
+                StaticDatesParameters p => Create(p),
+                _ => throw new NotImplementedException(),
+            };
+        }
+
+        private IStrategy Create(LinearRegressionParameters parameters)
         {
             var optimiser = _optimiserFactory.Create<LinearSearch>();
 
             return new LinearRegressionStrategy(
-                this,
                 _marketDataCache,
                 optimiser,
                 parameters);
         }
 
-        public IStrategy Create(RelativeStrengthParameters parameters)
+        private IStrategy Create(RelativeStrengthParameters parameters)
         {
             var optimiser = _optimiserFactory.Create<LinearSearch>();
 
             return new RelativeStrengthStrategy(
-                this,
                 _marketDataCache,
                 optimiser,
                 parameters);
         }
 
-        public IStrategy Create(DeltaParameters parameters)
+        private IStrategy Create(DeltaParameters parameters)
         {
             var optimiser = _optimiserFactory.Create<LinearSearch>();
 
             return new DeltaStrategy(
-                this,
                 optimiser,
                 parameters);
         }
 
-        public IStrategy Create(VolumeParameters parameters)
+        private IStrategy Create(VolumeParameters parameters)
         {
             var optimiser = _optimiserFactory.Create<LinearSearch>();
 
             return new VolumeStrategy(
-                this,
                 optimiser,
                 parameters);
         }
 
-        public IStrategy Create(GradientParameters parameters)
+        private IStrategy Create(GradientParameters parameters)
         {
             var optimiser = _optimiserFactory.Create<LinearSearch>();
 
             return new GradientStrategy(
-                this,
                 _marketDataCache,
                 optimiser,
                 parameters);
         }
 
-        public IStrategy Create(StaticDatesParameters parameters)
+        private IStrategy Create(EntropyParameters parameters)
+        {
+            var optimiser = _optimiserFactory.Create<LinearSearch>();
+
+            return new EntropyStrategy(
+                _marketDataCache,
+                optimiser,
+                parameters);
+        }
+
+        private static IStrategy Create(StaticDatesParameters parameters)
             => new StaticDatesStrategy(parameters);
     }
 }

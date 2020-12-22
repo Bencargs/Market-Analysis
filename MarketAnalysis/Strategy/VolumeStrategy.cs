@@ -1,5 +1,4 @@
-﻿using MarketAnalysis.Factories;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using MarketAnalysis.Search;
 using MarketAnalysis.Strategy.Parameters;
 using System;
@@ -7,10 +6,9 @@ using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class VolumeStrategy : IStrategy
+    public class VolumeStrategy : IStrategy, IEquatable<VolumeStrategy>
     {
         private readonly ISearcher _searcher;
-        private readonly StrategyFactory _strategyFactory;
         private VolumeParameters _parameters;
 
         public IParameters Parameters 
@@ -21,11 +19,9 @@ namespace MarketAnalysis.Strategy
         public StrategyType StrategyType { get; } = StrategyType.Volume;
 
         public VolumeStrategy(
-            StrategyFactory strategyFactory,
             ISearcher searcher,
             VolumeParameters parameters)
         {
-            _strategyFactory = strategyFactory;
             _searcher = searcher;
 
             Parameters = parameters;
@@ -34,7 +30,7 @@ namespace MarketAnalysis.Strategy
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
             var potentials = Enumerable.Range(1, 800).Select(x =>
-                _strategyFactory.Create(new VolumeParameters { Threshold = x }));
+                new VolumeParameters { Threshold = x });
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
@@ -52,15 +48,21 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            if (!(obj is VolumeStrategy strategy))
-                return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(VolumeStrategy)) return false;
 
+            return Equals(obj as VolumeStrategy);
+        }
+
+        public bool Equals(VolumeStrategy strategy)
+        {
             return _parameters.Threshold == strategy._parameters.Threshold;
         }
 
         public override int GetHashCode()
         {
-            return _parameters.Threshold.GetHashCode();
+            return HashCode.Combine(_parameters.Threshold);
         }
     }
 }

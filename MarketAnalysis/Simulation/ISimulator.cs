@@ -13,6 +13,5 @@ namespace MarketAnalysis.Simulation
             Investor investor, 
             DateTime? endDate = null, 
             ProgressBar progress = null);
-        //void RemoveCache(IEnumerable<IStrategy> strategies);
     }
 }

@@ -36,23 +36,23 @@ namespace MarketAnalysis.Providers
             return null;
         }
 
-        private IEnumerable<MarketData> ConvertToRow(AlphaDailyPriceData response)
+        private static IEnumerable<MarketData> ConvertToRow(AlphaDailyPriceData response)
         {
             var results = new List<MarketData>(2000);
-            foreach (var row in response?.TimeSeriesDaily)
+            foreach (var (date, value) in response.TimeSeriesDaily)
             {
-                var price = row.Value.Open;
+                var price = value.Open;
                 if (price == 0)
                     continue;
 
-                var lastData = results.LastOrDefault();
+                var lastData = results.Last();
                 var priceDelta = price - (lastData?.Price ?? 0m);
-                var volumeDelta = row.Value.Volume - (lastData?.Volume ?? 0m);
+                var volumeDelta = value.Volume - (lastData?.Volume ?? 0m);
 
                 results.Add(new MarketData
                 {
-                    Date = DateTime.Parse(row.Key),
-                    Volume = row.Value.Volume,
+                    Date = DateTime.Parse(date),
+                    Volume = value.Volume,
                     Price = price,
                     Delta = priceDelta,
                     DeltaPercent = lastData?.Delta != 0 

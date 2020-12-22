@@ -1,5 +1,4 @@
 ﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
 using MarketAnalysis.Strategy.Parameters;
@@ -8,11 +7,10 @@ using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class LinearRegressionStrategy : IStrategy
+    public class LinearRegressionStrategy : IStrategy, IEquatable<LinearRegressionStrategy>
     {
         private readonly ISearcher _searcher;
         private readonly IMarketDataCache _marketDataCache;
-        private readonly StrategyFactory _strategyFactory;
         private LinearRegressionParameters _parameters;
 
         public IParameters Parameters
@@ -23,13 +21,11 @@ namespace MarketAnalysis.Strategy
         public StrategyType StrategyType { get; } = StrategyType.LinearRegression;
 
         public LinearRegressionStrategy(
-            StrategyFactory strategyFactory,
             IMarketDataCache marketDataCache,
             ISearcher searcher,
             LinearRegressionParameters parameters)
         {
             _searcher = searcher;
-            _strategyFactory = strategyFactory;
             _marketDataCache = marketDataCache;
 
             Parameters = parameters;
@@ -38,7 +34,7 @@ namespace MarketAnalysis.Strategy
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
             var potentials = Enumerable.Range(30, 200).Select(x => 
-                _strategyFactory.Create(new LinearRegressionParameters{ Lookback = x }));
+                new LinearRegressionParameters{ Lookback = x });
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
@@ -86,15 +82,21 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            if (!(obj is LinearRegressionStrategy strategy))
-                return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(LinearRegressionStrategy)) return false;
 
+            return Equals(obj as LinearRegressionStrategy);
+        }
+
+        public bool Equals(LinearRegressionStrategy strategy)
+        {
             return strategy._parameters.Lookback == _parameters.Lookback;
         }
 
         public override int GetHashCode()
         {
-            return _parameters.Lookback.GetHashCode();
+            return HashCode.Combine(_parameters.Lookback);
         }
     }
 }

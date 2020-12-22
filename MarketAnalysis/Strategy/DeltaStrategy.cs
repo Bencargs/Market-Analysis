@@ -1,5 +1,4 @@
-﻿using MarketAnalysis.Factories;
-using MarketAnalysis.Models;
+﻿using MarketAnalysis.Models;
 using MarketAnalysis.Search;
 using MarketAnalysis.Strategy.Parameters;
 using System;
@@ -7,9 +6,8 @@ using System.Linq;
 
 namespace MarketAnalysis.Strategy
 {
-    public class DeltaStrategy : IStrategy
+    public class DeltaStrategy : IStrategy, IEquatable<DeltaStrategy>
     {
-        private readonly StrategyFactory _strategyFactory;
         private readonly ISearcher _searcher;
         private DeltaParameters _parameters;
 
@@ -21,11 +19,9 @@ namespace MarketAnalysis.Strategy
         public StrategyType StrategyType { get; } = StrategyType.Delta;
 
         public DeltaStrategy(
-            StrategyFactory strategyFactory,
             ISearcher searcher,
             DeltaParameters parameters)
         {
-            _strategyFactory = strategyFactory;
             _searcher = searcher;
 
             Parameters = parameters;
@@ -36,7 +32,7 @@ namespace MarketAnalysis.Strategy
             var potentials = Enumerable.Range(1, 100).Select(x =>
             {
                 var threshold = (decimal)x / 1000;
-                return _strategyFactory.Create(new DeltaParameters { Threshold = threshold });
+                return new DeltaParameters { Threshold = threshold };
             });
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
@@ -51,15 +47,21 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            if (!(obj is DeltaStrategy strategy))
-                return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(DeltaStrategy)) return false;
 
+            return Equals(obj as DeltaStrategy);
+        }
+
+        public bool Equals(DeltaStrategy strategy)
+        {
             return strategy._parameters.Threshold == _parameters.Threshold;
         }
 
         public override int GetHashCode()
         {
-            return _parameters.Threshold.GetHashCode();
+            return HashCode.Combine(_parameters.Threshold);
         }
     }
 }

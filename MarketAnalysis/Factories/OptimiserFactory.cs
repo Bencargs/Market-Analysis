@@ -8,22 +8,17 @@ namespace MarketAnalysis.Factories
 {
     public class OptimiserFactory
     {
-        private readonly IMarketDataCache _marketDataCache;
-        private readonly ISimulationCache _simulationCache;
-        private readonly IInvestorProvider _investorProider;
         private readonly Dictionary<Type, Func<ISearcher>> _typeLookup;
 
         public OptimiserFactory(
             IMarketDataCache marketDataCache,
             ISimulationCache simulationCache,
-            IInvestorProvider investorProider)
+            IInvestorProvider investorProvider,
+            StrategyFactory strategyFactory)
         {
-            _marketDataCache = marketDataCache;
-            _simulationCache = simulationCache;
-            _investorProider = investorProider;
             _typeLookup = new Dictionary<Type, Func<ISearcher>>
             {
-                { typeof(LinearSearch), () => new LinearSearch(_marketDataCache, _simulationCache, _investorProider) },
+                { typeof(LinearSearch), () => new LinearSearch(marketDataCache, simulationCache, investorProvider, strategyFactory) },
             };
         }
 

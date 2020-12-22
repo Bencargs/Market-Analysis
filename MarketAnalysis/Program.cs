@@ -19,13 +19,11 @@ namespace MarketAnalysis
             try
             {
                 RegisterLogger();
-                using (var op = Operation.Begin("Performing market analysis"))
-                using (var provider = RegisterServices())
-                {
-                    var service = provider.GetService<AnalysisService>();
-                    await service.Execute();
-                    op.Complete();
-                }
+                using var op = Operation.Begin("Performing market analysis");
+                await using var provider = RegisterServices();
+                var service = provider.GetService<AnalysisService>();
+                await service.Execute();
+                op.Complete();
             }
             catch (Exception ex)
             {
@@ -59,7 +57,6 @@ namespace MarketAnalysis
 
             // Factories
             services.AddSingleton<StrategyFactory>();
-            services.AddSingleton<OptimiserFactory>();
             services.AddSingleton<SimulatorFactory>();
 
             // Services

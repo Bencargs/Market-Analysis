@@ -4,7 +4,7 @@ using System;
 
 namespace MarketAnalysis.Strategy
 {
-    public class StaticDatesStrategy : IStrategy
+    public class StaticDatesStrategy : IStrategy, IEquatable<StaticDatesStrategy>
     {
         private StaticDatesParameters _parameters;
 
@@ -29,15 +29,21 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            if (!(obj is StaticDatesStrategy strategy))
-                return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(StaticDatesStrategy)) return false;
 
+            return Equals(obj as StaticDatesStrategy);
+        }
+
+        public bool Equals(StaticDatesStrategy strategy)
+        {
             return strategy._parameters.Identifier == _parameters.Identifier;
         }
 
         public override int GetHashCode()
         {
-            return _parameters.Identifier;
+            return HashCode.Combine(_parameters.Identifier);
         }
     }
 }

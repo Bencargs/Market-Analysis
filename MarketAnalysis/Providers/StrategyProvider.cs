@@ -17,14 +17,14 @@ namespace MarketAnalysis.Providers
 
         public IEnumerable<IStrategy> GetStrategies()
         {
-            var subStrategies = new IStrategy[]
+            var subStrategies = new[]
             {
                 _strategyFactory.Create(new RelativeStrengthParameters()),
                 _strategyFactory.Create(new DeltaParameters()),
                 _strategyFactory.Create(new GradientParameters()),
                 _strategyFactory.Create(new LinearRegressionParameters()),
                 _strategyFactory.Create(new VolumeParameters()),
-
+                //_strategyFactory.Create(new EntropyParameters()),
             };
             //var strategies = subStrategies.Concat(new[] { _strategyFactory.Create(new WeightedStrategyParameters()) });
             var strategies = subStrategies;

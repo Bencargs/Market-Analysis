@@ -47,7 +47,7 @@ namespace MarketAnalysis.Providers
             var startDate = new DateTime(2020, 1, 1);
             var daysDiff = (DateTime.Today - startDate).Days;
             var startPeriod = StartDatePeriod;
-            var secondsPerDay = 86400;
+            const int secondsPerDay = 86400;
             var endPeriod = startPeriod + (daysDiff * secondsPerDay);
             return endPeriod.ToString();
         }

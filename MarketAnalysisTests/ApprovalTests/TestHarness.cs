@@ -49,12 +49,7 @@ namespace MarketAnalysisTests.ApprovalTests
             IMarketDataCache marketDataCache,
             ISimulationCache simulationCache,
             IInvestorProvider investorProvider)
-        {
-
-            var optimiserFactory = new OptimiserFactory(marketDataCache, simulationCache, investorProvider);
-            var strategyFactory = new StrategyFactory(marketDataCache, optimiserFactory);
-            return strategyFactory;
-        }
+        => new (marketDataCache, simulationCache, investorProvider);
 
         protected static IMarketDataCache CreateMarketDataCache(IEnumerable<MarketData> data)
         {

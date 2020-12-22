@@ -9,10 +9,10 @@ namespace MarketAnalysis.Models
 {
     public class Chart
     {
-        private PlotModel _plot;
+        private readonly PlotModel _plot;
         private const int YAxis = 0;
         private double _minY;
-        private static readonly OxyColor[] _colours = new[]
+        private static readonly OxyColor[] Colours = new[]
         {
             OxyColor.FromArgb(255, 149, 196, 235),
             OxyColor.FromArgb(255, 204, 133, 212),
@@ -126,9 +126,9 @@ namespace MarketAnalysis.Models
 
         private OxyColor GetColorForIndex(int index)
         {
-            var i = index % _colours.Length;
+            var i = index % Colours.Length;
 
-            return _colours[i];
+            return Colours[i];
         }
     }
 }

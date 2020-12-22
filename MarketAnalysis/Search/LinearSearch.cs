@@ -1,9 +1,9 @@
-﻿using MarketAnalysis;
-using MarketAnalysis.Caching;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
-using ShellProgressBar;
+using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,37 +15,41 @@ namespace MarketAnalysis.Search
         private readonly IMarketDataCache _dataCache;
         private readonly ISimulationCache _simulationCache;
         private readonly IInvestorProvider _investorProvider;
+        private readonly StrategyFactory _strategyFactory;
 
         public LinearSearch(
             IMarketDataCache dataCache,
             ISimulationCache simulationCache,
-            IInvestorProvider investorProvider)
+            IInvestorProvider investorProvider,
+            StrategyFactory strategyFactory)
         {
             _dataCache = dataCache;
             _simulationCache = simulationCache;
             _investorProvider = investorProvider;
+            _strategyFactory = strategyFactory;
         }
 
-        public T Maximum<T>(
-            IEnumerable<T> strategies, 
+        public IStrategy Maximum(
+            IEnumerable<IParameters> parameters,
             DateTime fromDate,
             DateTime endDate)
-            where T : IStrategy
         {
-            var potentials = strategies.Select(strat =>
+            var potentials = parameters.Select(param =>
             {
+                var strategy = _strategyFactory.Create(param);
                 var investor = _investorProvider.Current;
                 var simulator = new TrainingSimulator(_dataCache, _simulationCache);
-                var result = simulator.Evaluate(strat, investor, endDate).Last();
-                return (result.Worth, result.BuyCount, strat);
+                var result = simulator.Evaluate(strategy, investor, endDate).Last();
+                return (result.Worth, result.BuyCount, strategy);
             })
             .AsParallel()
             .OrderByDescending(x => x.Worth)
             .ThenBy(x => x.BuyCount)
-            .Select(x => x.strat);
-            
+            .Select(x => x.strategy)
+            .ToArray();
+
             var optimal = potentials.First();
-            var toRemove = strategies.Except(new[] { optimal }).Cast<IStrategy>();
+            var toRemove = potentials.Except(new[] { optimal }.AsParallel());
             _simulationCache.Remove(fromDate, endDate, toRemove);
 
             return optimal;

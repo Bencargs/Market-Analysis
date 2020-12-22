@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using MarketAnalysis.Caching;
-using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
 using MarketAnalysis.Strategy.Parameters;
@@ -9,9 +8,8 @@ using MathNet.Numerics;
 
 namespace MarketAnalysis.Strategy
 {
-    public class GradientStrategy : IStrategy
+    public class GradientStrategy : IStrategy, IEquatable<GradientStrategy>
     {
-        private readonly StrategyFactory _strategyFactory;
         private readonly IMarketDataCache _marketDataCache;
         private readonly ISearcher _searcher;
         private GradientParameters _parameters;
@@ -24,12 +22,10 @@ namespace MarketAnalysis.Strategy
         public StrategyType StrategyType { get; } = StrategyType.Gradient;
 
         public GradientStrategy(
-            StrategyFactory strategyFactory,
             IMarketDataCache marketDataCache,
             ISearcher searcher,
             GradientParameters parameters)
         {
-            _strategyFactory = strategyFactory;
             _marketDataCache = marketDataCache;
             _searcher = searcher;
             Parameters = parameters;
@@ -42,7 +38,7 @@ namespace MarketAnalysis.Strategy
                 return Enumerable.Range(20, 20).Select(window =>
                 {
                     var threshold = -((decimal)x / 100);
-                    return _strategyFactory.Create(new GradientParameters { Threshold = threshold, Window = window });
+                    return new GradientParameters { Threshold = threshold, Window = window };
                 });
             });
 
@@ -66,16 +62,22 @@ namespace MarketAnalysis.Strategy
 
         public override bool Equals(object obj)
         {
-            if (!(obj is GradientStrategy strategy))
-                return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(GradientStrategy)) return false;
 
+            return Equals(obj as GradientStrategy);
+        }
+
+        public bool Equals(GradientStrategy strategy)
+        {
             return strategy._parameters.Window == _parameters.Window &&
                    strategy._parameters.Threshold == _parameters.Threshold;
         }
 
         public override int GetHashCode()
         {
-            return _parameters.Window.GetHashCode() ^ _parameters.Threshold.GetHashCode();
+            return HashCode.Combine(_parameters.Window, _parameters.Threshold);
         }
     }
 }

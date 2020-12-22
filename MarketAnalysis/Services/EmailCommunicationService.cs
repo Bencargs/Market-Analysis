@@ -9,6 +9,7 @@ using Attachment = SendGrid.Helpers.Mail.Attachment;
 using MarketAnalysis.Models.Reporting;
 using MarketAnalysis.Models;
 using System.Linq;
+using System.IO;
 
 namespace MarketAnalysis.Services
 {
@@ -20,7 +21,7 @@ namespace MarketAnalysis.Services
         public EmailCommunicationService(ReportProvider emailTemplateProvider)
         {
             _emailTemplateProvider = emailTemplateProvider;
-            _emailConverter = new Converter<ReportPage, (string html, List<Attachment> attachments)>(TemplateToEmail);
+            _emailConverter = TemplateToEmail;
         }
 
         public async Task SendCommunication(IResultsProvider resultsProvider)
@@ -46,7 +47,7 @@ namespace MarketAnalysis.Services
         private SendGridMessage CreateEmailMessage(DateTime date, Investor investor, string content, List<Attachment> attachments)
         {
             var from = new EmailAddress("research@cbc.com", "CBC Market Analysis");
-            var subject = $"Market Report {date.ToString("dd MMM yyyy")}";
+            var subject = $"Market Report {date:dd MMM yyyy}";
             var to = new EmailAddress(investor.Email, investor.Name);
             var plainTextContent = "";
             var htmlContent = content;

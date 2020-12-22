@@ -1,4 +1,5 @@
 ﻿using MarketAnalysis.Strategy;
+using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Collections.Generic;
 
@@ -6,10 +7,9 @@ namespace MarketAnalysis.Search
 {
 	public interface ISearcher
 	{
-		T Maximum<T>(
-			IEnumerable<T> strategies, 
-			DateTime fromDate, 
-			DateTime endDate)
-			where T : IStrategy;
+		public IStrategy Maximum(
+			IEnumerable<IParameters> parameters,
+			DateTime fromDate,
+			DateTime endDate);
 	}
 }

@@ -42,7 +42,7 @@ namespace MarketAnalysis.Services
 
         public async Task Execute()
         {
-            (var strategies, var data) = await Initialise();
+            var (strategies, data) = await Initialise();
 
             var results = Simulate(strategies);
 
@@ -57,7 +57,7 @@ namespace MarketAnalysis.Services
             var strategies = _strategyProvider.GetStrategies();
             _investorProvider.Initialise();
 
-            var data = await dataTask;
+            var data = (await dataTask).ToArray();
             _marketDataCache.Initialise(data);
 
             return (strategies, data);

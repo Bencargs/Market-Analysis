@@ -1,10 +1,7 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
-using MarketAnalysis.Caching;
-using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Models.ApiData;
-using MarketAnalysis.Strategy;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -51,18 +48,13 @@ namespace MarketAnalysis.Repositories
 
         public async Task Save(IEnumerable<MarketData> data)
         {
-            using var writer = new StreamWriter(_dataFilePath, false);
-            using var csv = new CsvWriter(writer, CultureInfo.CurrentCulture);
+            await using var writer = new StreamWriter(_dataFilePath, false);
+            await using var csv = new CsvWriter(writer, CultureInfo.CurrentCulture);
             foreach (var d in data)
             {
                 csv.WriteRecord(d);
                 await csv.NextRecordAsync();
             }
-        }
-
-        public Task Save(IEnumerable<IStrategy> data)
-        {
-            throw new NotSupportedException();
         }
 
         Task<IEnumerable<SimulationResult>> IRepository<SimulationResult>.Get()
@@ -72,14 +64,9 @@ namespace MarketAnalysis.Repositories
 
         public async Task Save(IEnumerable<SimulationResult> results)
         {
-            var resutlsFile = DirectoryManager.GetLatestResultsFile();
+            var resultsFile = DirectoryManager.GetLatestResultsFile();
             var json = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(results, Formatting.Indented));
-            File.WriteAllText(resutlsFile, json);
-        }
-
-        public Task Save(IEnumerable<Investor> data)
-        {
-            throw new NotImplementedException();
+            await File.WriteAllTextAsync(resultsFile, json);
         }
     }
 }

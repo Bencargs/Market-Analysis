@@ -1,102 +1,95 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using MarketAnalysis.Caching;
-//using MarketAnalysis.Models;
-//using MarketAnalysis.Search;
-//using MarketAnalysis.Simulation;
-//using ShellProgressBar;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Strategy.Parameters;
 
-//namespace MarketAnalysis.Strategy
-//{
-//    public class EntropyStrategy : OptimisableStrategy
-//    {
-//        private double _threshold;
-//        private int _window;
-//        private readonly MarketDataCache _marketDataCache;
-        
-//        public override StrategyType StrategyType { get; } = StrategyType.Entropy;
-//        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
+namespace MarketAnalysis.Strategy
+{
+    public class EntropyStrategy : IStrategy, IEquatable<EntropyStrategy>
+    {
+        private readonly ISearcher _searcher;
+        private readonly IMarketDataCache _marketDataCache;
+        private EntropyParameters _parameters;
 
-//        public EntropyStrategy(MarketDataCache marketDataCache)
-//            : this (marketDataCache, 0, 0)
-//        { }
+        public IParameters Parameters
+        {
+            get => _parameters;
+            private set => _parameters = (EntropyParameters)value;
+        }
+        public StrategyType StrategyType { get; } = StrategyType.Entropy;
 
-//        public EntropyStrategy(
-//            MarketDataCache marketDataCache, 
-//            int window, 
-//            double threshold, 
-//            bool shouldOptimise = true)
-//            : base(shouldOptimise)
-//        {
-//            _window = window;
-//            _threshold = threshold;
-//            _marketDataCache = marketDataCache;
-//        }
+        public EntropyStrategy(
+            IMarketDataCache marketDataCache,
+            ISearcher searcher,
+            EntropyParameters parameters)
+        {
+            _searcher = searcher;
+            _marketDataCache = marketDataCache;
 
-//        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
-//        {
-//            var potentials = Enumerable.Range(1, 30).SelectMany(w =>
-//            {
-//                return Enumerable.Range(1, 100).Select(e =>
-//                {
-//                    var threshold = (double)e / 10;
-//                    return new EntropyStrategy(_marketDataCache, w, threshold, false);
-//                });
-//            });
+            Parameters = parameters;
+        }
 
-//            var searcher = new LinearSearch(simulator, potentials, progress);
-//            return searcher.Maximum(LatestDate);
-//        }
+        public void Optimise(DateTime fromDate, DateTime endDate)
+        {
+            var potentials = Enumerable.Range(1, 30).SelectMany(w =>
+            {
+                return Enumerable.Range(1, 100).Select(e =>
+                {
+                    var threshold = (double)e / 10;
+                    return new EntropyParameters { Window = w, Threshold = threshold };
+                });
+            });
 
-//        protected override void SetParameters(IStrategy strategy)
-//        {
-//            var optimal = (EntropyStrategy)strategy;
-//            _window = optimal._window;
-//            _threshold = optimal._threshold;
-//        }
+            var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-//        protected override bool ShouldBuy(MarketData data)
-//        {
-//            var batch = _marketDataCache.GetLastSince(data.Date, _window)
-//                .Select(x => x.Delta)
-//                .ToArray();
+            Parameters = optimum.Parameters;
+        }
 
-//            var entropy = ShannonEntropy(batch);
-//            if (entropy > _threshold)
-//                return true;
-//            return false;
-//        }
+        public bool ShouldBuy(MarketData data)
+        {
+            var batch = _marketDataCache.GetLastSince(data.Date, _parameters.Window)
+                .Select(x => x.Delta)
+                .ToArray();
 
-//        private static double ShannonEntropy<T>(T[] sequence)
-//        {
-//            var map = new Dictionary<T, int>();
-//            foreach (T c in sequence)
-//            {
-//                map.TryGetValue(c, out var currentCount);
-//                map[c] = currentCount + 1;
-//            }
+            var entropy = ShannonEntropy(batch);
+            
+            return entropy > _parameters.Threshold;
+        }
 
-//            var entropies =
-//                from c in map.Keys
-//                let frequency = (double)map[c] / sequence.Length
-//                select -frequency * Math.Log(frequency) / Math.Log(2);
+        private static double ShannonEntropy<T>(T[] sequence)
+        {
+            var map = new Dictionary<T, int>();
+            foreach (T c in sequence)
+            {
+                map.TryGetValue(c, out var currentCount);
+                map[c] = currentCount + 1;
+            }
 
-//            return entropies.Sum();
-//        }
+            var entropies =
+                from c in map.Keys
+                let frequency = (double)map[c] / sequence.Length
+                select -frequency * Math.Log(frequency) / Math.Log(2);
 
-//        public override bool Equals(object obj)
-//        {
-//            if (!(obj is EntropyStrategy strategy))
-//                return false;
+            return entropies.Sum();
+        }
 
-//            return strategy._window == _window &&
-//                   strategy._threshold == _threshold;
-//        }
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(EntropyStrategy)) return false;
 
-//        public override int GetHashCode()
-//        {
-//            return _window.GetHashCode() ^ _threshold.GetHashCode();
-//        }
-//    }
-//}
+            return Equals(obj as EntropyStrategy);
+        }
+
+        public bool Equals(EntropyStrategy strategy)
+            => strategy._parameters.Window == _parameters.Window &&
+                Math.Abs(strategy._parameters.Threshold - _parameters.Threshold) < 0.00001;
+
+        public override int GetHashCode()
+            => HashCode.Combine(_parameters.Window, _parameters.Threshold);
+    }
+}

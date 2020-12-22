@@ -1,5 +1,4 @@
 ﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
 using MarketAnalysis.Strategy.Parameters;
@@ -11,7 +10,6 @@ namespace MarketAnalysis.Strategy
 {
     public class RelativeStrengthStrategy : IStrategy, IEquatable<RelativeStrengthStrategy>
     {
-        private readonly StrategyFactory _strategyFactory;
         private readonly IMarketDataCache _marketDataCache;
         private readonly ISearcher _searcher;
         private RelativeStrengthParameters _parameters;
@@ -24,13 +22,11 @@ namespace MarketAnalysis.Strategy
         public StrategyType StrategyType { get; } = StrategyType.RelativeStrength;
         
         public RelativeStrengthStrategy(
-            StrategyFactory strategyFactory,
             IMarketDataCache marketDataCache,
             ISearcher searcher,
             RelativeStrengthParameters parameters)
         {
             _searcher = searcher;
-            _strategyFactory = strategyFactory;
             _marketDataCache = marketDataCache;
 
             Parameters = parameters;
@@ -41,7 +37,7 @@ namespace MarketAnalysis.Strategy
             var potentials = new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(t =>
             {
                 return OptimisationSets.Value.Select(s =>
-                    _strategyFactory.Create(new RelativeStrengthParameters { Threshold = t/*, TestSet = s*/ }));
+                    new RelativeStrengthParameters { Threshold = t, TestSet = s });
             });
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
@@ -78,7 +74,7 @@ namespace MarketAnalysis.Strategy
             var results = new List<int[]>();
 
             var minSetSize = 4;
-            var maxPercentile = 10;
+            var maxPercentile = 8;
             foreach (var s in Enumerable.Range(minSetSize, maxPercentile))
             {
                 var combinations = GetCombinations(s, maxPercentile);
@@ -89,14 +85,6 @@ namespace MarketAnalysis.Strategy
             }
             return results;
         });
-
-    //    static IEnumerable<IEnumerable<T>> GetKCombs<T>(IEnumerable<T> list, int length) where T : IComparable
-    //    {
-    //        if (length == 1) return list.Select(t => new T[] { t });
-    //        return GetKCombs(list, length - 1)
-    //            .SelectMany(t => list.Where(o => o.CompareTo(t.Last()) > 0),
-    //                (t1, t2) => t1.Concat(new T[] { t2 }));
-    //    }
 
         private static IEnumerable<int[]> GetCombinations(int setSize, int numbers)
         {
@@ -133,15 +121,13 @@ namespace MarketAnalysis.Strategy
 
         public bool Equals(RelativeStrengthStrategy obj)
         {
-            return obj._parameters.Threshold == _parameters.Threshold;
-                //&& obj._parameters.TestSet.SequenceEqual(_parameters.TestSet);
+            return obj._parameters.Threshold == _parameters.Threshold
+                && obj._parameters.TestSet.SequenceEqual(_parameters.TestSet);
         }
 
         public override int GetHashCode()
         {
-            return _parameters.Threshold.GetHashCode();
-            //return _parameters.Threshold.GetHashCode() ^ _parameters.TestSet.GetHashCode();
-            //return HashCode.Combine(_parameters.Threshold, _parameters.TestSet);
+            return HashCode.Combine(_parameters.Threshold, _parameters.TestSet);
         }
     }
 }
