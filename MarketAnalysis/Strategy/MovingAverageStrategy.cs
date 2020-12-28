@@ -1,90 +1,79 @@
-﻿//using MarketAnalysis.Caching;
-//using MarketAnalysis.Models;
-//using MarketAnalysis.Search;
-//using MarketAnalysis.Simulation;
-//using ShellProgressBar;
-//using System;
-//using System.Linq;
+﻿using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using System;
+using System.Linq;
+using MarketAnalysis.Strategy.Parameters;
 
-//namespace MarketAnalysis.Strategy
-//{
-//    public class MovingAverageStrategy : OptimisableStrategy
-//    {
-//        private int _window;
-//        private double _threshold;
-//        private readonly MarketDataCache _marketDataCache;
-//        public override StrategyType StrategyType { get; } = StrategyType.MovingAverage;
-//        protected override TimeSpan OptimisePeriod { get; } = TimeSpan.FromDays(1024);
+namespace MarketAnalysis.Strategy
+{
+    public class MovingAverageStrategy : IStrategy, IEquatable<MovingAverageStrategy>
+    {
+        private readonly ISearcher _searcher;
+        private readonly IMarketDataCache _marketDataCache;
+        private MovingAverageParameters _parameters;
 
-//        public MovingAverageStrategy(MarketDataCache marketDataCache)
-//            : this (marketDataCache, 0, 0)
-//        { }
+        public IParameters Parameters => _parameters;
+        public StrategyType StrategyType { get; } = StrategyType.MovingAverage;
 
-//        public MovingAverageStrategy(
-//            MarketDataCache marketDataCache,
-//            int window, 
-//            double threshold, 
-//            bool shouldOptimise = true)
-//            : base(shouldOptimise)
-//        {
-//            _window = window;
-//            _threshold = threshold;
-//            _marketDataCache = marketDataCache;
-//        }
+        public MovingAverageStrategy(
+            IMarketDataCache marketDataCache,
+            ISearcher searcher,
+            MovingAverageParameters parameters)
+        {
+            _searcher = searcher;
+            _marketDataCache = marketDataCache;
+            _parameters = parameters;
+        }
 
-//        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
-//        {
-//            var potentials = Enumerable.Range(1, 90).SelectMany(w =>
-//            {
-//                return Enumerable.Range(1, 60).Select(t =>
-//                {
-//                    var threshold = (double)t / 10;
-//                    return new MovingAverageStrategy(_marketDataCache, w, threshold, false);
-//                });
-//            });
+        public void Optimise(DateTime fromDate, DateTime endDate)
+        {
+            var potentials = Enumerable.Range(1, 90).SelectMany(w =>
+            {
+                return Enumerable.Range(1, 60).Select(t =>
+                {
+                    var threshold = (double)t / 10;
+                    return new MovingAverageParameters { Window = w, Threshold = threshold };
+                });
+            });
 
-//            var searcher = new LinearSearch(simulator, potentials, progress);
-//            return searcher.Maximum(LatestDate);
-//        }
+            var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-//        protected override void SetParameters(IStrategy strategy)
-//        {
-//            var optimal = ((MovingAverageStrategy)strategy);
-//            _window = optimal._window;
-//            _threshold = optimal._threshold;
-//        }
+            _parameters = (MovingAverageParameters)optimum.Parameters;
+        }
 
-//        protected override bool ShouldBuy(MarketData data)
-//        {
-//            var batch = _marketDataCache.GetLastSince(LatestDate, _window).Select(x => x.Price).ToArray();
-//            if (batch.Length < 2)
-//                return false;
-
-//            var mean = batch.Average();
-//            double sum = batch.Sum(d => Math.Pow((double)(d - mean), 2));
-//            var a = Math.Abs( sum / batch.Count() - 1 );
-//            var standardDeviation = Math.Sqrt(a);
-//            var weightedDeviation = (decimal) (standardDeviation * _threshold);
+        public bool ShouldBuy(MarketData data)
+        {
+            var batch = _marketDataCache.GetLastSince(data.Date, _parameters.Window)
+                .Select(x => x.Price)
+                .ToArray();
             
-//            if (data.Price < (mean - weightedDeviation))
-//                return true;
-//            return false;
-//        }
+            if (batch.Length < 2)
+                return false;
 
-//        public override bool Equals(object obj)
-//        {
-//            if (!(obj is MovingAverageStrategy strategy))
-//                return false;
+            var mean = batch.Average();
+            var sum = batch.Sum(d => Math.Pow((double)(d - mean), 2));
+            var a = Math.Abs(sum / batch.Length - 1);
+            var standardDeviation = Math.Sqrt(a);
+            var weightedDeviation = (decimal)(standardDeviation * _parameters.Threshold);
 
-//            return strategy._window == _window
-//                && strategy._threshold == _threshold;
-//        }
+            return data.Price < mean - weightedDeviation;
+        }
 
-//        public override int GetHashCode()
-//        {
-//            return _window.GetHashCode() ^ 
-//                _threshold.GetHashCode() ^ 
-//                397;
-//        }
-//    }
-//}
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(MovingAverageStrategy)) return false;
+
+            return Equals(obj as MovingAverageStrategy);
+        }
+
+        public bool Equals(MovingAverageStrategy strategy)
+            => strategy._parameters.Window == _parameters.Window && 
+               Math.Abs(strategy._parameters.Threshold - _parameters.Threshold) < 0.00001;
+
+        public override int GetHashCode()
+            => HashCode.Combine(_parameters.Window, _parameters.Threshold);
+    }
+}

@@ -30,34 +30,30 @@ namespace MarketAnalysis.Simulation
             ProgressBar progress = null)
         {
             var queue = new OrderQueue();
+            var state = new SimulationState();
             var backtestingDate = Configuration.BacktestingDate;
             var trainer = new TrainingSimulator(_dataCache, _simulationCache);
-            foreach (var state in trainer.Evaluate(strategy, investor, backtestingDate, progress))
+            foreach (var s in trainer.Evaluate(strategy, investor, backtestingDate, progress))
             {
-                yield return state;
+                yield return state = s;
             }
 
             var remaining = _dataCache.Count - _dataCache.BacktestingIndex;
             using var childProgress = ProgressBarProvider.Create(progress, remaining, $"Evaluating: {strategy.StrategyType.GetDescription()}");
             foreach (var data in _dataCache.TakeFrom(backtestingDate, endDate))
             {
-                var latest = _simulationCache.GetOrCreate((strategy, data.Date), previous =>
-                {
-                    Optimise(strategy);
-                    var shouldBuy = ShouldBuy(strategy, data);
+                Optimise(strategy);
+                var shouldBuy = _simulationCache.GetOrCreate((strategy, data.Date), () => ShouldBuy(strategy, data));
 
-                    var state = previous.UpdateState(data, shouldBuy);
-                    state.AddFunds(investor);
-                    state.ExecuteOrders(queue);
+                state = state.UpdateState(data, shouldBuy);
+                state.AddFunds(investor);
+                state.ExecuteOrders(queue);
 
-                    if (state.ShouldBuy)
-                        state.AddBuyOrder(investor, queue);
-
-                    return state;
-                });
+                if (state.ShouldBuy)
+                    state.AddBuyOrder(investor, queue);
 
                 childProgress?.Tick();
-                yield return latest;
+                yield return state;
             }
         }
 

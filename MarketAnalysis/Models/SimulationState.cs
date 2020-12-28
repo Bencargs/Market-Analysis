@@ -3,7 +3,7 @@ using System;
 
 namespace MarketAnalysis.Models
 {
-    public class SimulationState
+    public class SimulationState : IEquatable<SimulationState>
     {
         public DateTime Date { get; set; }
         public decimal Funds { get; set; }
@@ -18,7 +18,7 @@ namespace MarketAnalysis.Models
             MarketData data,
             bool shouldBuy)
         {
-            return new SimulationState
+            return new()
             {
                 Date = data.Date,
                 SharePrice = data.Price,
@@ -59,23 +59,32 @@ namespace MarketAnalysis.Models
 
         public override bool Equals(object obj)
         {
-            if (!(obj is SimulationState other))
-                return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(SimulationState)) return false;
 
-            return Date == other.Date &&
-                   Funds == other.Funds &&
-                   Shares == other.Shares &&
-                   ShouldBuy == other.ShouldBuy &&
-                   BuyCount == other.BuyCount;
+            return Equals(obj as SimulationState);
         }
 
         public override int GetHashCode()
         {
-            return Date.GetHashCode() ^
-                   Funds.GetHashCode() ^
-                   Shares.GetHashCode() ^
-                   ShouldBuy.GetHashCode() ^
-                   BuyCount.GetHashCode();
+            return HashCode.Combine(
+                Date,
+                Funds,
+                Shares,
+                Orders,
+                ShouldBuy,
+                BuyCount);
+        }
+
+        public bool Equals(SimulationState other)
+        {
+            return Date == other.Date &&
+                   Funds == other.Funds &&
+                   Shares == other.Shares &&
+                   Orders == other.Orders &&
+                   ShouldBuy == other.ShouldBuy &&
+                   BuyCount == other.BuyCount;
         }
     }
 }

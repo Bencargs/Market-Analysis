@@ -13,11 +13,7 @@ namespace MarketAnalysis.Strategy
         private readonly IMarketDataCache _marketDataCache;
         private LinearRegressionParameters _parameters;
 
-        public IParameters Parameters
-        {
-            get => _parameters;
-            private set => _parameters = (LinearRegressionParameters)value;
-        }
+        public IParameters Parameters => _parameters;
         public StrategyType StrategyType { get; } = StrategyType.LinearRegression;
 
         public LinearRegressionStrategy(
@@ -27,8 +23,7 @@ namespace MarketAnalysis.Strategy
         {
             _searcher = searcher;
             _marketDataCache = marketDataCache;
-
-            Parameters = parameters;
+            _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
@@ -38,7 +33,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            Parameters = optimum.Parameters;
+            _parameters = (LinearRegressionParameters)optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)

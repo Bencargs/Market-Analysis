@@ -11,11 +11,7 @@ namespace MarketAnalysis.Strategy
         private readonly ISearcher _searcher;
         private VolumeParameters _parameters;
 
-        public IParameters Parameters 
-        {
-            get => _parameters;
-            private set => _parameters = (VolumeParameters)value; 
-        }
+        public IParameters Parameters => _parameters;
         public StrategyType StrategyType { get; } = StrategyType.Volume;
 
         public VolumeStrategy(
@@ -23,8 +19,7 @@ namespace MarketAnalysis.Strategy
             VolumeParameters parameters)
         {
             _searcher = searcher;
-
-            Parameters = parameters;
+            _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
@@ -34,7 +29,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            Parameters = ((VolumeStrategy)optimum).Parameters;
+            _parameters = (VolumeParameters)optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)

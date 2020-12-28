@@ -11,11 +11,7 @@ namespace MarketAnalysis.Strategy
         private readonly ISearcher _searcher;
         private DeltaParameters _parameters;
 
-        public IParameters Parameters
-        {
-            get => _parameters;
-            private set => _parameters = (DeltaParameters)value;
-        }
+        public IParameters Parameters => _parameters;
         public StrategyType StrategyType { get; } = StrategyType.Delta;
 
         public DeltaStrategy(
@@ -23,8 +19,7 @@ namespace MarketAnalysis.Strategy
             DeltaParameters parameters)
         {
             _searcher = searcher;
-
-            Parameters = parameters;
+            _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
@@ -37,7 +32,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            Parameters = optimum.Parameters;
+            _parameters = (DeltaParameters) optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)

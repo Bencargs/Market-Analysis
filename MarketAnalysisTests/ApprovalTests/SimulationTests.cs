@@ -92,5 +92,41 @@ namespace MarketAnalysisTests.ApprovalTests
 
             Approvals.Verify(actual);
         }
+
+        [Test]
+        public void MovingAverageStrategyTest()
+        {
+            var data = CreateMarketData();
+            var parameters = new MovingAverageParameters();
+
+            var target = SimulateStrategy(data, x => x.Create(parameters));
+            var actual = ToApprovedString(target);
+
+            Approvals.Verify(actual);
+        }
+
+        [Test]
+        public void EntropyStrategyTest()
+        {
+            var data = CreateMarketData();
+            var parameters = new EntropyParameters();
+
+            var target = SimulateStrategy(data, x => x.Create(parameters));
+            var actual = ToApprovedString(target);
+
+            Approvals.Verify(actual);
+        }
+
+        [Test]
+        public void HolidayEffectStrategyTest()
+        {
+            var data = CreateMarketData();
+            var parameters = new HolidayEffectParameters();
+
+            var target = SimulateStrategy(data, x => x.Create(parameters));
+            var actual = ToApprovedString(target);
+
+            Approvals.Verify(actual);
+        }
     }
 }

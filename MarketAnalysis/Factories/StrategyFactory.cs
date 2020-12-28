@@ -32,6 +32,8 @@ namespace MarketAnalysis.Factories
                 GradientParameters p => Create(p),
                 EntropyParameters p => Create(p),
                 StaticDatesParameters p => Create(p),
+                MovingAverageParameters p => Create(p),
+                HolidayEffectParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -94,7 +96,20 @@ namespace MarketAnalysis.Factories
                 parameters);
         }
 
+        private IStrategy Create(MovingAverageParameters parameters)
+        {
+            var optimiser = _optimiserFactory.Create<LinearSearch>();
+
+            return new MovingAverageStrategy(
+                _marketDataCache,
+                optimiser,
+                parameters);
+        }
+
         private static IStrategy Create(StaticDatesParameters parameters)
             => new StaticDatesStrategy(parameters);
+
+        private static IStrategy Create(HolidayEffectParameters parameters)
+            => new HolidayEffectStrategy(parameters);
     }
 }

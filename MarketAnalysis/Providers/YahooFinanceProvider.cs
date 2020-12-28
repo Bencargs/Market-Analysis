@@ -18,23 +18,20 @@ namespace MarketAnalysis.Providers
     {
         private readonly string _url = Configuration.YahooApiEndpoint;
         private string _parameters => $"{Configuration.YahooQueryString}?period1={StartDatePeriod}&period2={GetEndDateString()}&interval=1d&events=history";
-        private static readonly HttpClient HttpClient = new HttpClient();
 
         public async Task<IEnumerable<MarketData>> GetData()
         {
             Log.Information($"Reading market data from provider {_url}");
-            HttpClient.BaseAddress = new Uri(_url);
-            var request = await HttpClient.GetAsync(_parameters);
+            var client = new HttpClient {BaseAddress = new Uri(_url)};
+            var request = await client.GetAsync(_parameters);
             if (request.IsSuccessStatusCode)
             {
                 var response = await request.Content.ReadAsStreamAsync();
-                using (var reader = new StreamReader(response))
-                using (var csv = new CsvReader(reader, CultureInfo.CurrentCulture))
-                {
-                    csv.Configuration.RegisterClassMap<YahooTimeSeriesDataMap>();
-                    var records = csv.GetRecords<YahooTimeSeriesData>();
-                    return ConvertToRow(records).ToArray();
-                }
+                using var reader = new StreamReader(response);
+                using var csv = new CsvReader(reader, CultureInfo.CurrentCulture);
+                csv.Configuration.RegisterClassMap<YahooTimeSeriesDataMap>();
+                var records = csv.GetRecords<YahooTimeSeriesData>();
+                return ConvertToRow(records).ToArray();
             }
             Log.Error("No response recieved from api data provider");
             return null;

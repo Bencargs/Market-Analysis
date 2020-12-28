@@ -6,26 +6,18 @@ namespace MarketAnalysis.Strategy
 {
     public class StaticDatesStrategy : IStrategy, IEquatable<StaticDatesStrategy>
     {
-        private StaticDatesParameters _parameters;
+        private readonly StaticDatesParameters _parameters;
 
-        public IParameters Parameters 
-        {
-            get => _parameters;
-            private set => _parameters = (StaticDatesParameters)value; 
-        }
+        public IParameters Parameters => _parameters;
         public StrategyType StrategyType { get; } = StrategyType.StaticDates;
 
         public StaticDatesStrategy(StaticDatesParameters parameters)
-        {
-            Parameters = parameters;
-        }
+            => _parameters = parameters;
 
         public void Optimise(DateTime _, DateTime __) { }
 
         public bool ShouldBuy(MarketData data)
-        {
-            return _parameters.BuyDates[data.Date];
-        }
+            => _parameters.BuyDates[data.Date];
 
         public override bool Equals(object obj)
         {
@@ -37,13 +29,9 @@ namespace MarketAnalysis.Strategy
         }
 
         public bool Equals(StaticDatesStrategy strategy)
-        {
-            return strategy._parameters.Identifier == _parameters.Identifier;
-        }
+            => strategy._parameters.Identifier == _parameters.Identifier;
 
         public override int GetHashCode()
-        {
-            return HashCode.Combine(_parameters.Identifier);
-        }
+            => HashCode.Combine(_parameters.Identifier);
     }
 }

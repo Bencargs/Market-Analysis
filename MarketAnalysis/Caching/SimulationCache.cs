@@ -1,5 +1,4 @@
-﻿using MarketAnalysis.Models;
-using MarketAnalysis.Strategy;
+﻿using MarketAnalysis.Strategy;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,22 +9,22 @@ namespace MarketAnalysis.Caching
     public interface ISimulationCache
     {
         int Count { get; }
-        SimulationState GetOrCreate((IStrategy strategy, DateTime day) key, Func<SimulationState, SimulationState> createItem);
+        bool GetOrCreate((IStrategy strategy, DateTime day) key, Func<bool> createItem);
         void Remove(DateTime fromDate, DateTime toDate, IEnumerable<IStrategy> strategies);
     }
 
     public sealed class SimulationCache : ISimulationCache
     {
-        private readonly ConcurrentDictionary<IStrategy, List<SimulationState>> _cache = new ConcurrentDictionary<IStrategy, List<SimulationState>>();
-        private readonly SimulationStateDateComparer _comparer = new SimulationStateDateComparer();
+        private readonly ConcurrentDictionary<IStrategy, List<(DateTime Date, bool ShouldBuy)>> _cache = new();
+        private readonly TupleDateComparer _comparer = new();
 
         public int Count => _cache.Values.Count;
-
-        public SimulationState GetOrCreate((IStrategy strategy, DateTime day) key, Func<SimulationState, SimulationState> createItem)
+        
+        public bool GetOrCreate((IStrategy strategy, DateTime day) key, Func<bool> createItem)
         {
             if (!_cache.TryGetValue(key.strategy, out var history))
             {
-                history = new List<SimulationState>();
+                history = new List<(DateTime Date, bool ShouldBuy)>();
                 _cache.TryAdd(key.strategy, history);
             }
 
@@ -33,7 +32,8 @@ namespace MarketAnalysis.Caching
             if (FindEntry(history, latestState, key.day, out var cacheEntry))
                 return cacheEntry;
 
-            return CreateEntry(history, latestState, createItem);
+            var entry = CreateEntry(history, key.day, createItem);
+            return entry.Item2;
         }
 
         public void Remove(DateTime fromDate, DateTime toDate, IEnumerable<IStrategy> strategies)
@@ -53,39 +53,36 @@ namespace MarketAnalysis.Caching
                 }
             }
         }
-
-        private static SimulationState CreateEntry(List<SimulationState> history, SimulationState latestState, Func<SimulationState, SimulationState> createItem)
+        
+        private static (DateTime, bool) CreateEntry(ICollection<(DateTime, bool)> history, DateTime date, Func<bool> createItem)
         {
-            SimulationState cacheEntry = null;
-            if (createItem != null)
-            {
-                var previousState = latestState ?? new SimulationState();
-                cacheEntry = createItem(previousState);
-                history.Add(cacheEntry);
-            }
+            (DateTime, bool) cacheEntry = new();
+            if (createItem == null) 
+                return cacheEntry;
+            
+            cacheEntry = (date, createItem());
+            history.Add(cacheEntry);
             return cacheEntry;
         }
-
-        private bool FindEntry(List<SimulationState> history, SimulationState latestState, DateTime date, out SimulationState simulationState)
+        private bool FindEntry(List<(DateTime Date, bool ShouldBuy)> history, (DateTime Date, bool ShouldBuy) latestState, DateTime date, out bool shouldBuy)
         {
-            simulationState = null;
-            if (latestState == null)
+            shouldBuy = false;
+            if (date > latestState.Date) 
                 return false;
-
-            if (date <= latestState.Date)
-            {
-                var index = history.BinarySearch(new SimulationState { Date = date }, _comparer);
-                if (index > -1)
-                    simulationState = history[index];
-            }
-            return simulationState != null;
+            
+            var index = history.BinarySearch((date, false), _comparer);
+            if (index <= -1) 
+                return false;
+            
+            shouldBuy = history[index].ShouldBuy;
+            return true;
         }
-
-        private class SimulationStateDateComparer : IComparer<SimulationState>
+        
+        private class TupleDateComparer : IComparer<(DateTime, bool)>
         {
-            public int Compare(SimulationState x, SimulationState y)
+            public int Compare((DateTime, bool) x, (DateTime, bool) y)
             {
-                return x.Date.CompareTo(y.Date);
+                return x.Item1.CompareTo(y.Item1);
             }
         }
     }

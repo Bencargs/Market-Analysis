@@ -36,5 +36,8 @@ namespace MarketAnalysis.Models
 
         [Description("Moving Average")]
         MovingAverage,
+        
+        [Description("Holiday Effect")]
+        HolidayEffect,
     }
 }

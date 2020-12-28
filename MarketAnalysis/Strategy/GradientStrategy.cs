@@ -14,11 +14,7 @@ namespace MarketAnalysis.Strategy
         private readonly ISearcher _searcher;
         private GradientParameters _parameters;
 
-        public IParameters Parameters
-        {
-            get => _parameters;
-            private set => _parameters = (GradientParameters)value;
-        }
+        public IParameters Parameters => _parameters;
         public StrategyType StrategyType { get; } = StrategyType.Gradient;
 
         public GradientStrategy(
@@ -28,7 +24,7 @@ namespace MarketAnalysis.Strategy
         {
             _marketDataCache = marketDataCache;
             _searcher = searcher;
-            Parameters = parameters;
+            _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
@@ -44,7 +40,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            Parameters = optimum.Parameters;
+            _parameters = (GradientParameters)optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)

@@ -14,11 +14,7 @@ namespace MarketAnalysis.Strategy
         private readonly ISearcher _searcher;
         private RelativeStrengthParameters _parameters;
 
-        public IParameters Parameters 
-        {
-            get => _parameters;
-            private set => _parameters = (RelativeStrengthParameters)value; 
-        }
+        public IParameters Parameters => _parameters;
         public StrategyType StrategyType { get; } = StrategyType.RelativeStrength;
         
         public RelativeStrengthStrategy(
@@ -28,8 +24,7 @@ namespace MarketAnalysis.Strategy
         {
             _searcher = searcher;
             _marketDataCache = marketDataCache;
-
-            Parameters = parameters;
+            _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
@@ -42,7 +37,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            Parameters = optimum.Parameters;
+            _parameters = (RelativeStrengthParameters) optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)

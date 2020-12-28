@@ -14,11 +14,7 @@ namespace MarketAnalysis.Strategy
         private readonly IMarketDataCache _marketDataCache;
         private EntropyParameters _parameters;
 
-        public IParameters Parameters
-        {
-            get => _parameters;
-            private set => _parameters = (EntropyParameters)value;
-        }
+        public IParameters Parameters => _parameters;
         public StrategyType StrategyType { get; } = StrategyType.Entropy;
 
         public EntropyStrategy(
@@ -28,8 +24,7 @@ namespace MarketAnalysis.Strategy
         {
             _searcher = searcher;
             _marketDataCache = marketDataCache;
-
-            Parameters = parameters;
+            _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
@@ -45,7 +40,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            Parameters = optimum.Parameters;
+            _parameters = (EntropyParameters)optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)
@@ -62,7 +57,7 @@ namespace MarketAnalysis.Strategy
         private static double ShannonEntropy<T>(T[] sequence)
         {
             var map = new Dictionary<T, int>();
-            foreach (T c in sequence)
+            foreach (var c in sequence)
             {
                 map.TryGetValue(c, out var currentCount);
                 map[c] = currentCount + 1;

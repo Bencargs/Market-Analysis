@@ -28,23 +28,19 @@ namespace MarketAnalysis.Simulation
             ProgressBar _ = null)
         {
             var queue = new OrderQueue();
+            var state = new SimulationState();
             foreach (var data in _dataCache.TakeUntil(endDate))
             {
-                var latest = _simulationCache.GetOrCreate((strategy, data.Date), previous =>
-                {
-                    var shouldBuy = ShouldBuy(strategy, data);
-                    
-                    var state = previous.UpdateState(data, shouldBuy);
-                    state.AddFunds(investor);
-                    state.ExecuteOrders(queue);
+                var shouldBuy = _simulationCache.GetOrCreate((strategy, data.Date), () => ShouldBuy(strategy, data));
 
-                    if (state.ShouldBuy)
-                        state.AddBuyOrder(investor, queue);
+                state = state.UpdateState(data, shouldBuy);
+                state.AddFunds(investor);
+                state.ExecuteOrders(queue);
 
-                    return state;
-                });
+                if (state.ShouldBuy)
+                    state.AddBuyOrder(investor, queue);
 
-                yield return latest;
+                yield return state;
             }
         }
 
