@@ -1,9 +1,15 @@
+using System.Collections.Generic;
 using ApprovalTests;
 using ApprovalTests.Reporters;
 using MarketAnalysis.Strategy.Parameters;
 using NUnit.Framework;
 using System.Configuration;
 using System.Linq;
+using MarketAnalysis.Caching;
+using MarketAnalysis.Factories;
+using MarketAnalysis.Models;
+using MarketAnalysis.Simulation;
+using MarketAnalysis.Strategy;
 
 namespace MarketAnalysisTests.ApprovalTests
 {
@@ -126,6 +132,39 @@ namespace MarketAnalysisTests.ApprovalTests
             var target = SimulateStrategy(data, x => x.Create(parameters));
             var actual = ToApprovedString(target);
 
+            Approvals.Verify(actual);
+        }
+
+        [Test]
+        public void WeightedStrategyTest()
+        {
+            var data = CreateMarketData();
+            var investor = new Investor { DailyFunds = 10, OrderDelayDays = 3 };
+            var investorProvider = CreateInvestorProvider(investor);
+            var marketDataCache = CreateMarketDataCache(data);
+            var simulationCache = new SimulationCache();
+            var simulationFactory = new SimulatorFactory(marketDataCache, simulationCache);
+            var strategyFactory = CreateStrategyFactory(marketDataCache, simulationCache, investorProvider);
+            var deltaStrategy = strategyFactory.Create(new DeltaParameters());
+            var volumeStrategy = strategyFactory.Create(new VolumeParameters());
+            var _ = simulationFactory.Create<BacktestingSimulator>()
+                .Evaluate(deltaStrategy, investor).ToArray();
+            var __ = simulationFactory.Create<BacktestingSimulator>()
+                .Evaluate(volumeStrategy, investor).ToArray();
+
+            var parameters = new WeightedParameters
+            {
+                Weights = new Dictionary<IStrategy, double>
+                {
+                    { deltaStrategy, 0d },
+                    { volumeStrategy, 0d }
+                }
+            };
+            var strategy = strategyFactory.Create(parameters);
+            var target = simulationFactory.Create<BacktestingSimulator>()
+                .Evaluate(strategy, investor);
+            
+            var actual = ToApprovedString(target);
             Approvals.Verify(actual);
         }
     }

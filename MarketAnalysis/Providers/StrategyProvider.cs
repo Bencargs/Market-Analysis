@@ -3,6 +3,7 @@ using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using Serilog;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MarketAnalysis.Providers
 {
@@ -27,8 +28,12 @@ namespace MarketAnalysis.Providers
                 _strategyFactory.Create(new HolidayEffectParameters()),
                 //_strategyFactory.Create(new MovingAverageParameters()),
                 //_strategyFactory.Create(new EntropyParameters()),
+                //_strategyFactory.Create(new WeightedParameters())
             };
-            //var strategies = subStrategies.Concat(new[] { _strategyFactory.Create(new WeightedStrategyParameters()) });
+            //var strategies = subStrategies.Concat(new[]
+            //{
+            //    _strategyFactory.Create(new WeightedParameters {Weights = subStrategies.ToDictionary(x => x, v => 0d)})
+            //});
             var strategies = subStrategies;
 
             Log.Information($"Evaluating against strategies: {string.Join<IStrategy>(", ", strategies)}");

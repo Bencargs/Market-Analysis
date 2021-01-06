@@ -44,7 +44,7 @@ namespace MarketAnalysisTests.ApprovalTests
 
             return simulator.Evaluate(strategy, investor);
         }
-
+        
         protected static StrategyFactory CreateStrategyFactory(
             IMarketDataCache marketDataCache,
             ISimulationCache simulationCache,

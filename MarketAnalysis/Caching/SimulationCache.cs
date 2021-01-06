@@ -9,6 +9,7 @@ namespace MarketAnalysis.Caching
     public interface ISimulationCache
     {
         int Count { get; }
+        bool TryGet((IStrategy strategy, DateTime day) key, out bool shouldBuy);
         bool GetOrCreate((IStrategy strategy, DateTime day) key, Func<bool> createItem);
         void Remove(DateTime fromDate, DateTime toDate, IEnumerable<IStrategy> strategies);
     }
@@ -19,7 +20,21 @@ namespace MarketAnalysis.Caching
         private readonly TupleDateComparer _comparer = new();
 
         public int Count => _cache.Values.Count;
-        
+
+        public bool TryGet((IStrategy strategy, DateTime day) key, out bool shouldBuy)
+        {
+            shouldBuy = false;
+            if (!_cache.TryGetValue(key.strategy, out var cacheEntry))
+                return false;
+
+            var history = cacheEntry.ToList();
+            var latestState = history.LastOrDefault();
+            if (!FindEntry(history, latestState, key.day, out shouldBuy))
+                return false;
+            
+            return true;
+        }
+
         public bool GetOrCreate((IStrategy strategy, DateTime day) key, Func<bool> createItem)
         {
             if (!_cache.TryGetValue(key.strategy, out var history))
@@ -64,6 +79,7 @@ namespace MarketAnalysis.Caching
             history.Add(cacheEntry);
             return cacheEntry;
         }
+        
         private bool FindEntry(List<(DateTime Date, bool ShouldBuy)> history, (DateTime Date, bool ShouldBuy) latestState, DateTime date, out bool shouldBuy)
         {
             shouldBuy = false;

@@ -1,6 +1,6 @@
-﻿//namespace MarketAnalysis.Strategy
-//{
-//    public interface IAggregateStrategy
-//    {
-//    }
-//}
+﻿namespace MarketAnalysis.Strategy
+{
+    public interface IAggregateStrategy
+    {
+    }
+}

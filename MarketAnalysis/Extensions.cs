@@ -56,19 +56,19 @@ namespace MarketAnalysis
                         .FirstOrDefault();
         }
 
-        public static (IEnumerable<T>, IEnumerable<T>) Split<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        public static (IEnumerable<T> TrueSet, IEnumerable<T> FalseSet) Split<T>(this IEnumerable<T> source, Func<T, bool> predicate)
         {
-            var list1 = new List<T>();
-            var list2 = new List<T>();
+            var trueSet = new List<T>();
+            var falseSet = new List<T>();
 
             foreach (var s in source)
             {
                 if (predicate(s))
-                    list1.Add(s);
+                    trueSet.Add(s);
                 else
-                    list2.Add(s);
+                    falseSet.Add(s);
             }
-            return (list1, list2);
+            return (trueSet, falseSet);
         }
     }
 }

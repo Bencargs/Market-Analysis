@@ -1,103 +1,93 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using MarketAnalysis.Caching;
-//using MarketAnalysis.Models;
-//using MarketAnalysis.Search;
-//using MarketAnalysis.Simulation;
-//using ShellProgressBar;
+﻿using System;
+using System.Linq;
+using MarketAnalysis.Caching;
+using MarketAnalysis.Models;
+using MarketAnalysis.Search;
+using MarketAnalysis.Strategy.Parameters;
 
-//namespace MarketAnalysis.Strategy
-//{
-//    public class WeightedStrategy : OptimisableStrategy, IAggregateStrategy
-//    {
-//        private readonly double _threshold;
-//        private readonly SimulationCache _cache;
-//        private Dictionary<IStrategy, double> _weights;
-//        public override StrategyType StrategyType { get; } = StrategyType.Weighted;
-//        protected override TimeSpan OptimisePeriod => TimeSpan.FromDays(512);
+namespace MarketAnalysis.Strategy
+{
+    public class WeightedStrategy : IStrategy, IAggregateStrategy, IEquatable<WeightedStrategy>
+    {
+        private readonly ISearcher _searcher;
+        private readonly ISimulationCache _simulationCache;
+        private WeightedParameters _parameters;
 
-//        public WeightedStrategy(
-//            SimulationCache cache,
-//            Dictionary<IStrategy, double> weights,
-//            double threshold,
-//            bool shouldOptimise = true)
-//            : base(shouldOptimise)
-//        {
-//            _cache = cache;
-//            _weights = weights;
-//            _threshold = threshold;
-//        }
+        public IParameters Parameters => _parameters;
+        public StrategyType StrategyType { get; } = StrategyType.Weighted;
 
-//        public WeightedStrategy(
-//            SimulationCache cache,
-//            IStrategy[] strategies,
-//            bool shouldOptimise = true)
-//            : this(cache, strategies.ToDictionary(k => k, v => 0d), 0, shouldOptimise)
-//        {
-//        }
+        public WeightedStrategy(
+            ISimulationCache simulationCache,
+            ISearcher searcher,
+            WeightedParameters parameters)
+        {
+            _simulationCache = simulationCache;
+            _searcher = searcher;
+            _parameters = parameters;
+        }
 
-//        protected override IStrategy GetOptimum(ISimulator simulator, IProgressBar progress)
-//        {
-//            var potentials = Enumerable.Range(0, 100).SelectMany(x =>
-//            {
-//                return Enumerable.Range(1, 6).SelectMany(threshold =>
-//                {
-//                    var value = x / 100d;
-//                    var increment = 0.001d;
-//                    return Enumerable.Range(0, _weights.Count).Select(y =>
-//                    {
-//                        var newWeights = _weights.Select((w, j) =>
-//                        {
-//                            var allocation = j == y ? (value + increment) : value;
-//                            return (strategy: w.Key, allocation);
-//                        }).ToDictionary(k => k.strategy, v => v.allocation);
+        public void Optimise(DateTime fromDate, DateTime endDate)
+        {
+            var potentials = Enumerable.Range(0, 100).SelectMany(x =>
+            {
+                return Enumerable.Range(1, 6).SelectMany(threshold =>
+                {
+                    var value = x / 100d;
+                    const double increment = 0.001d;
+                    return Enumerable.Range(0, _parameters.Weights.Count).Select(y =>
+                    {
+                        var newWeights = _parameters.Weights.Select((w, j) =>
+                        {
+                            var allocation = j == y ? (value + increment) : value;
+                            return (strategy: w.Key, allocation);
+                        }).ToDictionary(k => k.strategy, v => v.allocation);
 
-//                        return new WeightedStrategy(_cache, newWeights, threshold, false);
-//                    });
-//                });
-//            });
+                        return new WeightedParameters{ Threshold = threshold, Weights = newWeights };
+                    });
+                });
+            });
 
-//            var searcher = new LinearSearch(simulator, potentials, progress);
-//            return searcher.Maximum(LatestDate);
-//        }
+            var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-//        protected override void SetParameters(IStrategy strategy)
-//        {
-//            _weights = ((WeightedStrategy)strategy)._weights;
-//        }
+            _parameters = (WeightedParameters) optimum.Parameters;
+        }
+        public bool ShouldBuy(MarketData data)
+        {
+            var sum = 0d;
+            foreach (var (strategy, w) in _parameters.Weights)
+            {
+                if (!_simulationCache.TryGet((strategy, data.Date), out var shouldBuy))
+                    continue;
+                    
+                var weight = Convert.ToDouble(shouldBuy) * w;
+                sum += weight;
+            }
 
-//        protected override bool ShouldBuy(MarketData data)
-//        {
-//            var sum = 0d;
-//            foreach (var s in _weights)
-//            {
-//                _cache.TryGet((s.Key, data.Date), out var result);
-//                var weight = Convert.ToDouble(result.ShouldBuy) * s.Value;
-//                sum += weight;
-//            }
+            return sum > _parameters.Threshold;
+        }
 
-//            return sum > _threshold;
-//        }
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != typeof(WeightedStrategy)) return false;
 
-//        public override bool Equals(object obj)
-//        {
-//            if (!(obj is WeightedStrategy strategy))
-//                return false;
+            return Equals(obj as WeightedStrategy);
+        }
 
-//            var self = _weights.Values.ToArray();
-//            var other = strategy._weights.Values.ToArray();
-//            for (int i = 0; i < self.Length; i++)
-//            {
-//                if (self[i] != other[i])
-//                    return false;
-//            }
-//            return true;
-//        }
+        public bool Equals(WeightedStrategy strategy)
+        {
+            if (_parameters.Threshold != strategy._parameters.Threshold)
+                return false;
 
-//        public override int GetHashCode()
-//        {
-//            return _weights.GetHashCode();
-//        }
-//    }
-//}
+            var self = _parameters.Weights.Values.ToArray();
+            var other = strategy._parameters.Weights.Values.ToArray();
+            return !self.Where((t, i) => Math.Abs(t - other[i]) > 0.00001).Any();
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(_parameters.Threshold, _parameters.Weights);
+        }
+    }
+}

@@ -4,12 +4,15 @@ using MarketAnalysis.Search;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MarketAnalysis.Factories
 {
     public class StrategyFactory
     {
         private readonly IMarketDataCache _marketDataCache;
+        private readonly ISimulationCache _simulationCache;
         private readonly OptimiserFactory _optimiserFactory;
 
         public StrategyFactory(
@@ -18,7 +21,8 @@ namespace MarketAnalysis.Factories
             IInvestorProvider investorProvider)
         {
             _marketDataCache = marketDataCache;
-            _optimiserFactory = new OptimiserFactory(_marketDataCache, simulationCache, investorProvider, this);
+            _simulationCache = simulationCache;
+            _optimiserFactory = new OptimiserFactory(_marketDataCache, _simulationCache, investorProvider, this);
         }
 
         public IStrategy Create(IParameters parameters)
@@ -34,6 +38,7 @@ namespace MarketAnalysis.Factories
                 StaticDatesParameters p => Create(p),
                 MovingAverageParameters p => Create(p),
                 HolidayEffectParameters p => Create(p),
+                WeightedParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -102,6 +107,16 @@ namespace MarketAnalysis.Factories
 
             return new MovingAverageStrategy(
                 _marketDataCache,
+                optimiser,
+                parameters);
+        }
+        
+        private IStrategy Create(WeightedParameters parameters)
+        {
+            var optimiser = _optimiserFactory.Create<LinearSearch>();
+
+            return new WeightedStrategy(
+                _simulationCache,
                 optimiser,
                 parameters);
         }

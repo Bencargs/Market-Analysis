@@ -37,7 +37,7 @@ namespace MarketAnalysis.Providers
             
             var joinPoint = recentData.First();
             joinPoint.Delta = joinPoint.Price - lastHistoricData.Price;
-            joinPoint.DeltaPercent = (lastHistoricData.Delta - joinPoint.Delta) / joinPoint.Delta;
+            joinPoint.DeltaPercent = joinPoint.Delta != 0 ?(lastHistoricData.Delta - joinPoint.Delta) / joinPoint.Delta : 0;
             joinPoint.VolumePercent = (lastHistoricData.Volume - joinPoint.Volume) / joinPoint.Volume;
 
             return historicData.Union(recentData).ToArray();

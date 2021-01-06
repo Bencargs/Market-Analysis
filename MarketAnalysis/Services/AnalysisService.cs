@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ShellProgressBar;
 
 namespace MarketAnalysis.Services
 {
@@ -65,20 +66,31 @@ namespace MarketAnalysis.Services
 
         private IResultsProvider Simulate(IEnumerable<IStrategy> strategies)
         {
+            void SimulateStrategy(IStrategy strategy, ProgressBar progress, ConcurrentDictionary<IStrategy, SimulationState[]> histories)
+            {
+                var description = strategy.StrategyType.GetDescription();
+                Log.Information($"Simulating strategy: {description}");
+
+                var simulator = _simulatorFactory.Create<BacktestingSimulator>();
+                var result = simulator.Evaluate(strategy, _investorProvider.Current, progress: progress);
+                histories[strategy] = result.ToArray();
+            }
+
             foreach (var investor in _investorProvider)
             {
                 _resultsProvider.Initialise();
                 var histories = new ConcurrentDictionary<IStrategy, SimulationState[]>();
                 using var progress = ProgressBarProvider.Create(0, "Evaluating...");
-                Parallel.ForEach(strategies, strategy =>
+                var split = strategies.Split(x => x is IAggregateStrategy);
+                var parallelisableStrategies = split.FalseSet;
+                Parallel.ForEach(parallelisableStrategies, strategy =>
                 {
-                    var description = strategy.StrategyType.GetDescription();
-                    Log.Information($"Simulating strategy: {description}");
-
-                    var simulator = _simulatorFactory.Create<BacktestingSimulator>();
-                    var result = simulator.Evaluate(strategy, _investorProvider.Current, progress: progress);
-                    histories[strategy] = result.ToArray();
+                    SimulateStrategy(strategy, progress, histories);
                 });
+                foreach (var strategy in split.TrueSet)
+                {
+                    SimulateStrategy(strategy, progress, histories);
+                }
                 _resultsProvider.AddResults(investor, histories);
             }
 
