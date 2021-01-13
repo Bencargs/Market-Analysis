@@ -134,6 +134,18 @@ namespace MarketAnalysisTests.ApprovalTests
 
             Approvals.Verify(actual);
         }
+        
+        [Test]
+        public void OddsStrategyTest()
+        {
+            var data = CreateMarketData();
+            var parameters = new OddsParameters();
+
+            var target = SimulateStrategy(data, x => x.Create(parameters));
+            var actual = ToApprovedString(target);
+
+            Approvals.Verify(actual);
+        }
 
         [Test]
         public void WeightedStrategyTest()

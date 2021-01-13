@@ -4,8 +4,6 @@ using MarketAnalysis.Search;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace MarketAnalysis.Factories
 {
@@ -39,6 +37,7 @@ namespace MarketAnalysis.Factories
                 MovingAverageParameters p => Create(p),
                 HolidayEffectParameters p => Create(p),
                 WeightedParameters p => Create(p),
+                OddsParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -117,6 +116,15 @@ namespace MarketAnalysis.Factories
 
             return new WeightedStrategy(
                 _simulationCache,
+                optimiser,
+                parameters);
+        }
+
+        private IStrategy Create(OddsParameters parameters)
+        {
+            var optimiser = _optimiserFactory.Create<LinearSearch>();
+
+            return new OddsStrategy(
                 optimiser,
                 parameters);
         }

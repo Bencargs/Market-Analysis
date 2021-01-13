@@ -48,7 +48,7 @@ namespace MarketAnalysis.Caching
                 return cacheEntry;
 
             var entry = CreateEntry(history, key.day, createItem);
-            return entry.Item2;
+            return entry.ShouldBuy;
         }
 
         public void Remove(DateTime fromDate, DateTime toDate, IEnumerable<IStrategy> strategies)
@@ -69,7 +69,7 @@ namespace MarketAnalysis.Caching
             }
         }
         
-        private static (DateTime, bool) CreateEntry(ICollection<(DateTime, bool)> history, DateTime date, Func<bool> createItem)
+        private static (DateTime Date, bool ShouldBuy) CreateEntry(ICollection<(DateTime, bool)> history, DateTime date, Func<bool> createItem)
         {
             (DateTime, bool) cacheEntry = new();
             if (createItem == null) 

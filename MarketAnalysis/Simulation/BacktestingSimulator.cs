@@ -32,12 +32,6 @@ namespace MarketAnalysis.Simulation
             var queue = new OrderQueue();
             var state = new SimulationState();
             var backtestingDate = Configuration.BacktestingDate;
-            var trainer = new TrainingSimulator(_dataCache, _simulationCache);
-            foreach (var s in trainer.Evaluate(strategy, investor, backtestingDate, progress))
-            {
-                yield return state = s;
-            }
-
             var remaining = _dataCache.Count - _dataCache.BacktestingIndex;
             using var childProgress = ProgressBarProvider.Create(progress, remaining, $"Evaluating: {strategy.StrategyType.GetDescription()}");
             foreach (var data in _dataCache.TakeFrom(backtestingDate, endDate))
