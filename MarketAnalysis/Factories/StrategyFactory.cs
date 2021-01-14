@@ -37,7 +37,7 @@ namespace MarketAnalysis.Factories
                 MovingAverageParameters p => Create(p),
                 HolidayEffectParameters p => Create(p),
                 WeightedParameters p => Create(p),
-                OddsParameters p => Create(p),
+                OptimalStoppingParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -120,11 +120,11 @@ namespace MarketAnalysis.Factories
                 parameters);
         }
 
-        private IStrategy Create(OddsParameters parameters)
+        private IStrategy Create(OptimalStoppingParameters parameters)
         {
             var optimiser = _optimiserFactory.Create<LinearSearch>();
 
-            return new OddsStrategy(
+            return new OptimalStoppingStrategy(
                 optimiser,
                 parameters);
         }

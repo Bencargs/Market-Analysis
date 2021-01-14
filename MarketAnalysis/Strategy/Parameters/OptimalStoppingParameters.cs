@@ -2,7 +2,7 @@
 
 namespace MarketAnalysis.Strategy.Parameters
 {
-    public class OddsParameters : IParameters
+    public class OptimalStoppingParameters : IParameters
     {
         public decimal MinPrice { get; set; }
         public int WaitTime { get; set; }

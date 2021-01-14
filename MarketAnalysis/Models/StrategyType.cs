@@ -40,7 +40,7 @@ namespace MarketAnalysis.Models
         [Description("Holiday Effect")]
         HolidayEffect,
         
-        [Description("Odds Algorithm")]
-        Odds,
+        [Description("Optimal Stopping")]
+        OptimalStopping,
     }
 }

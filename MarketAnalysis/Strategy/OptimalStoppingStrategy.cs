@@ -6,18 +6,18 @@ using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
 {
-    public class OddsStrategy : IStrategy, IEquatable<OddsStrategy>
+    public class OptimalStoppingStrategy : IStrategy, IEquatable<OptimalStoppingStrategy>
     {
-        private const double WaitRatio = 1 / Math.E;
+        private const double WaitRatio = 1 / Math.E; // Via Odds Algorithm
         private readonly ISearcher _searcher;
-        private OddsParameters _parameters;
+        private OptimalStoppingParameters _parameters;
 
         public IParameters Parameters => _parameters;
-        public StrategyType StrategyType { get; } = StrategyType.Odds;
+        public StrategyType StrategyType { get; } = StrategyType.OptimalStopping;
         
-        public OddsStrategy(
+        public OptimalStoppingStrategy(
             ISearcher searcher,
-            OddsParameters parameters)
+            OptimalStoppingParameters parameters)
         {
             _searcher = searcher;
             _parameters = parameters;
@@ -27,7 +27,7 @@ namespace MarketAnalysis.Strategy
         public void Optimise(DateTime fromDate, DateTime toDate)
         {
             var potentials = Enumerable.Range(3, 60)
-                .Select(wait => new OddsParameters
+                .Select(wait => new OptimalStoppingParameters
                 {
                     WaitTime = 0,
                     MaxWaitTime = wait,
@@ -36,7 +36,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, toDate);
 
-            _parameters = (OddsParameters) optimum.Parameters;
+            _parameters = (OptimalStoppingParameters) optimum.Parameters;
         }
 
         public bool ShouldBuy(MarketData data)
@@ -71,17 +71,20 @@ namespace MarketAnalysis.Strategy
         {
             if (ReferenceEquals(this, obj)) return true;
             if (ReferenceEquals(null, obj)) return false;
-            if (obj.GetType() != typeof(OddsStrategy)) return false;
+            if (obj.GetType() != typeof(OptimalStoppingStrategy)) return false;
 
-            return Equals(obj as OddsStrategy);
+            return Equals(obj as OptimalStoppingStrategy);
         }
 
-        public bool Equals(OddsStrategy other)
+        public bool Equals(OptimalStoppingStrategy other)
             => other._parameters.MinPrice == _parameters.MinPrice &&
                other._parameters.WaitTime == _parameters.WaitTime &&
                other._parameters.MaxWaitTime == _parameters.MaxWaitTime;
 
         public override int GetHashCode()
-            => HashCode.Combine(_parameters.MinPrice, _parameters.WaitTime, _parameters.MaxWaitTime);
+            => HashCode.Combine(
+                _parameters.MinPrice, 
+                _parameters.WaitTime, 
+                _parameters.MaxWaitTime);
     }
 }

@@ -26,7 +26,7 @@ namespace MarketAnalysis.Providers
                 _strategyFactory.Create(new VolumeParameters()),
                 _strategyFactory.Create(new HolidayEffectParameters()),
                 _strategyFactory.Create(new MovingAverageParameters()),
-                _strategyFactory.Create(new OddsParameters()),
+                _strategyFactory.Create(new OptimalStoppingParameters()),
                 //_strategyFactory.Create(new EntropyParameters()),
                 //_strategyFactory.Create(new WeightedParameters())
             };

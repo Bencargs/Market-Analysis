@@ -136,10 +136,10 @@ namespace MarketAnalysisTests.ApprovalTests
         }
         
         [Test]
-        public void OddsStrategyTest()
+        public void OptimalStoppingStrategyTest()
         {
             var data = CreateMarketData();
-            var parameters = new OddsParameters();
+            var parameters = new OptimalStoppingParameters();
 
             var target = SimulateStrategy(data, x => x.Create(parameters));
             var actual = ToApprovedString(target);
