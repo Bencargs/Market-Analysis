@@ -18,14 +18,14 @@ namespace MarketAnalysis.Repositories
     {
         private readonly string _dataFilePath = Configuration.DataPath;
 
-        Task<IEnumerable<MarketData>> IRepository<MarketData>.Get()
+        async Task<IEnumerable<MarketData>> IRepository<MarketData>.Get()
         {
+            var results = new List<MarketData>(5000);
+
             using var reader = new StreamReader(_dataFilePath);
             using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.CurrentCulture) { HasHeaderRecord = false });
-            var fileData = csv.GetRecords<FileMarketData>();
-                
-            var results = new List<MarketData>(5000);
-            foreach (var row in fileData)
+            var fileData = csv.GetRecordsAsync<FileMarketData>();
+            await foreach (var row in fileData)
             {
                 var lastData = results.LastOrDefault();
                 var priceDelta = (lastData?.Price ?? 0m) - row.Price;
@@ -43,7 +43,7 @@ namespace MarketAnalysis.Repositories
                         ? (lastData.Volume - volumeDelta) / volumeDelta : 0
                 });
             }
-            return Task.FromResult(results.OrderBy(x => x.Date).AsEnumerable());
+            return results.OrderBy(x => x.Date);
         }
 
         public async Task Save(IEnumerable<MarketData> data)

@@ -66,14 +66,14 @@ namespace MarketAnalysis.Services
 
         private IResultsProvider Simulate(IEnumerable<IStrategy> strategies)
         {
-            void SimulateStrategy(IStrategy strategy, ProgressBar progress, ConcurrentDictionary<IStrategy, SimulationState[]> histories)
+            SimulationState[] SimulateStrategy(IStrategy strategy, ProgressBar progress)
             {
                 var description = strategy.StrategyType.GetDescription();
                 Log.Information($"Simulating strategy: {description}");
 
                 var simulator = _simulatorFactory.Create<BacktestingSimulator>();
                 var result = simulator.Evaluate(strategy, _investorProvider.Current, progress: progress);
-                histories[strategy] = result.ToArray();
+                return result.ToArray();
             }
 
             foreach (var investor in _investorProvider)
@@ -81,15 +81,14 @@ namespace MarketAnalysis.Services
                 _resultsProvider.Initialise();
                 var histories = new ConcurrentDictionary<IStrategy, SimulationState[]>();
                 using var progress = ProgressBarProvider.Create(0, "Evaluating...");
-                var split = strategies.Split(x => x is IAggregateStrategy);
-                var parallelisableStrategies = split.FalseSet;
-                Parallel.ForEach(parallelisableStrategies, strategy =>
+                var (sequential, parallelisable) = strategies.Split(x => x is IAggregateStrategy);
+                Parallel.ForEach(parallelisable, strategy =>
                 {
-                    SimulateStrategy(strategy, progress, histories);
+                    histories[strategy] = SimulateStrategy(strategy, progress);
                 });
-                foreach (var strategy in split.TrueSet)
+                foreach (var strategy in sequential)
                 {
-                    SimulateStrategy(strategy, progress, histories);
+                    histories[strategy] = SimulateStrategy(strategy, progress);
                 }
                 _resultsProvider.AddResults(investor, histories);
             }

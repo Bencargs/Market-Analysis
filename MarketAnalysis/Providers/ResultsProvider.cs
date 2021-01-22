@@ -103,32 +103,27 @@ namespace MarketAnalysis.Providers
             }
         }
 
+        private static IOrderedEnumerable<KeyValuePair<IStrategy, SimulationState[]>> OrderResults(
+            ConcurrentDictionary<IStrategy, SimulationState[]> source)
+            => source.OrderByDescending(x => x.Value.Last().Worth);
+
         public Dictionary<Investor, IEnumerable<SimulationResult>> GetResults()
-        {
-            return _results.GroupBy(k => k.Investor).ToDictionary(k => k.Key, v => v.AsEnumerable());
-        }
+            => _results.GroupBy(k => k.Investor)
+                .ToDictionary(k => k.Key, v => v.AsEnumerable());
 
         public async Task SaveSimulationResults()
-        {
-            await _simulationResultsRepository.Save(_results);
-        }
+            => await _simulationResultsRepository.Save(_results);
 
         public async Task SaveData(IEnumerable<MarketData> data)
-        {
-            await _marketDataRepository.Save(data);
-        }
+            => await _marketDataRepository.Save(data);
 
         public static bool ShouldBuy(IEnumerable<SimulationResult> results)
-        {
-            return results.Count(x => x.ShouldBuy) > 1;
-        }
+            => results.Count(x => x.ShouldBuy) > 1;
 
         public static decimal TotalProfit(IEnumerable<SimulationResult> results)
-        {
-            return results.Average(x => x.ProfitTotal);
-        }
+                => results.Average(x => x.ProfitTotal);
 
-        private int GetMaximumHoldPeriod(SimulationState[] history, SimulationState[] buySignals)
+        private static int GetMaximumHoldPeriod(SimulationState[] history, SimulationState[] buySignals)
         {
             if (!buySignals.Any())
                 return history.Length;
@@ -203,24 +198,22 @@ namespace MarketAnalysis.Providers
                 : x.Worth).ToArray();
         }
 
-        private decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix)
+        private static decimal CalculatePrecision(Dictionary<ConfusionCategory, int> confusionMatrix)
         {
             var denominator = confusionMatrix[ConfusionCategory.TruePositive] + confusionMatrix[ConfusionCategory.FalsePositive];
 
             return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePositive] / denominator : 0;
         }
 
-        private decimal CalculateRecall(Dictionary<ConfusionCategory, int> confusionMatrix)
+        private static decimal CalculateRecall(Dictionary<ConfusionCategory, int> confusionMatrix)
         {
             var denominator = confusionMatrix[ConfusionCategory.TruePositive] + confusionMatrix[ConfusionCategory.FalseNegative];
 
             return denominator != 0 ? (decimal) confusionMatrix[ConfusionCategory.TruePositive] / denominator : 0;
         }
 
-        private decimal CalculateAccuracy(Dictionary<ConfusionCategory, int> confusionMatrix, IList<SimulationState> history)
-        {
-            return (decimal) (confusionMatrix[ConfusionCategory.TruePositive] + confusionMatrix[ConfusionCategory.TrueNegative]) / history.Count;
-        }
+        private static decimal CalculateAccuracy(Dictionary<ConfusionCategory, int> confusionMatrix, IList<SimulationState> history)
+            => (decimal) (confusionMatrix[ConfusionCategory.TruePositive] + confusionMatrix[ConfusionCategory.TrueNegative]) / history.Count;
 
         private Dictionary<ConfusionCategory, int> CalculateConfusionMatrix(IList<SimulationState> history)
         {
@@ -252,13 +245,13 @@ namespace MarketAnalysis.Providers
             return confusionMatrix;
         }
 
-        private decimal CalculateAlpha(decimal currentWorth, decimal currentMarketWorth)
+        private static decimal CalculateAlpha(decimal currentWorth, decimal currentMarketWorth)
         {
             var excessReturn = currentWorth - currentMarketWorth;
             return excessReturn / currentMarketWorth;
         }
 
-        private decimal CalculateYTDProfit(Investor investor, IList<SimulationState> history)
+        private static decimal CalculateYTDProfit(Investor investor, IList<SimulationState> history)
         {
             var latestState = history.Last();
             var yearOpenDay = history.ToList().FindIndex(x => x.Date > new DateTime(latestState.Date.Year, 1, 1));
@@ -267,9 +260,7 @@ namespace MarketAnalysis.Providers
             return latestState.Worth - strategyOpenWorth - investment;
         }
 
-        private decimal GetInvestmentSince(decimal dailyFunds, int simulationDays)
-        {
-            return simulationDays * dailyFunds;
-        }
+        private static decimal GetInvestmentSince(decimal dailyFunds, int simulationDays)
+            => simulationDays * dailyFunds;
     }
 }

@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -16,30 +15,63 @@ namespace MarketAnalysis.Providers
 {
     public class YahooFinanceProvider : IApiDataProvider
     {
+        private static int StartDatePeriod => 1577836800;
         private readonly string _url = Configuration.YahooApiEndpoint;
-        private string _parameters => $"{Configuration.YahooQueryString}?period1={StartDatePeriod}&period2={GetEndDateString()}&interval=1d&events=history";
+        private static string Parameters => $"{Configuration.YahooQueryString}?period1={StartDatePeriod}&period2={GetEndDateString()}&interval=1d&events=history";
 
         public async Task<IEnumerable<MarketData>> GetData()
         {
             Log.Information($"Reading market data from provider {_url}");
-            var client = new HttpClient {BaseAddress = new Uri(_url)};
-            var request = await client.GetAsync(_parameters);
+            var client = new HttpClient { BaseAddress = new Uri(_url) };
+            var request = await client.GetAsync(Parameters);
             if (request.IsSuccessStatusCode)
             {
-                var response = await request.Content.ReadAsStreamAsync();
+                await using var response = await request.Content.ReadAsStreamAsync();
                 using var reader = new StreamReader(response);
                 using var csv = new CsvReader(reader, CultureInfo.CurrentCulture);
                 csv.Configuration.RegisterClassMap<YahooTimeSeriesDataMap>();
-                var records = csv.GetRecords<YahooTimeSeriesData>();
-                return ConvertToRow(records).ToArray();
+                var records = csv.GetRecordsAsync<YahooTimeSeriesData>();
+                var results = await ConvertToRow(records);
+                return results;
             }
-            Log.Error("No response recieved from api data provider");
+            Log.Error("No response received from api data provider");
             return null;
         }
 
-        private int StartDatePeriod => 1577836800;
+        private static async Task<List<MarketData>> ConvertToRow(IAsyncEnumerable<YahooTimeSeriesData> records)
+        {
+            var results = new List<MarketData>();
+            MarketData lastData = null;
+            await foreach (var row in records)
+            {
+                var price = row.Close ?? 0;
+                if (price == 0)
+                    continue;
+                var volume = row.Volume ?? 0;
 
-        private string GetEndDateString()
+                var priceDelta = (lastData?.Price ?? 0m) - price;
+                var volumeDelta = (lastData?.Volume ?? 0m) - volume;
+
+                var marketDataRow = new MarketData
+                {
+                    Date = row.Date,
+                    Volume = volume,
+                    Price = price,
+                    Delta = priceDelta,
+                    DeltaPercent = priceDelta != 0 && lastData?.Delta != null
+                        ? (lastData.Delta - priceDelta) / priceDelta : 0,
+                    VolumePercent = volumeDelta != 0 && lastData?.Volume != null
+                        ? (lastData.Volume - volumeDelta) / volumeDelta : 0
+                };
+
+                results.Add(marketDataRow);
+                lastData = marketDataRow;
+            }
+
+            return results;
+        }
+
+        private static string GetEndDateString()
         {
             var startDate = new DateTime(2020, 1, 1);
             var daysDiff = (DateTime.Today - startDate).Days;
@@ -47,35 +79,6 @@ namespace MarketAnalysis.Providers
             const int secondsPerDay = 86400;
             var endPeriod = startPeriod + (daysDiff * secondsPerDay);
             return endPeriod.ToString();
-        }
-
-        private IEnumerable<MarketData> ConvertToRow(IEnumerable<YahooTimeSeriesData> data)
-        {
-            MarketData lastData = null;
-            foreach (var row in data)
-            {
-                var price = row.Close;
-                if (price == 0 || price == null)
-                    continue;
-                
-                var priceDelta = (lastData?.Price ?? 0m) - price;
-                var volumeDelta = (lastData?.Volume ?? 0m) - row.Volume;
-
-                var marketDataRow = new MarketData
-                {
-                    Date = row.Date,
-                    Volume = (decimal)row.Volume,
-                    Price = (decimal)price,
-                    Delta = (decimal)priceDelta,
-                    DeltaPercent = (decimal)(priceDelta != 0 && lastData?.Delta != null
-                        ? (lastData.Delta - priceDelta) / priceDelta : 0),
-                    VolumePercent = (decimal)(volumeDelta != 0 && lastData?.Volume != null
-                        ? (lastData.Volume - volumeDelta) / volumeDelta : 0)
-                };
-
-                yield return marketDataRow;
-                lastData = marketDataRow;
-            }
         }
 
         public class YahooTimeSeriesData
@@ -115,11 +118,12 @@ namespace MarketAnalysis.Providers
                         ? (decimal?)dResult
                         : null;
                 }
-                else if (type == typeof(int?))
+
+                if (type == typeof(int?))
                 {
                     return (int.TryParse(test, out var iResult))
-                            ? (int?)iResult
-                            : null;
+                        ? (int?)iResult
+                        : null;
                 }
                 return defaultType;
             }

@@ -34,13 +34,18 @@ namespace MarketAnalysis.Providers
             var recentData = latestData.Where(x => x.Date > lastHistoricData.Date).ToArray();
             if (!recentData.Any())
                 return historicData;
-            
-            var joinPoint = recentData.First();
-            joinPoint.Delta = joinPoint.Price - lastHistoricData.Price;
-            joinPoint.DeltaPercent = joinPoint.Delta != 0 ?(lastHistoricData.Delta - joinPoint.Delta) / joinPoint.Delta : 0;
-            joinPoint.VolumePercent = (lastHistoricData.Volume - joinPoint.Volume) / joinPoint.Volume;
 
-            return historicData.Union(recentData).ToArray();
+            var joinPoint = recentData.First(); 
+            joinPoint.Delta = joinPoint.Price - lastHistoricData.Price;
+            joinPoint.DeltaPercent = joinPoint.Delta != 0 
+                ? (lastHistoricData.Delta - joinPoint.Delta) / joinPoint.Delta : 0;
+            joinPoint.VolumePercent = joinPoint.Volume != 0 
+                ? (lastHistoricData.Volume - joinPoint.Volume) / joinPoint.Volume : 0;
+
+            var combinedData = historicData.Union(latestData)
+                .DistinctBy(x => x.Date)
+                .OrderBy(x => x.Date);
+            return combinedData;
         }
     }
 }
