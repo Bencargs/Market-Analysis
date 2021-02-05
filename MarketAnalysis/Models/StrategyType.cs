@@ -42,5 +42,8 @@ namespace MarketAnalysis.Models
         
         [Description("Optimal Stopping")]
         OptimalStopping,
+
+        [Description("Probability")]
+        Probability,
     }
 }

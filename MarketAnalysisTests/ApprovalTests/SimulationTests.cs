@@ -148,6 +148,18 @@ namespace MarketAnalysisTests.ApprovalTests
         }
 
         [Test]
+        public void ProbabilityStrategyTest()
+        {
+            var data = CreateMarketData();
+            var parameters = new ProbabilityParameters();
+
+            var target = SimulateStrategy(data, x => x.Create(parameters));
+            var actual = ToApprovedString(target);
+
+            Approvals.Verify(actual);
+        }
+
+        [Test]
         public void WeightedStrategyTest()
         {
             var data = CreateMarketData();

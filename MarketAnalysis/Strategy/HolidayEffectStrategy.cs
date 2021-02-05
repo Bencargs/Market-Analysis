@@ -19,9 +19,9 @@ namespace MarketAnalysis.Strategy
         public void Optimise(DateTime fromDate, DateTime toDate) { }
 
         public bool ShouldBuy(MarketData data)
-            => DateSystem.IsPublicHoliday(data.Date, CountryCode.AU) ||
-               DateSystem.IsPublicHoliday(data.Date, CountryCode.US) ||
-               DateSystem.IsPublicHoliday(data.Date, CountryCode.CN);
+            => DateSystem.IsPublicHoliday(data.Date.AddDays(1), CountryCode.AU) ||
+               DateSystem.IsPublicHoliday(data.Date.AddDays(1), CountryCode.US) ||
+               DateSystem.IsPublicHoliday(data.Date.AddDays(1), CountryCode.CN);
 
         public override bool Equals(object obj)
         {

@@ -38,6 +38,7 @@ namespace MarketAnalysis.Factories
                 HolidayEffectParameters p => Create(p),
                 WeightedParameters p => Create(p),
                 OptimalStoppingParameters p => Create(p),
+                ProbabilityParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -125,6 +126,16 @@ namespace MarketAnalysis.Factories
             var optimiser = _optimiserFactory.Create<LinearSearch>();
 
             return new OptimalStoppingStrategy(
+                optimiser,
+                parameters);
+        }
+        
+        private IStrategy Create(ProbabilityParameters parameters)
+        {
+            var optimiser = _optimiserFactory.Create<LinearSearch>();
+
+            return new ProbabilityStrategy(
+                _marketDataCache,
                 optimiser,
                 parameters);
         }
