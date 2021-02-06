@@ -30,7 +30,7 @@ namespace MarketAnalysis.Strategy
         public void Optimise(DateTime fromDate, DateTime toDate)
         {
             Dictionary<int, List<int>> histogram = new();
-            var history = _marketDataCache.TakeFrom(fromDate, toDate).ToArray();
+            var history = _marketDataCache.TakeUntil(toDate).ToArray();
             for (var i = 1; i < history.Length; i++)
             {
                 var previousPrice = Convert.ToInt32(history[i - 1].DeltaPercent);
@@ -55,7 +55,7 @@ namespace MarketAnalysis.Strategy
             if (!_parameters.Histogram.ContainsKey(currentPrice))
                 return false;
             
-            var value = _parameters.Histogram[currentPrice].Sum();
+            var value = _parameters.Histogram[currentPrice].Average();
             return value > _parameters.Threshold;
         }
 
