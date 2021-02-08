@@ -55,7 +55,7 @@ namespace MarketAnalysis.Providers
         public void AddResults(Investor investor, ConcurrentDictionary<IStrategy, SimulationState[]> source)
         {
 
-            foreach (var (strategy, simulationResults) in source)
+            foreach (var (strategy, simulationResults) in OrderResults(source))
             {
                 var history = simulationResults.ToArray();
                 var latestState = history.Last();

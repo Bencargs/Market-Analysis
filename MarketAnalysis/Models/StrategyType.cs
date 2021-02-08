@@ -45,5 +45,8 @@ namespace MarketAnalysis.Models
 
         [Description("Probability")]
         Probability,
+        
+        [Description("Spread")]
+        Spread,
     }
 }

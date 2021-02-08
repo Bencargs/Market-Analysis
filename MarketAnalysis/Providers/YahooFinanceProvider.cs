@@ -48,9 +48,11 @@ namespace MarketAnalysis.Providers
                 if (price == 0)
                     continue;
                 var volume = row.Volume ?? 0;
+                var spread = row.High - row.Low ?? 0;
 
                 var priceDelta = (lastData?.Price ?? 0m) - price;
                 var volumeDelta = (lastData?.Volume ?? 0m) - volume;
+                var spreadDelta = (lastData?.Spread ?? 0m) - spread;
 
                 var marketDataRow = new MarketData
                 {
@@ -58,10 +60,13 @@ namespace MarketAnalysis.Providers
                     Volume = volume,
                     Price = price,
                     Delta = priceDelta,
+                    Spread = spread,
                     DeltaPercent = priceDelta != 0 && lastData?.Delta != null
                         ? (lastData.Delta - priceDelta) / priceDelta : 0,
                     VolumePercent = volumeDelta != 0 && lastData?.Volume != null
-                        ? (lastData.Volume - volumeDelta) / volumeDelta : 0
+                        ? (lastData.Volume - volumeDelta) / volumeDelta : 0,
+                    SpreadPercent = spreadDelta != 0 && lastData?.Spread != null
+                        ? (lastData.Spread - spreadDelta) / spreadDelta : 0
                 };
 
                 results.Add(marketDataRow);
@@ -93,13 +98,15 @@ namespace MarketAnalysis.Providers
             public int? Volume { get; set; }
         }
 
-        public class YahooTimeSeriesDataMap : ClassMap<YahooTimeSeriesData>
+        public sealed class YahooTimeSeriesDataMap : ClassMap<YahooTimeSeriesData>
         {
             public YahooTimeSeriesDataMap()
             {
                 Map(m => m.Date);
                 Map(m => m.Close).TypeConverter<NullableValueConverter<decimal?>>();
                 Map(m => m.Volume).TypeConverter<NullableValueConverter<int?>>();
+                Map(m => m.High).TypeConverter<NullableValueConverter<decimal?>>();
+                Map(m => m.Low).TypeConverter<NullableValueConverter<decimal?>>();
             }
         }
 

@@ -30,6 +30,7 @@ namespace MarketAnalysis.Repositories
                 var lastData = results.LastOrDefault();
                 var priceDelta = (lastData?.Price ?? 0m) - row.Price;
                 var volumeDelta = (lastData?.Volume ?? 0m) - row.Volume;
+                var spreadDelta = (lastData?.Spread ?? 0m) - row.Spread;
 
                 results.Add(new MarketData
                 {
@@ -37,10 +38,13 @@ namespace MarketAnalysis.Repositories
                     Price = row.Price,
                     Delta = row.Delta,
                     Volume = row.Volume,
-                    DeltaPercent = (priceDelta != 0 && lastData?.Delta != null)
+                    Spread = row.Spread,
+                    DeltaPercent = priceDelta != 0 && lastData?.Delta != null
                         ? (lastData.Delta - priceDelta) / priceDelta : 0,
-                    VolumePercent = (volumeDelta != 0 && lastData?.Volume != null)
-                        ? (lastData.Volume - volumeDelta) / volumeDelta : 0
+                    VolumePercent = volumeDelta != 0 && lastData?.Volume != null
+                        ? (lastData.Volume - volumeDelta) / volumeDelta : 0,
+                    SpreadPercent = spreadDelta != 0 && lastData?.Spread != null
+                        ? (lastData.Spread - spreadDelta) / spreadDelta : 0,
                 });
             }
             return results.OrderBy(x => x.Date);

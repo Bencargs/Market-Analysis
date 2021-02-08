@@ -39,6 +39,7 @@ namespace MarketAnalysis.Factories
                 WeightedParameters p => Create(p),
                 OptimalStoppingParameters p => Create(p),
                 ProbabilityParameters p => Create(p),
+                SpreadParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -136,6 +137,15 @@ namespace MarketAnalysis.Factories
 
             return new ProbabilityStrategy(
                 _marketDataCache,
+                optimiser,
+                parameters);
+        }
+
+        private IStrategy Create(SpreadParameters parameters)
+        {
+            var optimiser = _optimiserFactory.Create<LinearSearch>();
+
+            return new SpreadStrategy(
                 optimiser,
                 parameters);
         }
