@@ -40,7 +40,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            _parameters = (EntropyParameters)optimum.Parameters;
+            _parameters = (EntropyParameters)optimum;
         }
 
         public bool ShouldBuy(MarketData data)

@@ -263,3 +263,5 @@ FakesAssemblies/
 *.opt
 MarketAnalysis/results.json
 MarketAnalysis/Logs/logfile.txt
+
+*.received.*

@@ -39,7 +39,7 @@ namespace MarketAnalysis.Strategy
 
             var optimum = _searcher.Maximum(potentials, fromDate, endDate);
 
-            _parameters = (MovingAverageParameters)optimum.Parameters;
+            _parameters = (MovingAverageParameters)optimum;
         }
 
         public bool ShouldBuy(MarketData data)
