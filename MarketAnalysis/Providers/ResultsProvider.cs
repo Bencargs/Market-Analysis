@@ -16,7 +16,8 @@ namespace MarketAnalysis.Providers
 {
     public class ResultsProvider : IResultsProvider
     {
-        private readonly List<SimulationResult> _results = new List<SimulationResult>(5000);
+        private readonly List<SimulationResult> _results = new(5000);
+        private readonly Dictionary<ResultsChart, Chart> _charts = new();
         private readonly IMarketDataCache _marketDataCache;
         private readonly StrategyFactory _strategyFactory;
         private readonly SimulatorFactory _simulatorFactory;
@@ -44,17 +45,28 @@ namespace MarketAnalysis.Providers
 
         public void Initialise()
         {
-            var buyDates = _marketDataCache.TakeUntil().Select(x => x.Date).ToDictionary(k => k, v => true);
+            var buyDates = _marketDataCache
+                .TakeUntil()
+                .Skip(_marketDataCache.BacktestingIndex)
+                .Select(x => x.Date)
+                .ToDictionary(k => k, _ => true);
             var constantStrategy = _strategyFactory.Create(new StaticDatesParameters { BuyDates = buyDates });
 
             using var progressBar = ProgressBarProvider.Create(_marketDataCache.BacktestingIndex, "Initialising...");
-            _marketAverage = _simulatorFactory.Create<TrainingSimulator>().Evaluate(constantStrategy, _investorProvider.Current).ToArray();
-            _marketMaximum = GetMarketMaximum(buyDates, progressBar).ToArray();
-        }
+            _marketAverage = _simulatorFactory.Create<BacktestingSimulator>().Evaluate(constantStrategy, _investorProvider.Current).ToArray();
+            _marketMaximum = GetMarketMaximum(buyDates, null).ToArray();
+            
+            _charts.Add(ResultsChart.Performance, new Chart("Strategy returns", "Return ($ AU)", "Time (Days)"));
+            _charts[ResultsChart.Performance].AddSeries(_marketAverage.Select(x => (double)x.Worth), "Market Average", colour: OxyColor.FromArgb(255, 0, 0, 0));
 
+            _charts.Add(ResultsChart.Signal, new Chart("Strategy Buy Signal", "Time (Days)", "Market Price"));
+            _charts[ResultsChart.Signal].AddSeries(_marketAverage.Select(x => (double)x.SharePrice), "Market Average", colour: OxyColor.FromArgb(255, 0, 0, 0));
+
+            _charts.Add(ResultsChart.Relative, new Chart("Performance vs Market Average", "Profit/Loss ($ AU)", "Time (Days)"));
+        }
+        
         public void AddResults(Investor investor, ConcurrentDictionary<IStrategy, SimulationState[]> source)
         {
-
             foreach (var (strategy, simulationResults) in OrderResults(source))
             {
                 var history = simulationResults.ToArray();
@@ -66,6 +78,10 @@ namespace MarketAnalysis.Providers
                 var excessReturns = GetExcessReturns(history);
                 var maximumReturn = _marketMaximum.Last().Worth;
                 var currentMarketWorth = _marketAverage.Last().Worth;
+
+                AddPerformanceChartSeries(history, strategy);
+                AddSignalsChartSeries(history, strategy);
+                AddRelativeChartSeries(history, strategy);
 
                 _results.Add(new SimulationResult
                 {
@@ -79,7 +95,7 @@ namespace MarketAnalysis.Providers
                     Alpha = CalculateAlpha(latestState.Worth, currentMarketWorth),
                     MaximumAlpha = CalculateAlpha(maximumReturn, currentMarketWorth),
                     MaximumDrawdown = excessReturns.Min(),
-                    BuyCount = buySignals.Count(),
+                    BuyCount = buySignals.Length,
                     MaximumHoldingPeriod = GetMaximumHoldPeriod(history, buySignals),
                     SharpeRatio = CalculateSharpeRatio(history, currentMarketWorth),
                     MarketCorrelation = CalculateCorrelation(history),
@@ -90,11 +106,9 @@ namespace MarketAnalysis.Providers
                     AverageReturn = GetAverageReturn(buySignals),
                     
                     MarketAverage = _marketAverage
-                        .Skip(_marketDataCache.BacktestingIndex)
                         .Select(x => (double) x.Worth)
                         .ToArray(),
                     History = history
-                        .Skip(_marketDataCache.BacktestingIndex)
                         .Select(x => (double)x.Worth)
                         .ToArray(),
 
@@ -103,9 +117,8 @@ namespace MarketAnalysis.Providers
             }
         }
 
-        private static IOrderedEnumerable<KeyValuePair<IStrategy, SimulationState[]>> OrderResults(
-            ConcurrentDictionary<IStrategy, SimulationState[]> source)
-            => source.OrderByDescending(x => x.Value.Last().Worth);
+        public async Task SaveChart(ResultsChart chartType, string path)
+            => await _charts[chartType].Save(path);
 
         public Dictionary<Investor, IEnumerable<SimulationResult>> GetResults()
             => _results.GroupBy(k => k.Investor)
@@ -121,7 +134,32 @@ namespace MarketAnalysis.Providers
             => results.Count(x => x.ShouldBuy) > 1;
 
         public static decimal TotalProfit(IEnumerable<SimulationResult> results)
-                => results.Average(x => x.ProfitTotal);
+            => results.Average(x => x.ProfitTotal);
+
+        private void AddRelativeChartSeries(SimulationState[] history, IStrategy strategy)
+        {
+            var relative = _marketAverage
+                .Select((x, i) => (double)(x.Worth - history[i].Worth));
+
+            _charts[ResultsChart.Relative].AddSeries(relative, strategy.StrategyType.GetDescription());
+        }
+
+        private void AddSignalsChartSeries(SimulationState[] history, IStrategy strategy)
+        {
+            var signals = history
+                .Select((x, i) => x.ShouldBuy ? (double)_marketAverage[i].SharePrice : 0d);
+            _charts[ResultsChart.Signal].AddSeries(signals, strategy.StrategyType.GetDescription(), Chart.Type.Point);
+        }
+
+        private void AddPerformanceChartSeries(SimulationState[] history, IStrategy strategy)
+        {
+            var chartData = history.Select(t => (double)t.Worth);
+            _charts[ResultsChart.Performance].AddSeries(chartData, strategy.StrategyType.GetDescription());
+        }
+
+        private static IOrderedEnumerable<KeyValuePair<IStrategy, SimulationState[]>> OrderResults(
+            ConcurrentDictionary<IStrategy, SimulationState[]> source)
+            => source.OrderByDescending(x => x.Value.Last().Worth);
 
         private static int GetMaximumHoldPeriod(SimulationState[] history, SimulationState[] buySignals)
         {
@@ -154,7 +192,7 @@ namespace MarketAnalysis.Providers
                     worth = newWorth;
                     history = newHistory;
                 }
-                progressBar.Tick($"Initialising...");
+                progressBar?.Tick($"Initialising...");
             }
             return history;
         }
@@ -170,8 +208,8 @@ namespace MarketAnalysis.Providers
 
         private double CalculateCorrelation(IList<SimulationState> history)
         {
-            var modeled = _marketAverage.Select(x => (double)x.Worth).ToArray();
             var observed = history.Select(x => (double)x.Worth).ToArray();
+            var modeled = _marketAverage.Take(history.Count).Select(x => (double)x.Worth).ToArray();
 
             return MathNet.Numerics.GoodnessOfFit.RSquared(modeled, observed);
         }

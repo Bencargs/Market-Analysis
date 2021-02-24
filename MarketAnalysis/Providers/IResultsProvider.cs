@@ -12,6 +12,7 @@ namespace MarketAnalysis.Providers
         void AddResults(Investor investor, ConcurrentDictionary<IStrategy , SimulationState[]> history);
         Dictionary<Investor, IEnumerable<SimulationResult>> GetResults();
         Task SaveSimulationResults();
+        Task SaveChart(ResultsChart chartType, string path);
         Task SaveData(IEnumerable<MarketData> data);
     }
 }

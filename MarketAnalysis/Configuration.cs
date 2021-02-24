@@ -6,9 +6,10 @@ namespace MarketAnalysis
 {
     public static class Configuration
     {
+        public static string RelativePath => ConfigurationManager.AppSettings["RelativePath"];
         public static string LogPath => GetAbsolutePath(ConfigurationManager.AppSettings["LogPath"]);
         public static string ReportsPath => GetAbsolutePath(ConfigurationManager.AppSettings["ReportsPath"]);
-        public static string DataPath => GetAbsolutePath( ConfigurationManager.AppSettings["DataPath"]);
+        public static string DataPath => GetAbsolutePath(ConfigurationManager.AppSettings["DataPath"]);
         public static string ResultsPath => GetAbsolutePath(ConfigurationManager.AppSettings["ResultsPath"]);
         public static string AlphaApiEndpoint => ConfigurationManager.AppSettings["AlphaApiEndpoint"];
         public static string AlphaQueryString => ConfigurationManager.AppSettings["AlphaQueryString"];
@@ -29,10 +30,10 @@ namespace MarketAnalysis
         public static DateTime BacktestingDate { get; } = DateTime.Parse(ConfigurationManager.AppSettings["BacktestingDate"]);
         public static int CacheSize { get; } = int.Parse(ConfigurationManager.AppSettings["CacheSize"]);
 
-        private static string GetAbsolutePath(string relativePath)
+        private static string GetAbsolutePath(string path)
         {
             var currentDirectory = Directory.GetCurrentDirectory();
-            return Path.Combine(currentDirectory, "..\\..\\..\\", relativePath);
+            return Path.Combine(currentDirectory, RelativePath, path);
         }
     }
 }

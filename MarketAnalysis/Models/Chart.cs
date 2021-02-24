@@ -4,6 +4,7 @@ using OxyPlot.Series;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MarketAnalysis.Models
 {
@@ -67,7 +68,7 @@ namespace MarketAnalysis.Models
 
         private Chart AddPointSeries(IEnumerable<double> series, OxyColor colour, string name = "")
         {
-            var points = series.ToArray().Select((data, i) => new ScatterPoint(i, data));
+            var points = series.Select((data, i) => new ScatterPoint(i, data)).ToArray();
             _plot.Series.Add(new OxyPlot.Series.ScatterSeries
             {
                 ItemsSource = points,
@@ -104,13 +105,13 @@ namespace MarketAnalysis.Models
             return this;
         }
 
-        public void Save(string filepath)
+        public async Task Save(string filepath)
         {
             var bytes = ToByteArray();
 
             File.Delete(filepath);
-            using var filestream = new FileStream(filepath, FileMode.Create);
-            filestream.Write(bytes, 0, bytes.Length);
+            await using var filestream = new FileStream(filepath, FileMode.Create);
+            await filestream.WriteAsync(bytes, 0, bytes.Length);
         }
 
         public byte[] ToByteArray()
@@ -124,7 +125,7 @@ namespace MarketAnalysis.Models
             return stream.ToArray();
         }
 
-        private OxyColor GetColorForIndex(int index)
+        private static OxyColor GetColorForIndex(int index)
         {
             var i = index % Colours.Length;
 

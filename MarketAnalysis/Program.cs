@@ -32,7 +32,7 @@ namespace MarketAnalysis
             }
         }
 
-        public static ServiceProvider RegisterServices()
+        private static ServiceProvider RegisterServices()
         {
             var services = new ServiceCollection();
 
@@ -66,7 +66,7 @@ namespace MarketAnalysis
             return services.BuildServiceProvider();
         }
 
-        public static void RegisterLogger()
+        private static void RegisterLogger()
         {
             var logPath = DirectoryManager.GetLatestLogFile();
             Log.Logger = new LoggerConfiguration()

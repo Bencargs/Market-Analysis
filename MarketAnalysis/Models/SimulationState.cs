@@ -39,6 +39,8 @@ namespace MarketAnalysis.Models
                 return;
 
             Funds = 0;
+            Orders += cost;
+            
             var order = new MarketOrder
             {
                 Funds = cost,
@@ -54,6 +56,7 @@ namespace MarketAnalysis.Models
                 var newShares = order.Funds / SharePrice;
                 Shares += newShares;
                 BuyCount++;
+                Orders--;
             }
         }
 

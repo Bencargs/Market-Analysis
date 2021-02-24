@@ -17,7 +17,7 @@ namespace MarketAnalysis.Strategy
         public void Optimise(DateTime _, DateTime __) { }
 
         public bool ShouldBuy(MarketData data)
-            => _parameters.BuyDates[data.Date];
+            => _parameters.BuyDates.TryGetValue(data.Date, out var shouldBuy) && shouldBuy;
 
         public override bool Equals(object obj)
         {

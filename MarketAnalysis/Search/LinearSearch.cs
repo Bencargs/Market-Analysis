@@ -2,10 +2,10 @@
 using MarketAnalysis.Factories;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Simulation;
-using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace MarketAnalysis.Search
@@ -29,7 +29,7 @@ namespace MarketAnalysis.Search
             _strategyFactory = strategyFactory;
         }
 
-        public IStrategy Maximum(
+        public IParameters Maximum(
             IEnumerable<IParameters> parameters,
             DateTime fromDate,
             DateTime endDate)
@@ -52,7 +52,7 @@ namespace MarketAnalysis.Search
             var toRemove = potentials.Except(new[] { optimal }.AsParallel());
             _simulationCache.Remove(fromDate, endDate, toRemove);
 
-            return optimal;
+            return optimal.Parameters;
         }
     }
 }

@@ -1,19 +1,23 @@
+﻿using System;
 using System.Collections.Generic;
-using ApprovalTests;
-using ApprovalTests.Reporters;
-using MarketAnalysis.Strategy.Parameters;
-using NUnit.Framework;
 using System.Configuration;
 using System.Linq;
+using ApprovalTests;
+using ApprovalTests.Namers;
+using ApprovalTests.Reporters;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
+using MarketAnalysis.Strategy.Parameters;
+using MarketAnalysisTests.ApprovalTests;
+using NUnit.Framework;
 
-namespace MarketAnalysisTests.ApprovalTests
+namespace MarketAnalysisTests
 {
-    [UseReporter(typeof(DiffReporter))]
+    [UseReporter(typeof(FileLauncherReporter))]
+    [UseApprovalSubdirectory("ApprovalTests")]
     public class SimulationTests : TestHarness
     {
         [SetUp]
@@ -22,20 +26,46 @@ namespace MarketAnalysisTests.ApprovalTests
             ConfigurationManager.AppSettings["BacktestingDate"] = "2010-07-01";
             ConfigurationManager.AppSettings["CacheSize"] = "2000";
             ConfigurationManager.AppSettings["DataPath"] = "MarketData.csv";
+            ConfigurationManager.AppSettings["RelativePath"] = @"..\..\..\";
+        }
+
+        [Test]
+        public void Test()
+        {
+            ConfigurationManager.AppSettings["DataPath"] = "MarketData2021-1-15.csv";
+            var data = CreateMarketData();
+            var parameters = new IParameters[]
+            {
+                new GradientParameters(),
+                new LinearRegressionParameters(),
+                new HolidayEffectParameters(),
+                new VolumeParameters(),
+                new MovingAverageParameters(),
+                new DeltaParameters(),
+                new RelativeStrengthParameters(),
+                new OptimalStoppingParameters()
+            };
+
+            var target = SimulateStrategy(data, parameters);
+
+            var actual = string.Join(Environment.NewLine,
+                target.Select(k =>
+                    $"{k.Key},{k.Value.ShouldBuy},{k.Value.Worth},{k.Value.BuyCount}"));
+            Approvals.Verify(actual);
         }
 
         [Test]
         public void StaticDaysTest()
         {
-            var data = CreateMarketData();
+            var data = CreateMarketData().ToArray();
             var parameters = new StaticDatesParameters
             {
-                BuyDates = data.ToDictionary(k => k.Date, v => true)
+                BuyDates = data.ToDictionary(k => k.Date, _ => true)
             };
-            
+
             var target = SimulateStrategy(data, x => x.Create(parameters));
             var actual = ToApprovedString(target);
-            
+
             Approvals.Verify(actual);
         }
 
@@ -130,11 +160,12 @@ namespace MarketAnalysisTests.ApprovalTests
             var parameters = new HolidayEffectParameters();
 
             var target = SimulateStrategy(data, x => x.Create(parameters));
+
             var actual = ToApprovedString(target);
 
             Approvals.Verify(actual);
         }
-        
+
         [Test]
         public void OptimalStoppingStrategyTest()
         {
@@ -199,7 +230,7 @@ namespace MarketAnalysisTests.ApprovalTests
             var strategy = strategyFactory.Create(parameters);
             var target = simulationFactory.Create<BacktestingSimulator>()
                 .Evaluate(strategy, investor);
-            
+
             var actual = ToApprovedString(target);
             Approvals.Verify(actual);
         }

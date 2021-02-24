@@ -102,7 +102,11 @@ namespace MarketAnalysis.Services
 
             var saveDataTask = resultsProvider.SaveData(data);//sus - just use the cache?
 
-            await Task.WhenAll(saveSimulationsTask, saveDataTask);
+            var performanceChartTask = resultsProvider.SaveChart(ResultsChart.Performance, @"C:\temp\performance.png");
+            var relativeChartTask = resultsProvider.SaveChart(ResultsChart.Relative, @"C:\temp\relative.png");
+            var signalChartTask = resultsProvider.SaveChart(ResultsChart.Signal, @"C:\temp\buys.png");
+
+            await Task.WhenAll(saveSimulationsTask, saveDataTask, performanceChartTask, relativeChartTask, signalChartTask);
         }
     }
 }
