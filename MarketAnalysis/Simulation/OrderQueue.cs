@@ -7,7 +7,7 @@ namespace MarketAnalysis.Simulation
 {
     public class OrderQueue
     {
-        private readonly Queue<MarketOrder> _orders = new Queue<MarketOrder>();
+        private readonly Queue<MarketOrder> _orders = new();
 
         public void Add(MarketOrder order)
         {
@@ -21,6 +21,9 @@ namespace MarketAnalysis.Simulation
                 yield return _orders.Dequeue();
             }
         }
+
+        public decimal Worth()
+            => _orders.Sum(x => x.Funds);
 
         private bool ShouldEnumerate(DateTime date) => _orders.Any() && _orders.Peek().ExecutionDate <= date;
     }

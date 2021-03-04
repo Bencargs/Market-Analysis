@@ -4,6 +4,7 @@ using MarketAnalysis.Search;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using System;
+using MarketAnalysis.Services;
 
 namespace MarketAnalysis.Factories
 {
@@ -12,14 +13,17 @@ namespace MarketAnalysis.Factories
         private readonly IMarketDataCache _marketDataCache;
         private readonly ISimulationCache _simulationCache;
         private readonly OptimiserFactory _optimiserFactory;
+        private readonly RatingService _ratingService;
 
         public StrategyFactory(
             IMarketDataCache marketDataCache,
             ISimulationCache simulationCache,
-            IInvestorProvider investorProvider)
+            IInvestorProvider investorProvider,
+            RatingService ratingService)
         {
             _marketDataCache = marketDataCache;
             _simulationCache = simulationCache;
+            _ratingService = ratingService;
             _optimiserFactory = new OptimiserFactory(_marketDataCache, _simulationCache, investorProvider, this);
         }
 
@@ -40,6 +44,7 @@ namespace MarketAnalysis.Factories
                 OptimalStoppingParameters p => Create(p),
                 ProbabilityParameters p => Create(p),
                 SpreadParameters p => Create(p),
+                ClusteringParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -147,6 +152,17 @@ namespace MarketAnalysis.Factories
 
             return new SpreadStrategy(
                 optimiser,
+                parameters);
+        }
+
+        private IStrategy Create(ClusteringParameters parameters)
+        {
+            var optimiser = _optimiserFactory.Create<LinearSearch>();
+
+            return new ClusteringStrategy(
+                optimiser,
+                _marketDataCache,
+                _ratingService,
                 parameters);
         }
 

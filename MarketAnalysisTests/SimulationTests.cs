@@ -7,7 +7,7 @@ using ApprovalTests.Namers;
 using ApprovalTests.Reporters;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Factories;
-using MarketAnalysis.Models;
+using MarketAnalysis.Services;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
@@ -16,7 +16,7 @@ using NUnit.Framework;
 
 namespace MarketAnalysisTests
 {
-    [UseReporter(typeof(FileLauncherReporter))]
+    [UseReporter(typeof(DiffReporter))]
     [UseApprovalSubdirectory("ApprovalTests")]
     public class SimulationTests : TestHarness
     {
@@ -203,21 +203,36 @@ namespace MarketAnalysisTests
         }
 
         [Test]
+        public void ClusteringStrategyTest()
+        {
+            var data = CreateMarketData();
+            var parameters = new ClusteringParameters();
+            
+            var target = SimulateStrategy(
+                data, 
+                x => x.Create(parameters), 
+                true);
+            var actual = ToApprovedString(target);
+
+            Approvals.Verify(actual);
+        }
+
+        [Test]
         public void WeightedStrategyTest()
         {
             var data = CreateMarketData();
-            var investor = new Investor { DailyFunds = 10, OrderDelayDays = 3 };
-            var investorProvider = CreateInvestorProvider(investor);
+            var investorProvider = CreateInvestorProvider();
             var marketDataCache = CreateMarketDataCache(data);
             var simulationCache = new SimulationCache();
             var simulationFactory = new SimulatorFactory(marketDataCache, simulationCache);
-            var strategyFactory = CreateStrategyFactory(marketDataCache, simulationCache, investorProvider);
+            var ratingService = new RatingService(marketDataCache, simulationFactory, investorProvider);
+            var strategyFactory = CreateStrategyFactory(marketDataCache, simulationCache, investorProvider, ratingService);
             var deltaStrategy = strategyFactory.Create(new DeltaParameters());
             var volumeStrategy = strategyFactory.Create(new VolumeParameters());
             var _ = simulationFactory.Create<BacktestingSimulator>()
-                .Evaluate(deltaStrategy, investor).ToArray();
+                .Evaluate(deltaStrategy, investorProvider.Current).ToArray();
             var __ = simulationFactory.Create<BacktestingSimulator>()
-                .Evaluate(volumeStrategy, investor).ToArray();
+                .Evaluate(volumeStrategy, investorProvider.Current).ToArray();
 
             var parameters = new WeightedParameters
             {
@@ -229,7 +244,7 @@ namespace MarketAnalysisTests
             };
             var strategy = strategyFactory.Create(parameters);
             var target = simulationFactory.Create<BacktestingSimulator>()
-                .Evaluate(strategy, investor);
+                .Evaluate(strategy, investorProvider.Current);
 
             var actual = ToApprovedString(target);
             Approvals.Verify(actual);

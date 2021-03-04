@@ -3,6 +3,7 @@ using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using Serilog;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MarketAnalysis.Providers
 {
@@ -15,7 +16,7 @@ namespace MarketAnalysis.Providers
             _strategyFactory = strategyFactory;
         }
 
-        public IEnumerable<IStrategy> GetStrategies()
+        public IStrategy[] GetStrategies()
         {
             var subStrategies = new[]
             {
@@ -29,6 +30,7 @@ namespace MarketAnalysis.Providers
                 _strategyFactory.Create(new OptimalStoppingParameters()),
                 _strategyFactory.Create(new ProbabilityParameters()),
                 //_strategyFactory.Create(new EntropyParameters()),
+                _strategyFactory.Create(new ClusteringParameters())
                 //_strategyFactory.Create(new WeightedParameters())
             };
             //var strategies = subStrategies.Concat(new[]
@@ -39,7 +41,7 @@ namespace MarketAnalysis.Providers
 
             Log.Information($"Evaluating against strategies: {string.Join<IStrategy>(", ", strategies)}");
 
-            return strategies;
+            return strategies.ToArray();
         }
     }
 }

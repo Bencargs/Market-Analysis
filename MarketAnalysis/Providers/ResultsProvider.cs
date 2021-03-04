@@ -1,16 +1,14 @@
 ﻿using MarketAnalysis.Caching;
-using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Repositories;
-using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
-using MarketAnalysis.Strategy.Parameters;
 using OxyPlot;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MarketAnalysis.Services;
 
 namespace MarketAnalysis.Providers
 {
@@ -19,48 +17,39 @@ namespace MarketAnalysis.Providers
         private readonly List<SimulationResult> _results = new(5000);
         private readonly Dictionary<ResultsChart, Chart> _charts = new();
         private readonly IMarketDataCache _marketDataCache;
-        private readonly StrategyFactory _strategyFactory;
-        private readonly SimulatorFactory _simulatorFactory;
-        private readonly IInvestorProvider _investorProvider;
         private readonly IRepository<MarketData> _marketDataRepository;
+        private readonly RatingService _ratingService;
+
         private readonly IRepository<SimulationResult> _simulationResultsRepository;
-        private SimulationState[] _marketAverage;
-        private SimulationState[] _marketMaximum;
 
         public ResultsProvider(
             IMarketDataCache marketDataCache,
-            StrategyFactory strategyFactory,
-            SimulatorFactory simulatorFactory,
-            IInvestorProvider investorProvider,
             IRepository<MarketData> marketDataRepository,
+            RatingService ratingService,
             IRepository<SimulationResult> simulationResultsRepository)
         {
             _marketDataCache = marketDataCache;
-            _strategyFactory = strategyFactory;
-            _simulatorFactory = simulatorFactory;
-            _investorProvider = investorProvider;
             _marketDataRepository = marketDataRepository;
+            _ratingService = ratingService;
             _simulationResultsRepository = simulationResultsRepository;
         }
 
         public void Initialise()
         {
-            var buyDates = _marketDataCache
-                .TakeUntil()
-                .Skip(_marketDataCache.BacktestingIndex)
-                .Select(x => x.Date)
-                .ToDictionary(k => k, _ => true);
-            var constantStrategy = _strategyFactory.Create(new StaticDatesParameters { BuyDates = buyDates });
-
-            using var progressBar = ProgressBarProvider.Create(_marketDataCache.BacktestingIndex, "Initialising...");
-            _marketAverage = _simulatorFactory.Create<BacktestingSimulator>().Evaluate(constantStrategy, _investorProvider.Current).ToArray();
-            _marketMaximum = GetMarketMaximum(buyDates, null).ToArray();
+            _ratingService.Initialise();
             
             _charts.Add(ResultsChart.Performance, new Chart("Strategy returns", "Return ($ AU)", "Time (Days)"));
-            _charts[ResultsChart.Performance].AddSeries(_marketAverage.Select(x => (double)x.Worth), "Market Average", colour: OxyColor.FromArgb(255, 0, 0, 0));
+            _charts[ResultsChart.Performance].AddSeries(
+                _ratingService
+                .GetMarketAverageWorth()
+                .Select(x => (double)x), 
+                "Market Average", colour: OxyColor.FromArgb(255, 0, 0, 0));
 
             _charts.Add(ResultsChart.Signal, new Chart("Strategy Buy Signal", "Time (Days)", "Market Price"));
-            _charts[ResultsChart.Signal].AddSeries(_marketAverage.Select(x => (double)x.SharePrice), "Market Average", colour: OxyColor.FromArgb(255, 0, 0, 0));
+            _charts[ResultsChart.Signal].AddSeries(
+                _ratingService.GetMarketAverageWorth()
+                    .Select(x => (double)x), 
+                "Market Average", colour: OxyColor.FromArgb(255, 0, 0, 0));
 
             _charts.Add(ResultsChart.Relative, new Chart("Performance vs Market Average", "Profit/Loss ($ AU)", "Time (Days)"));
         }
@@ -76,8 +65,8 @@ namespace MarketAnalysis.Providers
                 var buySignals = history.Where(x => x.ShouldBuy).ToArray();
                 var confusionMatrix = CalculateConfusionMatrix(history);
                 var excessReturns = GetExcessReturns(history);
-                var maximumReturn = _marketMaximum.Last().Worth;
-                var currentMarketWorth = _marketAverage.Last().Worth;
+                var maximumReturn = _ratingService.GetMarketMaximum().Last().Worth;
+                var currentMarketWorth = _ratingService.GetMarketAverageWorth().Last();
 
                 AddPerformanceChartSeries(history, strategy);
                 AddSignalsChartSeries(history, strategy);
@@ -105,8 +94,9 @@ namespace MarketAnalysis.Providers
                     ConfusionMatrix = confusionMatrix,
                     AverageReturn = GetAverageReturn(buySignals),
                     
-                    MarketAverage = _marketAverage
-                        .Select(x => (double) x.Worth)
+                    MarketAverage = _ratingService
+                        .GetMarketAverageWorth()
+                        .Select(x => (double)x)
                         .ToArray(),
                     History = history
                         .Select(x => (double)x.Worth)
@@ -135,11 +125,13 @@ namespace MarketAnalysis.Providers
 
         public static decimal TotalProfit(IEnumerable<SimulationResult> results)
             => results.Average(x => x.ProfitTotal);
-
+        
         private void AddRelativeChartSeries(SimulationState[] history, IStrategy strategy)
         {
-            var relative = _marketAverage
-                .Select((x, i) => (double)(x.Worth - history[i].Worth));
+            var relative = _ratingService
+                .GetMarketAverageWorth()
+                .Skip(_marketDataCache.BacktestingIndex)
+                .Select((x, i) => (double) (x - history[i].Worth));
 
             _charts[ResultsChart.Relative].AddSeries(relative, strategy.StrategyType.GetDescription());
         }
@@ -147,7 +139,9 @@ namespace MarketAnalysis.Providers
         private void AddSignalsChartSeries(SimulationState[] history, IStrategy strategy)
         {
             var signals = history
-                .Select((x, i) => x.ShouldBuy ? (double)_marketAverage[i].SharePrice : 0d);
+                .Select((x, i) => x.ShouldBuy ? (double)_ratingService.GetMarketAverageWorth(i) : 0d)
+                .ToArray();
+
             _charts[ResultsChart.Signal].AddSeries(signals, strategy.StrategyType.GetDescription(), Chart.Type.Point);
         }
 
@@ -171,32 +165,6 @@ namespace MarketAnalysis.Providers
             return buyIndexes.Skip(1).Select((x, i) => x > 0 ? x - buyIndexes[i] : x).Max();
         }
 
-        private IEnumerable<SimulationState> GetMarketMaximum(Dictionary<DateTime, bool> buyDates, ShellProgressBar.ProgressBar progressBar)
-        {
-            var investor = _investorProvider.Current;
-            var strategy = _strategyFactory.Create(new StaticDatesParameters { BuyDates = buyDates });
-            var history = _simulatorFactory.Create<TrainingSimulator>().Evaluate(strategy, investor);
-            var worth = history.LastOrDefault()?.Worth ?? 0m;
-
-            var i = 1;
-            foreach (var (date, _) in buyDates.Where(x => x.Key > Configuration.BacktestingDate).Reverse())
-            {
-                buyDates[date] = false;
-                strategy = _strategyFactory.Create(new StaticDatesParameters { BuyDates = buyDates, Identifier = i++ });
-                var newHistory = _simulatorFactory.Create<TrainingSimulator>().Evaluate(strategy, investor);
-                var newWorth = newHistory?.LastOrDefault()?.Worth ?? 0m;
-                if (newWorth < worth)
-                    buyDates[date] = true;
-                else
-                {
-                    worth = newWorth;
-                    history = newHistory;
-                }
-                progressBar?.Tick($"Initialising...");
-            }
-            return history;
-        }
-
         private decimal GetAverageReturn(SimulationState[] buySignals)
         {
             var signalReturns = GetExcessReturns(buySignals);
@@ -209,7 +177,7 @@ namespace MarketAnalysis.Providers
         private double CalculateCorrelation(IList<SimulationState> history)
         {
             var observed = history.Select(x => (double)x.Worth).ToArray();
-            var modeled = _marketAverage.Take(history.Count).Select(x => (double)x.Worth).ToArray();
+            var modeled = _ratingService.GetMarketAverageWorth().Select(x => (double)x);
 
             return MathNet.Numerics.GoodnessOfFit.RSquared(modeled, observed);
         }
@@ -232,7 +200,7 @@ namespace MarketAnalysis.Providers
         private decimal[] GetExcessReturns(IList<SimulationState> history)
         {
             return history.Select((x, i) => i > 0
-                ? x.Worth - _marketAverage[i].Worth
+                ? x.Worth - _ratingService.GetMarketAverageWorth(i)
                 : x.Worth).ToArray();
         }
 
@@ -263,7 +231,10 @@ namespace MarketAnalysis.Providers
                 { ConfusionCategory.FalseNegative, 0 }
             };
 
-            var optimalBuys = _marketMaximum.Where(x => x.ShouldBuy).Select(x => x.Date).ToArray();
+            var optimalBuys = _ratingService
+                .GetMarketMaximum()
+                .Where(x => x.ShouldBuy)
+                .Select(x => x.Date).ToArray();
             var strategyBuys = history.Where(x => x.ShouldBuy).Select(x => x.Date).ToArray();
             foreach (var h in history)
             {

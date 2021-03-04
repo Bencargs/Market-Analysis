@@ -34,17 +34,17 @@ namespace MarketAnalysis.Search
             DateTime fromDate,
             DateTime endDate)
         {
-            var potentials = parameters.Select(param =>
+            var potentials = parameters.Select((param, index) =>
             {
                 var strategy = _strategyFactory.Create(param);
                 var investor = _investorProvider.Current;
                 var simulator = new TrainingSimulator(_dataCache, _simulationCache);
                 var result = simulator.Evaluate(strategy, investor, endDate).Last();
-                return (result.Worth, result.BuyCount, strategy);
+                return (result.Worth, result.BuyCount, strategy, index);
             })
             .AsParallel()
             .OrderByDescending(x => x.Worth)
-            .ThenBy(x => x.BuyCount)
+            .ThenBy(x => x.index) // This is used as a tie breaker due to parallelism
             .Select(x => x.strategy)
             .ToArray();
 

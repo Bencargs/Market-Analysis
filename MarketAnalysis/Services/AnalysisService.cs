@@ -52,7 +52,7 @@ namespace MarketAnalysis.Services
             await SaveResults(results, data);
         }
 
-        private async Task<(IEnumerable<IStrategy>, IEnumerable<MarketData>)> Initialise()
+        private async Task<(IStrategy[], IEnumerable<MarketData>)> Initialise()
         {
             var dataTask = _marketDataProvider.GetPriceData();
             var strategies = _strategyProvider.GetStrategies();

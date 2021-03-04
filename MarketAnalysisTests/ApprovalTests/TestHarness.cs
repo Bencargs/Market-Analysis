@@ -9,6 +9,10 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using MarketAnalysis;
+using MarketAnalysis.Services;
+using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysisTests.ApprovalTests
 {
@@ -28,28 +32,70 @@ namespace MarketAnalysisTests.ApprovalTests
             return string.Join(Environment.NewLine, approvedText);
         }
 
-        protected static IEnumerable<SimulationState> SimulateStrategy(
+        protected static Dictionary<string, SimulationState> SimulateStrategy(
             IEnumerable<MarketData> data,
-            Func<StrategyFactory, IStrategy> createStrategyFunc)
+            IParameters[] parameters)
         {
-            var investor = new Investor { DailyFunds = 10, OrderDelayDays = 3 };
-            var investorProvider = CreateInvestorProvider(investor);
+            //var investor = new Investor { DailyFunds = 10, OrderDelayDays = 3 };
+            var investorProvider = CreateInvestorProvider(/*investor*/);
 
             var marketDataCache = CreateMarketDataCache(data);
             var simulationCache = new SimulationCache();
 
-            var simulator = new BacktestingSimulator(marketDataCache, simulationCache);
-            var strategyFactory = CreateStrategyFactory(marketDataCache, simulationCache, investorProvider);
+            //var simulator = new BacktestingSimulator(marketDataCache, simulationCache);
+            var simulatorFactor = new SimulatorFactory(marketDataCache, simulationCache);
+            var simulator = simulatorFactor.Create<BacktestingSimulator>();
+            var ratingService = new RatingService(marketDataCache, simulatorFactor, investorProvider);
+            var strategyFactory = CreateStrategyFactory(marketDataCache, simulationCache, investorProvider, ratingService);
+
+            var results = new Dictionary<string, SimulationState>();
+            foreach (var p in parameters)
+            {
+                var strategy = strategyFactory.Create(p);
+                var state = simulator.Evaluate(strategy, investorProvider.Current);
+                results[strategy.StrategyType.GetDescription()] = state.Last();
+            };
+
+            return results;
+        }
+
+        protected static IEnumerable<SimulationState> SimulateStrategy(
+            IEnumerable<MarketData> data,
+            Func<StrategyFactory, IStrategy> createStrategyFunc,
+            bool initialiseRatingService = false)
+        {
+            var investorProvider = CreateInvestorProvider();
+
+            var marketDataCache = CreateMarketDataCache(data);
+            var simulationCache = new SimulationCache();
+
+            var simulatorFactor = new SimulatorFactory(marketDataCache, simulationCache);
+            var simulator = simulatorFactor.Create<BacktestingSimulator>();
+            var ratingService = new RatingService(
+                marketDataCache,
+                simulatorFactor,
+                investorProvider);
+            var strategyFactory = CreateStrategyFactory(
+                marketDataCache, 
+                simulationCache, 
+                investorProvider, 
+                ratingService);
             var strategy = createStrategyFunc(strategyFactory);
 
-            return simulator.Evaluate(strategy, investor);
+            if (initialiseRatingService)
+            {
+                ratingService.Initialise();
+            }
+
+            return simulator.Evaluate(strategy, investorProvider.Current);
         }
         
         protected static StrategyFactory CreateStrategyFactory(
             IMarketDataCache marketDataCache,
             ISimulationCache simulationCache,
-            IInvestorProvider investorProvider)
-        => new (marketDataCache, simulationCache, investorProvider);
+            IInvestorProvider investorProvider,
+            RatingService ratingService)
+        => new (marketDataCache, simulationCache, investorProvider, ratingService);
 
         protected static IMarketDataCache CreateMarketDataCache(IEnumerable<MarketData> data)
         {
@@ -65,8 +111,9 @@ namespace MarketAnalysisTests.ApprovalTests
             return data.Result;
         }
 
-        protected static IInvestorProvider CreateInvestorProvider(Investor investor)
+        protected static IInvestorProvider CreateInvestorProvider(/*Investor investor*/)
         {
+            var investor = new Investor { DailyFunds = 10, OrderDelayDays = 3 };
             var investorProvider = new Mock<IInvestorProvider>();
             investorProvider.Setup(x => x.Current).Returns(investor);
             return investorProvider.Object;

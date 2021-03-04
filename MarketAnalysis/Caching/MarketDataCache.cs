@@ -10,6 +10,7 @@ namespace MarketAnalysis.Caching
         int Count { get; }
         int BacktestingIndex { get; }
         void Initialise(IEnumerable<MarketData> data);
+        MarketData this[int index] { get; }
         IEnumerable<MarketData> GetLastSince(DateTime date, int count);
         IEnumerable<MarketData> TakeUntil(DateTime? date = null);
         IEnumerable<MarketData> TakeFrom(DateTime fromDate, DateTime? endDate);
@@ -20,12 +21,15 @@ namespace MarketAnalysis.Caching
         private MarketData[] _cache;
 
         public int Count => _cache.Length;
-        public int BacktestingIndex => Count - _cache.TakeWhile(x => x.Date < Configuration.BacktestingDate).Count();
+        public int BacktestingIndex { get; private set; }
 
         public void Initialise(IEnumerable<MarketData> data)
         {
             _cache = data.OrderBy(x => x.Date).ToArray();
+            BacktestingIndex = _cache.TakeWhile(x => x.Date < Configuration.BacktestingDate).Count() + 1;
         }
+
+        public MarketData this[int index] => _cache[index];
 
         public IEnumerable<MarketData> GetLastSince(DateTime date, int count)
         {

@@ -11,6 +11,7 @@ using MarketAnalysis.Factories;
 using MarketAnalysis.Models;
 using MarketAnalysis.Providers;
 using MarketAnalysis.Repositories;
+using MarketAnalysis.Services;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using MarketAnalysisTests.ApprovalTests;
@@ -38,22 +39,30 @@ namespace MarketAnalysisTests
             var marketDataCache = CreateMarketDataCache(marketData);
 
             var investor = new Investor { DailyFunds = 10, OrderDelayDays = 3 };
-            var investorProvider = CreateInvestorProvider(investor);
+            var investorProvider = CreateInvestorProvider();
 
             var simulationCache = new SimulationCache();
 
             var simulationFactory = new SimulatorFactory(marketDataCache, simulationCache);
-            var strategyFactory = CreateStrategyFactory(marketDataCache, simulationCache, investorProvider);
+            var ratingService = new RatingService(
+                marketDataCache,
+                simulationFactory,
+                investorProvider);
+
+            
+            var strategyFactory = CreateStrategyFactory(
+                marketDataCache, 
+                simulationCache,
+                investorProvider,
+                ratingService);
 
             var marketDataRepository = new Mock<IRepository<MarketData>>();
             var simulationResultsRepository = new Mock<IRepository<SimulationResult>>();
 
             _target = new ResultsProvider(
                 marketDataCache,
-                strategyFactory,
-                simulationFactory,
-                investorProvider,
                 marketDataRepository.Object,
+                ratingService,
                 simulationResultsRepository.Object);
 
             _target.Initialise();

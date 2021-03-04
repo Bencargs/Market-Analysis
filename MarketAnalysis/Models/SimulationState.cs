@@ -25,6 +25,7 @@ namespace MarketAnalysis.Models
                 ShouldBuy = shouldBuy,
                 Funds = Funds,
                 Shares = Shares,
+                Orders = Orders,
                 BuyCount = BuyCount,
             };
         }
@@ -39,14 +40,13 @@ namespace MarketAnalysis.Models
                 return;
 
             Funds = 0;
-            Orders += cost;
-            
             var order = new MarketOrder
             {
                 Funds = cost,
                 ExecutionDate = Date.AddDays(investor.OrderDelayDays),
             };
             orderQueue.Add(order);
+            Orders = orderQueue.Worth();
         }
 
         public void ExecuteOrders(OrderQueue orderQueue)
@@ -56,8 +56,8 @@ namespace MarketAnalysis.Models
                 var newShares = order.Funds / SharePrice;
                 Shares += newShares;
                 BuyCount++;
-                Orders--;
             }
+            Orders = orderQueue.Worth();
         }
 
         public override bool Equals(object obj)
