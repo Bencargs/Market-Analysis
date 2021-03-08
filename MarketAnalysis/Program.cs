@@ -61,6 +61,7 @@ namespace MarketAnalysis
 
             // Services
             services.AddSingleton<ICommunicationService, EmailCommunicationService>();
+            services.AddSingleton<RatingService>();
             services.AddTransient<AnalysisService>();
 
             return services.BuildServiceProvider();

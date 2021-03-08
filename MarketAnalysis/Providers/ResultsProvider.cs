@@ -128,10 +128,14 @@ namespace MarketAnalysis.Providers
         
         private void AddRelativeChartSeries(SimulationState[] history, IStrategy strategy)
         {
-            var relative = _ratingService
+            var marketAverage = _ratingService
                 .GetMarketAverageWorth()
                 .Skip(_marketDataCache.BacktestingIndex)
-                .Select((x, i) => (double) (x - history[i].Worth));
+                .ToArray();
+
+            var initialValue = marketAverage.First();
+            var relative = marketAverage
+                .Select((x, i) => (double) (x - (history[i].Worth + initialValue)));
 
             _charts[ResultsChart.Relative].AddSeries(relative, strategy.StrategyType.GetDescription());
         }

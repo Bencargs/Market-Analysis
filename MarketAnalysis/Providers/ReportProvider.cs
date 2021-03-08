@@ -20,9 +20,9 @@ namespace MarketAnalysis.Providers
             var strategyReports = await GetStrategyReportsAsync(results);
 
             // temporary
-            var json = JsonConvert.SerializeObject(results);
+            var json = JsonConvert.SerializeObject(results, Formatting.Indented);
             var bytes = Encoding.ASCII.GetBytes(json);
-            summary.AddJsonFile("reslts", bytes);
+            summary.AddJsonFile("results", bytes);
 
             return new Report
             {

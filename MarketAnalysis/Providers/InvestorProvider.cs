@@ -29,7 +29,7 @@ namespace MarketAnalysis.Providers
                         Email = "benjamin.d.cargill@gmail.com",
                         DailyFunds = 10m,
                         OrderBrokerage = 0m,
-                        OrderDelayDays = 3
+                        OrderDelayDays = 4
                     },
                     //new RecipientDetails
                     //{

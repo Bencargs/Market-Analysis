@@ -19,7 +19,6 @@ namespace MarketAnalysis.Services
 
         private SimulationState[] _marketAverage;
         private SimulationState[] _marketMaximum;
-        private Dictionary<DateTime, decimal> _marketDataValues;
 
         public RatingService(
             IMarketDataCache marketDataCache,
@@ -41,7 +40,6 @@ namespace MarketAnalysis.Services
 
             using var progressBar = ProgressBarProvider.Create(_marketDataCache.BacktestingIndex, "Initialising...");
             _marketAverage = SimulateBuyDates(buyDates);
-            _marketDataValues = GetMarketDataValues(buyDates);
             _marketMaximum = GetMarketMaximum(buyDates, progressBar);
         }
 
@@ -70,7 +68,7 @@ namespace MarketAnalysis.Services
                     BuyDates = buyDates,
                     Identifier = identifier
                 });
-            
+
             return _simulatorFactory
                 .Create<BacktestingSimulator>()
                 .Evaluate(constantStrategy, _investorProvider.Current)

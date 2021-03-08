@@ -31,10 +31,9 @@ namespace MarketAnalysis.Simulation
         {
             var queue = new OrderQueue();
             var state = new SimulationState();
-            var backtestingDate = Configuration.BacktestingDate;
             var remaining = _dataCache.Count - _dataCache.BacktestingIndex;
             using var childProgress = ProgressBarProvider.Create(progress, remaining, $"Evaluating: {strategy.StrategyType.GetDescription()}");
-            foreach (var data in _dataCache.TakeFrom(backtestingDate, endDate))
+            foreach (var data in _dataCache.TakeFrom(Configuration.BacktestingDate, endDate))
             {
                 Optimise(strategy);
                 var shouldBuy = _simulationCache.GetOrCreate((strategy, data.Date), () => ShouldBuy(strategy, data));

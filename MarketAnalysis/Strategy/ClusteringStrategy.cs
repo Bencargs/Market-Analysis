@@ -50,7 +50,6 @@ namespace MarketAnalysis.Strategy
                 var y = _ySelector(data);
                 var cell = grid[x, y];
                 marketDataValues.TryGetValue(data.Date, out var value);
-                //var value = _ratingService.GetMarkedDataValue(data.Date);
                 cell.Add(value);
             }
 
