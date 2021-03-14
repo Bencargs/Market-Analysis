@@ -11,7 +11,6 @@ using MarketAnalysis.Services;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
-using MarketAnalysisTests.ApprovalTests;
 using NUnit.Framework;
 
 namespace MarketAnalysisTests

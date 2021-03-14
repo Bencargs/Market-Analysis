@@ -4,7 +4,7 @@ using System;
 
 namespace MarketAnalysis.Strategy
 {
-    public class StaticDatesStrategy : IStrategy, IEquatable<StaticDatesStrategy>
+    public class StaticDatesStrategy : IStrategy
     {
         private readonly StaticDatesParameters _parameters;
 
@@ -18,20 +18,5 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuy(MarketData data)
             => _parameters.BuyDates.TryGetValue(data.Date, out var shouldBuy) && shouldBuy;
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != typeof(StaticDatesStrategy)) return false;
-
-            return Equals(obj as StaticDatesStrategy);
-        }
-
-        public bool Equals(StaticDatesStrategy strategy)
-            => strategy._parameters.Identifier == _parameters.Identifier;
-
-        public override int GetHashCode()
-            => HashCode.Combine(_parameters.Identifier);
     }
 }

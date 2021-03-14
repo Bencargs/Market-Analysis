@@ -92,7 +92,7 @@ namespace MarketAnalysis.Strategy
             var clusterAverage = GetAverage(cell);
             var clusterValue = Convert.ToInt32(Math.Abs(clusterAverage));
 
-            return clusterValue < _parameters.Threshold;
+            return clusterValue > _parameters.Threshold;
         }
 
         private static decimal GetAverage(List<decimal> values)

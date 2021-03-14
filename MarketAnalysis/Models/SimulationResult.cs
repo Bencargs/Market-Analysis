@@ -23,8 +23,7 @@ namespace MarketAnalysis.Models
         public decimal Precision { get; set; }
         public Dictionary<ConfusionCategory, int> ConfusionMatrix { get; set; }
         public decimal AverageReturn { get; set; }
-        public double[] MarketAverage { get; set; }
-        public double[] History { get; set; }
+        public decimal[] History { get; set; }
         public bool ShouldBuy { get; set; }
         public string StrategyType { get; set; }
     }

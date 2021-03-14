@@ -60,13 +60,10 @@ namespace MarketAnalysis.Services
 
         private SimulationState[] SimulateBuyDates(Dictionary<DateTime, bool> buyDates)
         {
-            var identifier = ToIdentifier(buyDates);
-            
             var constantStrategy = new StaticDatesStrategy(
                 new StaticDatesParameters
                 {
-                    BuyDates = buyDates,
-                    Identifier = identifier
+                    BuyDates = buyDates
                 });
 
             return _simulatorFactory
@@ -78,13 +75,13 @@ namespace MarketAnalysis.Services
         private Dictionary<DateTime, decimal> GetMarketDataValues(Dictionary<DateTime, bool> buyDates)
         {
             Dictionary<DateTime, decimal> buyDateValue = new();
-            var marketAverageWorth = SimulateBuyDates(buyDates).Last().Worth;
+            var marketAverageWorth = SimulateBuyDates(buyDates)?.LastOrDefault()?.Worth ?? 0m;
             foreach (var (date, _) in buyDates)
             {
                 buyDates[date] = false;
 
-                var newHistory = SimulateBuyDates(buyDates);
-                var buyValue = newHistory.Last().Worth - marketAverageWorth;
+                var newWorth = SimulateBuyDates(buyDates).Last().Worth;
+                var buyValue = newWorth - marketAverageWorth;
                 buyDateValue[date] = buyValue;
                 
                 buyDates[date] = true;
@@ -115,25 +112,6 @@ namespace MarketAnalysis.Services
             }
 
             return history;
-        }
-        
-        private static int ToIdentifier(Dictionary<DateTime, bool> buyDates)
-        {
-            static char[] Selector(IEnumerable<KeyValuePair<DateTime, bool>> bytes) =>
-                bytes.Select(x => x.Value ? '0' : '1')
-                    .Reverse()
-                    .ToArray();
-
-            var binary = buyDates
-                .Batch(16)
-                .Select(Selector)
-                .Select(s => new string(s));
-
-            var identifier = binary
-                .Select(b => Convert.ToInt64(b))
-                .Sum(x => x);
-
-            return (int) identifier;
         }
     }
 }

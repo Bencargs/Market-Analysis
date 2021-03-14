@@ -94,12 +94,8 @@ namespace MarketAnalysis.Providers
                     ConfusionMatrix = confusionMatrix,
                     AverageReturn = GetAverageReturn(buySignals),
                     
-                    MarketAverage = _ratingService
-                        .GetMarketAverageWorth()
-                        .Select(x => (double)x)
-                        .ToArray(),
                     History = history
-                        .Select(x => (double)x.Worth)
+                        .Select(x => x.Worth)
                         .ToArray(),
 
                     StrategyType = strategy.StrategyType.GetDescription()

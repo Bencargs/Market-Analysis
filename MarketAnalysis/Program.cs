@@ -8,7 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using SerilogTimings;
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace MarketAnalysis
 {
@@ -18,8 +20,9 @@ namespace MarketAnalysis
         {
             try
             {
-                RegisterLogger();
                 using var op = Operation.Begin("Performing market analysis");
+                RegisterConfiguration();
+                RegisterLogger();
                 await using var provider = RegisterServices();
                 var service = provider.GetService<AnalysisService>();
                 await service.Execute();
@@ -75,6 +78,16 @@ namespace MarketAnalysis
                 .Enrich.FromLogContext()
                 .WriteTo.File(logPath)
                 .CreateLogger();
+        }
+
+        private static void RegisterConfiguration()
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", false, true)
+                .Build();
+            IConfigurationSection settings = configuration.GetSection("Settings");
+            Configuration.Initialise(settings);
         }
     }
 }
