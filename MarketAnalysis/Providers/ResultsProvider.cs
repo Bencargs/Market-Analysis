@@ -121,7 +121,13 @@ namespace MarketAnalysis.Providers
 
         public static decimal TotalProfit(IEnumerable<SimulationResult> results)
             => results.Average(x => x.ProfitTotal);
-        
+
+        public decimal MarketAverage()
+            => _ratingService
+                .GetMarketAverageWorth()
+                .Skip(_marketDataCache.BacktestingIndex)
+                .Last();
+
         private void AddRelativeChartSeries(SimulationState[] history, IStrategy strategy)
         {
             var marketAverage = _ratingService

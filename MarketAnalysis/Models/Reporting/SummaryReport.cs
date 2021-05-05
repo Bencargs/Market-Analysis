@@ -14,11 +14,16 @@ namespace MarketAnalysis.Reports
     {
         private readonly DateTime _date;
         private readonly Investor _investor;
+        private readonly IResultsProvider _resultsProvider;
         private readonly IEnumerable<SimulationResult> _results;
 
-        public SummaryReport(Investor investor, IEnumerable<SimulationResult> results)
+        public SummaryReport(
+            Investor investor,
+            IResultsProvider resultsProvider,
+            IEnumerable<SimulationResult> results)
         {
             _investor = investor;
+            _resultsProvider = resultsProvider;
             _results = results;
             _date = results.First().Date;
         }
@@ -43,6 +48,7 @@ namespace MarketAnalysis.Reports
             template.Replace("InvestorNumber", _investor.Number);
             template.Replace("recommendation", template.GetRecommendation(ResultsProvider.ShouldBuy(_results)));
             template.Replace("profit", ResultsProvider.TotalProfit(_results).ToString("C2"));
+            template.Replace("marketAverage", _resultsProvider.MarketAverage().ToString("C2"));
         }
 
         private void AddResultsSummary(ReportPage template)

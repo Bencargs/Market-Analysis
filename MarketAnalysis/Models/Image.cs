@@ -8,9 +8,9 @@ namespace MarketAnalysis.Models
     public class Image
     {
         private int _hash;
-        private byte[,] _data;
-        public int Width { get; private set; }
-        public int Height { get; private set; }
+        private readonly byte[,] _data;
+        public int Width { get; }
+        public int Height { get; }
 
         public Image(int width, int height)
         {

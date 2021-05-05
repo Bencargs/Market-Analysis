@@ -18,13 +18,13 @@ namespace MarketAnalysis
         public static string ResultsPath => GetAbsolutePath(_configuration["ResultsPath"]);
         public static string AlphaApiEndpoint => _configuration["AlphaApiEndpoint"];
         public static string AlphaQueryString => _configuration["AlphaQueryString"];
-        public static string AlphaApiKey => Environment.GetEnvironmentVariable("AlphaApiKey", EnvironmentVariableTarget.User);
+        public static string AlphaApiKey => Environment.GetEnvironmentVariable("AlphaApiKey", EnvironmentVariableTarget.Process);
         public static string WorldApiEndpoint => _configuration["WorldApiEndpoint"];
         public static string WorldQueryString => _configuration["WorldQueryString"];
-        public static string WorldApiKey => Environment.GetEnvironmentVariable("WorldApiKey", EnvironmentVariableTarget.User);
+        public static string WorldApiKey => Environment.GetEnvironmentVariable("WorldApiKey", EnvironmentVariableTarget.Process);
         public static string YahooApiEndpoint => _configuration["YahooApiEndpoint"];
         public static string YahooQueryString => _configuration["YahooQueryString"];
-        public static string SmtpApiKey => Environment.GetEnvironmentVariable("SmptApiKey", EnvironmentVariableTarget.User);
+        public static string SmtpApiKey => Environment.GetEnvironmentVariable("SmptApiKey", EnvironmentVariableTarget.Process);
         public static string LogoImagePath => GetAbsolutePath(_configuration["LogoImagePath"]);
         public static string WorldImagePath => GetAbsolutePath(_configuration["WorldImagePath"]);
         public static string PhoneImagePath => GetAbsolutePath(_configuration["PhoneImagePath"]);

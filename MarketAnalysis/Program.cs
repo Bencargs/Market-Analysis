@@ -16,7 +16,7 @@ namespace MarketAnalysis
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static async Task Main(string[] _)
         {
             try
             {

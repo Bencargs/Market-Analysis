@@ -13,7 +13,7 @@ namespace MarketAnalysis.Models
         private readonly PlotModel _plot;
         private const int YAxis = 0;
         private double _minY;
-        private static readonly OxyColor[] Colours = new[]
+        private static readonly OxyColor[] Colours = 
         {
             OxyColor.FromArgb(255, 149, 196, 235),
             OxyColor.FromArgb(255, 204, 133, 212),

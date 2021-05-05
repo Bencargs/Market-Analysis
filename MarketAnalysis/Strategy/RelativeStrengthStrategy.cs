@@ -43,7 +43,7 @@ namespace MarketAnalysis.Strategy
         public bool ShouldBuy(MarketData data)
         {
             var batch = _marketDataCache.GetLastSince(data.Date, _parameters.Threshold).ToArray();
-            if (batch.Count() < 3)
+            if (batch.Length < 3)
                 return false;
 
             var strength = GetRelativeStrength(data.Price, batch);
@@ -64,7 +64,7 @@ namespace MarketAnalysis.Strategy
             return Convert.ToInt32(adjustedPrice / range * 100);
         }
 
-        private static readonly Lazy<List<int[]>> OptimisationSets = new Lazy<List<int[]>>(() =>
+        private static readonly Lazy<List<int[]>> OptimisationSets = new(() =>
         {
             var results = new List<int[]>();
 

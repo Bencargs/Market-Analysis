@@ -11,6 +11,13 @@ namespace MarketAnalysis.Providers
 {
     public class ReportProvider
     {
+        private readonly IResultsProvider _resultsProvider;
+
+        public ReportProvider(IResultsProvider resultsProvider)
+        {
+            _resultsProvider = resultsProvider;
+        }
+
         public async Task<Report> GenerateReports(Investor investor, IEnumerable<SimulationResult> results)
         {
             var date = results.First().Date.ToString("dd MMM yyyy");
@@ -45,7 +52,7 @@ namespace MarketAnalysis.Providers
 
         private async Task<ReportPage> GetSummaryReportAsync(Investor investor, IEnumerable<SimulationResult> results)
         {
-            return await new SummaryReport(investor, results).Build();
+            return await new SummaryReport(investor, _resultsProvider, results).Build();
         }
 
         private ReportPage GetMarketReport()
@@ -53,7 +60,7 @@ namespace MarketAnalysis.Providers
             return new ReportPage("");
         }
 
-        private async Task<ReportPage[]> GetStrategyReportsAsync(IEnumerable<SimulationResult> results)
+        private static async Task<ReportPage[]> GetStrategyReportsAsync(IEnumerable<SimulationResult> results)
         {
             var reports = new List<ReportPage>();
             foreach (var r in results)
