@@ -27,4 +27,16 @@
     <Folder Include="ChartTests\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="HolidayEffectSimulationState.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="MarketData.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="MarketData.csv-other">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

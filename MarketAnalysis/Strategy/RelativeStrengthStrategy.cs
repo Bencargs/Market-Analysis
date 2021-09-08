@@ -5,12 +5,14 @@ using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MarketAnalysis.Staking;
 
 namespace MarketAnalysis.Strategy
 {
     public class RelativeStrengthStrategy : IStrategy, IEquatable<RelativeStrengthStrategy>
     {
         private readonly IMarketDataCache _marketDataCache;
+        private readonly IStakingService _stakingService;
         private readonly ISearcher _searcher;
         private RelativeStrengthParameters _parameters;
 
@@ -19,16 +21,20 @@ namespace MarketAnalysis.Strategy
         
         public RelativeStrengthStrategy(
             IMarketDataCache marketDataCache,
+            IStakingService stakingService,
             ISearcher searcher,
             RelativeStrengthParameters parameters)
         {
             _searcher = searcher;
             _marketDataCache = marketDataCache;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
+            _stakingService.Evaluate(fromDate, endDate);
+
             var potentials = new[] { 30, 35, 40, 45, 50, 55, 60 }.SelectMany(t =>
             {
                 return OptimisationSets.Value.Select(s =>
@@ -50,6 +56,11 @@ namespace MarketAnalysis.Strategy
 
             var testSets = OptimisationSets.Value;
             return testSets.Any(x => x.Contains(strength));
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         private static int GetRelativeStrength(decimal price, MarketData[] data)

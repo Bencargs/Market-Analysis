@@ -30,10 +30,10 @@ namespace MarketAnalysis.Services
             _investorProvider = investorProvider;
         }
         
-        public void Initialise()
+        public void RateMarketData(DateTime? toDate = null)
         {
             var buyDates = _marketDataCache
-                .TakeUntil()
+                .TakeUntil(toDate)
                 .Skip(_marketDataCache.BacktestingIndex)
                 .Select(x => x.Date)
                 .ToDictionary(k => k, _ => true);

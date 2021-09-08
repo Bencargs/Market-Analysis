@@ -27,18 +27,20 @@ namespace MarketAnalysis.Simulation
             DateTime? endDate = null,
             ProgressBar _ = null)
         {
-            var queue = new OrderQueue();
             var state = new SimulationState();
             foreach (var data in _dataCache.TakeUntil(endDate))
             {
                 var shouldBuy = _simulationCache.GetOrCreate((strategy, data.Date), () => ShouldBuy(strategy, data));
 
                 state = state.UpdateState(data, shouldBuy);
-                state.AddFunds(investor);
-                state.ExecuteOrders(queue);
+                state.AddFunds(investor.DailyFunds);
+                state.ExecuteOrders();
 
                 if (state.ShouldBuy)
-                    state.AddBuyOrder(investor, queue);
+                {
+                    var funds = strategy.GetStake(state.TotalFunds);
+                    state.AddBuyOrder(investor.OrderBrokerage, investor.OrderDelayDays, funds);
+                }
 
                 yield return state;
             }

@@ -22,8 +22,9 @@ namespace MarketAnalysis.Simulation
             }
         }
 
-        public decimal Worth()
-            => _orders.Sum(x => x.Funds);
+        public decimal Worth() => _orders.Sum(x => x.Funds);
+
+        public decimal LatestPayment() => _orders.LastOrDefault()?.Funds ?? 0m;
 
         private bool ShouldEnumerate(DateTime date) => _orders.Any() && _orders.Peek().ExecutionDate <= date;
     }

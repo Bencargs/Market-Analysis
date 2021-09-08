@@ -10,6 +10,7 @@ using SerilogTimings;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using MarketAnalysis.Simulation;
 using Microsoft.Extensions.Configuration;
 
 namespace MarketAnalysis
@@ -44,27 +45,27 @@ namespace MarketAnalysis
             services.AddSingleton<ISimulationCache, SimulationCache>();
 
             // Repositories
-            services.AddSingleton<IRepository<MarketData>, FileRepository>();
-            services.AddSingleton<IRepository<SimulationResult>, FileRepository>();
+            services.AddTransient<IRepository<MarketData>, FileRepository>();
+            services.AddTransient<IRepository<SimulationResult>, FileRepository>();
 
             // Providers
-            services.AddSingleton<ProgressBarProvider>();
+            services.AddTransient<ProgressBarProvider>();
             services.AddSingleton<IResultsProvider, ResultsProvider>();
             //services.AddSingleton<IApiDataProvider, WorldTradingDataProvider>();
             //services.AddSingleton<IApiDataProvider, AlphaVantageDataProvider>();
             services.AddTransient<IApiDataProvider, YahooFinanceProvider>();
-            services.AddSingleton<StrategyProvider>();
+            services.AddTransient<StrategyProvider>();
             services.AddSingleton<IInvestorProvider, InvestorProvider>();
-            services.AddSingleton<MarketDataProvider>();
-            services.AddSingleton<ReportProvider>();
+            services.AddTransient<MarketDataProvider>();
+            services.AddTransient<ReportProvider>();
 
             // Factories
-            services.AddSingleton<StrategyFactory>();
-            services.AddSingleton<SimulatorFactory>();
+            services.AddTransient<StrategyFactory>();
+            services.AddTransient<SimulatorFactory>();
 
             // Services
-            services.AddSingleton<ICommunicationService, EmailCommunicationService>();
-            services.AddSingleton<RatingService>();
+            services.AddTransient<ICommunicationService, EmailCommunicationService>();
+            services.AddTransient<RatingService>();
             services.AddTransient<AnalysisService>();
 
             return services.BuildServiceProvider();

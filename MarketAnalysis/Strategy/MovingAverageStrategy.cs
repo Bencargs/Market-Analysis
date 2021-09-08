@@ -3,6 +3,7 @@ using MarketAnalysis.Models;
 using MarketAnalysis.Search;
 using System;
 using System.Linq;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
@@ -11,6 +12,7 @@ namespace MarketAnalysis.Strategy
     {
         private readonly ISearcher _searcher;
         private readonly IMarketDataCache _marketDataCache;
+        private readonly IStakingService _stakingService;
         private MovingAverageParameters _parameters;
 
         public IParameters Parameters => _parameters;
@@ -18,16 +20,20 @@ namespace MarketAnalysis.Strategy
 
         public MovingAverageStrategy(
             IMarketDataCache marketDataCache,
+            IStakingService stakingService,
             ISearcher searcher,
             MovingAverageParameters parameters)
         {
             _searcher = searcher;
             _marketDataCache = marketDataCache;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
+            _stakingService.Evaluate(fromDate, endDate);
+
             var potentials = Enumerable.Range(1, 90).SelectMany(w =>
             {
                 return Enumerable.Range(1, 60).Select(t =>
@@ -58,6 +64,11 @@ namespace MarketAnalysis.Strategy
             var weightedDeviation = (decimal)(standardDeviation * _parameters.Threshold);
 
             return data.Price < mean - weightedDeviation;
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         public override bool Equals(object obj)

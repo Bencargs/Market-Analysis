@@ -4,6 +4,7 @@ using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
@@ -11,6 +12,7 @@ namespace MarketAnalysis.Strategy
     public class ProbabilityStrategy : IStrategy, IEquatable<ProbabilityStrategy>
     {
         private readonly IMarketDataCache _marketDataCache;
+        private readonly IStakingService _stakingService;
         private readonly ISearcher _searcher;
         private ProbabilityParameters _parameters;
 
@@ -20,15 +22,20 @@ namespace MarketAnalysis.Strategy
         public ProbabilityStrategy(
             IMarketDataCache marketDataCache,
             ISearcher searcher,
+            IStakingService stakingService,
             ProbabilityParameters parameters)
         {
             _marketDataCache = marketDataCache;
             _searcher = searcher;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime toDate)
         {
+            _stakingService.Evaluate(fromDate, toDate);
+
+
             Dictionary<int, List<int>> histogram = new();
             var history = _marketDataCache.TakeUntil(toDate).ToArray();
             for (var i = 1; i < history.Length; i++)
@@ -57,6 +64,11 @@ namespace MarketAnalysis.Strategy
             
             var value = _parameters.Histogram[currentPrice].Average();
             return value > _parameters.Threshold;
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         public override bool Equals(object obj)

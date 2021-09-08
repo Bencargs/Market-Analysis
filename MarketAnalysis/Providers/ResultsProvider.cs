@@ -36,7 +36,7 @@ namespace MarketAnalysis.Providers
 
         public void Initialise()
         {
-            _ratingService.Initialise();
+            _ratingService.RateMarketData();
             
             _charts.Add(ResultsChart.Performance, new Chart("Strategy returns", "Return ($ AU)", "Time (Days)"));
             _charts[ResultsChart.Performance].AddSeries(
@@ -78,6 +78,7 @@ namespace MarketAnalysis.Providers
                     Investor = investor,
                     SimulationDays = simulationDays,
                     ShouldBuy = latestState.ShouldBuy,
+                    Stake = latestState.OrderQueue.LatestPayment(),
                     ProfitTotal = profitTotal,
                     ProfitYTD = CalculateYTDProfit(investor, history),
                     AboveMarketReturn = excessReturns.Last(),
@@ -121,6 +122,11 @@ namespace MarketAnalysis.Providers
 
         public static decimal TotalProfit(IEnumerable<SimulationResult> results)
             => results.Average(x => x.ProfitTotal);
+
+        public static decimal Stake(IEnumerable<SimulationResult> results)
+            => ShouldBuy(results)
+                ? results.Where(x => x.ShouldBuy).Average(x => x.Stake)
+                : 0m;
 
         public decimal MarketAverage()
             => _ratingService

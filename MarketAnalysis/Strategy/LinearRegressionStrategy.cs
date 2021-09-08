@@ -4,12 +4,14 @@ using MarketAnalysis.Search;
 using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Linq;
+using MarketAnalysis.Staking;
 
 namespace MarketAnalysis.Strategy
 {
     public class LinearRegressionStrategy : IStrategy, IEquatable<LinearRegressionStrategy>
     {
         private readonly ISearcher _searcher;
+        private readonly IStakingService _stakingService;
         private readonly IMarketDataCache _marketDataCache;
         private LinearRegressionParameters _parameters;
 
@@ -19,15 +21,19 @@ namespace MarketAnalysis.Strategy
         public LinearRegressionStrategy(
             IMarketDataCache marketDataCache,
             ISearcher searcher,
+            IStakingService stakingService,
             LinearRegressionParameters parameters)
         {
             _searcher = searcher;
             _marketDataCache = marketDataCache;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
+            _stakingService.Evaluate(fromDate, endDate);
+            
             var potentials = Enumerable.Range(30, 200).Select(x => 
                 new LinearRegressionParameters{ Lookback = x });
 
@@ -49,6 +55,11 @@ namespace MarketAnalysis.Strategy
             GenerateLinearBestFit(latestPoints, out double m, out double b);
             var prediction = (decimal) (m * _marketDataCache.Count - b);
             return data.Price < prediction;
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         private static void GenerateLinearBestFit(XYPoint[] points, out double m, out double b)

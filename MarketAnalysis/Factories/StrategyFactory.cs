@@ -5,6 +5,7 @@ using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
 using System;
 using MarketAnalysis.Services;
+using MarketAnalysis.Staking;
 
 namespace MarketAnalysis.Factories
 {
@@ -56,6 +57,7 @@ namespace MarketAnalysis.Factories
             return new LinearRegressionStrategy(
                 _marketDataCache,
                 optimiser,
+                new BasicKellyStaking(_marketDataCache),
                 parameters);
         }
 
@@ -65,6 +67,7 @@ namespace MarketAnalysis.Factories
 
             return new RelativeStrengthStrategy(
                 _marketDataCache,
+                new BasicKellyStaking(_marketDataCache),
                 optimiser,
                 parameters);
         }
@@ -75,6 +78,7 @@ namespace MarketAnalysis.Factories
 
             return new DeltaStrategy(
                 optimiser,
+                new NoStaking(),
                 parameters);
         }
 
@@ -84,6 +88,7 @@ namespace MarketAnalysis.Factories
 
             return new VolumeStrategy(
                 optimiser,
+                new NoStaking(),
                 parameters);
         }
 
@@ -93,6 +98,7 @@ namespace MarketAnalysis.Factories
 
             return new GradientStrategy(
                 _marketDataCache,
+                new BasicKellyStaking(_marketDataCache),
                 optimiser,
                 parameters);
         }
@@ -104,6 +110,7 @@ namespace MarketAnalysis.Factories
             return new EntropyStrategy(
                 _marketDataCache,
                 optimiser,
+                new NoStaking(),
                 parameters);
         }
 
@@ -113,6 +120,7 @@ namespace MarketAnalysis.Factories
 
             return new MovingAverageStrategy(
                 _marketDataCache,
+                new NoStaking(),
                 optimiser,
                 parameters);
         }
@@ -123,6 +131,7 @@ namespace MarketAnalysis.Factories
 
             return new WeightedStrategy(
                 _simulationCache,
+                new NoStaking(),
                 optimiser,
                 parameters);
         }
@@ -133,6 +142,7 @@ namespace MarketAnalysis.Factories
 
             return new OptimalStoppingStrategy(
                 optimiser,
+                new NoStaking(),
                 parameters);
         }
         
@@ -143,6 +153,7 @@ namespace MarketAnalysis.Factories
             return new ProbabilityStrategy(
                 _marketDataCache,
                 optimiser,
+                new NoStaking(),
                 parameters);
         }
 
@@ -152,6 +163,7 @@ namespace MarketAnalysis.Factories
 
             return new SpreadStrategy(
                 optimiser,
+                new NoStaking(),
                 parameters);
         }
 
@@ -163,13 +175,14 @@ namespace MarketAnalysis.Factories
                 optimiser,
                 _marketDataCache,
                 _ratingService,
+                new NoStaking(),
                 parameters);
         }
 
         private static IStrategy Create(StaticDatesParameters parameters)
             => new StaticDatesStrategy(parameters);
 
-        private static IStrategy Create(HolidayEffectParameters parameters)
-            => new HolidayEffectStrategy(parameters);
+        private IStrategy Create(HolidayEffectParameters parameters)
+            => new HolidayEffectStrategy(parameters, new NoStaking());
     }
 }

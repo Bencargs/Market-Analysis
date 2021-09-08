@@ -3,12 +3,14 @@ using MarketAnalysis.Search;
 using MarketAnalysis.Strategy.Parameters;
 using System;
 using System.Linq;
+using MarketAnalysis.Staking;
 
 namespace MarketAnalysis.Strategy
 {
     public class DeltaStrategy : IStrategy, IEquatable<DeltaStrategy>
     {
         private readonly ISearcher _searcher;
+        private readonly IStakingService _stakingService;
         private DeltaParameters _parameters;
 
         public IParameters Parameters => _parameters;
@@ -16,14 +18,18 @@ namespace MarketAnalysis.Strategy
 
         public DeltaStrategy(
             ISearcher searcher,
+            IStakingService stakingService,
             DeltaParameters parameters)
         {
             _searcher = searcher;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
+            _stakingService.Evaluate(fromDate, endDate);
+            
             var potentials = Enumerable.Range(1, 100).Select(x =>
             {
                 var threshold = (decimal)x / 1000;
@@ -38,6 +44,11 @@ namespace MarketAnalysis.Strategy
         public bool ShouldBuy(MarketData data)
         {
             return data.Delta < _parameters.Threshold;
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         public override bool Equals(object obj)

@@ -18,5 +18,10 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuy(MarketData data)
             => _parameters.BuyDates.TryGetValue(data.Date, out var shouldBuy) && shouldBuy;
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return totalFunds;
+        }
     }
 }

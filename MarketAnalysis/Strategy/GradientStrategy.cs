@@ -3,6 +3,7 @@ using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 using MathNet.Numerics;
 
@@ -11,6 +12,7 @@ namespace MarketAnalysis.Strategy
     public class GradientStrategy : IStrategy, IEquatable<GradientStrategy>
     {
         private readonly IMarketDataCache _marketDataCache;
+        private readonly IStakingService _stakingService;
         private readonly ISearcher _searcher;
         private GradientParameters _parameters;
 
@@ -19,16 +21,20 @@ namespace MarketAnalysis.Strategy
 
         public GradientStrategy(
             IMarketDataCache marketDataCache,
+            IStakingService stakingService,
             ISearcher searcher,
             GradientParameters parameters)
         {
             _marketDataCache = marketDataCache;
+            _stakingService = stakingService;
             _searcher = searcher;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
+            _stakingService.Evaluate(fromDate, endDate);
+
             var potentials = Enumerable.Range(1, 10).SelectMany(x =>
             {
                 return Enumerable.Range(20, 20).Select(window =>
@@ -54,6 +60,11 @@ namespace MarketAnalysis.Strategy
             var (intercept, gradient) = Fit.Line(xData, yData);
 
             return gradient < (double)_parameters.Threshold;
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         public override bool Equals(object obj)

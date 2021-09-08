@@ -2,6 +2,7 @@
 using System.Linq;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
@@ -9,6 +10,7 @@ namespace MarketAnalysis.Strategy
     public class SpreadStrategy : IStrategy, IEquatable<SpreadStrategy>
     {
         private readonly ISearcher _searcher;
+        private readonly IStakingService _stakingService;
         private SpreadParameters _parameters;
 
         public IParameters Parameters => _parameters;
@@ -16,14 +18,18 @@ namespace MarketAnalysis.Strategy
 
         public SpreadStrategy(
             ISearcher searcher,
+            IStakingService stakingService,
             SpreadParameters parameters)
         {
             _searcher = searcher;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime toDate)
         {
+            _stakingService.Evaluate(fromDate, toDate);
+
             var potentials = Enumerable.Range(0, 100)
                 .Select(x => new SpreadParameters {Threshold = (decimal)x/100});
 
@@ -34,6 +40,11 @@ namespace MarketAnalysis.Strategy
 
         public bool ShouldBuy(MarketData data)
             => data.SpreadPercent > _parameters.Threshold;
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
+        }
 
         public override bool Equals(object obj)
         {

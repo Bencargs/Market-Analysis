@@ -5,6 +5,7 @@ using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
 using MarketAnalysis.Services;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
@@ -16,6 +17,7 @@ namespace MarketAnalysis.Strategy
         private readonly Func<MarketData, decimal> _ySelector = x => x.VolumePercent;
         private readonly IMarketDataCache _marketDataCache;
         private readonly RatingService _ratingService;
+        private readonly IStakingService _stakingService;
         private readonly ISearcher _searcher;
         private ClusteringParameters _parameters;
         public IParameters Parameters => _parameters;
@@ -25,16 +27,20 @@ namespace MarketAnalysis.Strategy
             ISearcher searcher,
             IMarketDataCache marketDataCache,
             RatingService ratingService,
+            IStakingService stakingService,
             ClusteringParameters parameters)
         {
             _searcher = searcher;
             _marketDataCache = marketDataCache;
             _ratingService = ratingService;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime toDate)
         {
+            _stakingService.Evaluate(fromDate, toDate);
+
             var history = _marketDataCache.TakeUntil(toDate).ToArray();
 
             // Build 2d array where each cell is sized to has equal data points and probability
@@ -94,6 +100,9 @@ namespace MarketAnalysis.Strategy
 
             return clusterValue > _parameters.Threshold;
         }
+
+        public decimal GetStake(decimal totalFunds)
+            => _stakingService.GetStake(totalFunds);
 
         private static decimal GetAverage(List<decimal> values)
             => values.Average() * 1_000;

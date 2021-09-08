@@ -25,6 +25,7 @@ namespace MarketAnalysis.Models
         public decimal AverageReturn { get; set; }
         public decimal[] History { get; set; }
         public bool ShouldBuy { get; set; }
+        public decimal Stake { get; set; }
         public string StrategyType { get; set; }
     }
 }

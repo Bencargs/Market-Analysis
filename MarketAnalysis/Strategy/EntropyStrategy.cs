@@ -4,6 +4,7 @@ using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
@@ -11,6 +12,7 @@ namespace MarketAnalysis.Strategy
     public class EntropyStrategy : IStrategy, IEquatable<EntropyStrategy>
     {
         private readonly ISearcher _searcher;
+        private readonly IStakingService _stakingService;
         private readonly IMarketDataCache _marketDataCache;
         private EntropyParameters _parameters;
 
@@ -20,15 +22,19 @@ namespace MarketAnalysis.Strategy
         public EntropyStrategy(
             IMarketDataCache marketDataCache,
             ISearcher searcher,
+            IStakingService stakingService,
             EntropyParameters parameters)
         {
             _searcher = searcher;
+            _stakingService = stakingService;
             _marketDataCache = marketDataCache;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
+            _stakingService.Evaluate(fromDate, endDate);
+
             var potentials = Enumerable.Range(1, 30).SelectMany(w =>
             {
                 return Enumerable.Range(1, 100).Select(e =>
@@ -52,6 +58,11 @@ namespace MarketAnalysis.Strategy
             var entropy = ShannonEntropy(batch);
             
             return entropy > _parameters.Threshold;
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         private static double ShannonEntropy<T>(T[] sequence)

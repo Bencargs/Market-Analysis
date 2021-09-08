@@ -2,6 +2,7 @@
 using System.Linq;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
@@ -10,6 +11,7 @@ namespace MarketAnalysis.Strategy
     {
         private const double WaitRatio = 1 / Math.E; // Via Odds Algorithm
         private readonly ISearcher _searcher;
+        private readonly IStakingService _stakingService;
         private OptimalStoppingParameters _parameters;
 
         public IParameters Parameters => _parameters;
@@ -17,15 +19,19 @@ namespace MarketAnalysis.Strategy
         
         public OptimalStoppingStrategy(
             ISearcher searcher,
+            IStakingService stakingService,
             OptimalStoppingParameters parameters)
         {
             _searcher = searcher;
+            _stakingService = stakingService;
             _parameters = parameters;
         }
 
 
         public void Optimise(DateTime fromDate, DateTime toDate)
         {
+            _stakingService.Evaluate(fromDate, toDate);
+
             var potentials = Enumerable.Range(3, 60)
                 .Select(wait => new OptimalStoppingParameters
                 {
@@ -66,7 +72,12 @@ namespace MarketAnalysis.Strategy
 
             return false;
         }
-        
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
+        }
+
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(this, obj)) return true;

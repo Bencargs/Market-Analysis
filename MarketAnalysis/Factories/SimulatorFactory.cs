@@ -2,6 +2,8 @@
 using MarketAnalysis.Simulation;
 using System;
 using System.Collections.Generic;
+using MarketAnalysis.Services;
+using MarketAnalysis.Staking;
 
 namespace MarketAnalysis.Factories
 {
@@ -15,8 +17,8 @@ namespace MarketAnalysis.Factories
         {
             _typeLookup = new Dictionary<Type, Func<ISimulator>>
             {
-                { typeof(TrainingSimulator), () => new TrainingSimulator(marketDataCache, simulationCache) },
-                { typeof(BacktestingSimulator), () => new BacktestingSimulator(marketDataCache, simulationCache) }
+                { typeof(TrainingSimulator), () => new TrainingSimulator(marketDataCache, simulationCache)},
+                { typeof(BacktestingSimulator), () => new BacktestingSimulator(marketDataCache, simulationCache)}
             };
         }
 

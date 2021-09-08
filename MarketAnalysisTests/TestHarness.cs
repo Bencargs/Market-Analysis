@@ -10,21 +10,33 @@ using MarketAnalysis.Repositories;
 using MarketAnalysis.Services;
 using MarketAnalysis.Simulation;
 using MarketAnalysis.Strategy;
-using MarketAnalysis.Strategy.Parameters;
+using Microsoft.Extensions.Configuration;
 using Moq;
 
 namespace MarketAnalysisTests
 {
     public class TestHarness
     {
+        public TestHarness()
+        {
+
+            var configuration = new Mock<IConfiguration>();
+            configuration.Setup(x => x["BacktestingDate"]).Returns("2010-07-01");
+            configuration.Setup(x => x["CacheSize"]).Returns("2000");
+            configuration.Setup(x => x["DataPath"]).Returns("MarketData.csv");
+            configuration.Setup(x => x["RelativePath"]).Returns("");
+
+            Configuration.Initialise(configuration.Object);
+        }
+
         protected static string ToApprovedString(IEnumerable<SimulationState> results)
         {
             var approvedText = results.Select(x => 
                 $"{x.Date}," +
                 $"{x.BuyCount}," +
                 $"{Math.Round(x.SharePrice, 5)}," +
-                $"{Math.Round(x.Funds, 5)}," +
-                $"{Math.Round(x.Orders, 5)}," +
+                $"{Math.Round(x.TotalFunds, 5)}," +
+                $"{Math.Round(x.OrderQueue.Worth(), 5)}," +
                 $"{Math.Round(x.Shares, 5)}," +
                 $"{Math.Round(x.Worth, 5)}," +
                 $"{x.ShouldBuy}");
@@ -81,7 +93,7 @@ namespace MarketAnalysisTests
 
             if (initialiseRatingService)
             {
-                ratingService.Initialise();
+                ratingService.RateMarketData();
             }
 
             return simulator.Evaluate(strategy, investorProvider.Current);

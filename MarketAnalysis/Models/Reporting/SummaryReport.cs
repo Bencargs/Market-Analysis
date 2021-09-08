@@ -47,6 +47,7 @@ namespace MarketAnalysis.Reports
             template.Replace("InvestorName", _investor.Name);
             template.Replace("InvestorNumber", _investor.Number);
             template.Replace("recommendation", template.GetRecommendation(ResultsProvider.ShouldBuy(_results)));
+            template.Replace("stake", ResultsProvider.Stake(_results).ToString("C2"));
             template.Replace("profit", ResultsProvider.TotalProfit(_results).ToString("C2"));
             template.Replace("marketAverage", _resultsProvider.MarketAverage().ToString("C2"));
         }
@@ -59,8 +60,8 @@ namespace MarketAnalysis.Reports
                 summary.Append("<tr>");
                 summary.Append($"<td>{s.StrategyType}</td>");
                 summary.Append($"<td>{template.GetRecommendation(s.ShouldBuy)}</td>");
-                summary.Append($"<td>{s.ProfitYTD.ToString("C2")}</td>");
-                summary.Append($"<td>{s.ProfitTotal.ToString("C2")}</td>");
+                summary.Append($"<td>{s.ProfitYTD:C2}</td>");
+                summary.Append($"<td>{s.ProfitTotal:C2}</td>");
                 summary.Append($"<td>{s.BuyCount}</td>");
                 summary.Append("</tr>");
             }

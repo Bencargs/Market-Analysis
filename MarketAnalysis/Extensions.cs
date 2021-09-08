@@ -56,7 +56,7 @@ namespace MarketAnalysis
                         .FirstOrDefault();
         }
 
-        public static (IEnumerable<T> TrueSet, IEnumerable<T> FalseSet) Split<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        public static (List<T> TrueSet, List<T> FalseSet) Split<T>(this IEnumerable<T> source, Func<T, bool> predicate)
         {
             var trueSet = new List<T>();
             var falseSet = new List<T>();
@@ -83,6 +83,13 @@ namespace MarketAnalysis
                     yield return element;
                 }
             }
+        }
+
+        public static decimal Clamp(this decimal value, int min, int max)
+        {
+            value = Math.Max(min, value);
+            value = Math.Min(max, value);
+            return value;
         }
     }
 }

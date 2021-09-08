@@ -3,6 +3,7 @@ using System.Linq;
 using MarketAnalysis.Caching;
 using MarketAnalysis.Models;
 using MarketAnalysis.Search;
+using MarketAnalysis.Staking;
 using MarketAnalysis.Strategy.Parameters;
 
 namespace MarketAnalysis.Strategy
@@ -10,6 +11,7 @@ namespace MarketAnalysis.Strategy
     public class WeightedStrategy : IStrategy, IAggregateStrategy, IEquatable<WeightedStrategy>
     {
         private readonly ISearcher _searcher;
+        private readonly IStakingService _stakingService;
         private readonly ISimulationCache _simulationCache;
         private WeightedParameters _parameters;
 
@@ -18,16 +20,20 @@ namespace MarketAnalysis.Strategy
 
         public WeightedStrategy(
             ISimulationCache simulationCache,
+            IStakingService stakingService,
             ISearcher searcher,
             WeightedParameters parameters)
         {
             _simulationCache = simulationCache;
+            _stakingService = stakingService;
             _searcher = searcher;
             _parameters = parameters;
         }
 
         public void Optimise(DateTime fromDate, DateTime endDate)
         {
+            _stakingService.Evaluate(fromDate, endDate);
+
             var potentials = Enumerable.Range(0, 100).SelectMany(x =>
             {
                 return Enumerable.Range(1, 6).SelectMany(threshold =>
@@ -64,6 +70,11 @@ namespace MarketAnalysis.Strategy
             }
 
             return sum > _parameters.Threshold;
+        }
+
+        public decimal GetStake(decimal totalFunds)
+        {
+            return _stakingService.GetStake(totalFunds);
         }
 
         public override bool Equals(object obj)
