@@ -2,12 +2,12 @@
 
 namespace MarketAnalysis.Staking
 {
-    public class NoStaking : IStakingService
+    public class DollarCostAveraging : IStakingService
     {
         public void Evaluate(DateTime _, DateTime __)
         {
         }
 
-        public decimal GetStake(decimal totalFunds) => totalFunds;
+        public decimal GetStake(DateTime _, decimal totalFunds) => totalFunds;
     }
 }

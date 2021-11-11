@@ -58,7 +58,7 @@ namespace MarketAnalysis.Strategy
                 return false;
 
             var mean = batch.Average();
-            var sum = batch.Sum(d => Math.Pow((double)(d - mean), 2));
+            var sum = batch.Sum(d => (double)((d - mean) * (d - mean)));
             var a = Math.Abs(sum / batch.Length - 1);
             var standardDeviation = Math.Sqrt(a);
             var weightedDeviation = (decimal)(standardDeviation * _parameters.Threshold);
@@ -66,9 +66,9 @@ namespace MarketAnalysis.Strategy
             return data.Price < mean - weightedDeviation;
         }
 
-        public decimal GetStake(decimal totalFunds)
+        public decimal GetStake(DateTime today, decimal totalFunds)
         {
-            return _stakingService.GetStake(totalFunds);
+            return _stakingService.GetStake(today, totalFunds);
         }
 
         public override bool Equals(object obj)

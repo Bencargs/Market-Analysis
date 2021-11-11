@@ -31,9 +31,9 @@ namespace MarketAnalysis.Strategy
                DateSystem.IsPublicHoliday(data.Date.AddDays(1), CountryCode.US) ||
                DateSystem.IsPublicHoliday(data.Date.AddDays(1), CountryCode.CN);
 
-        public decimal GetStake(decimal totalFunds)
+        public decimal GetStake(DateTime today, decimal totalFunds)
         {
-            return _stakingService.GetStake(totalFunds);
+            return _stakingService.GetStake(today, totalFunds);
         }
 
         public override bool Equals(object obj)

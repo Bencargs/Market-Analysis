@@ -12,7 +12,6 @@ namespace MarketAnalysis.Strategy
 {
     public class ClusteringStrategy : IStrategy, IEquatable<ClusteringStrategy>
     {
-
         private readonly Func<MarketData, decimal> _xSelector = x => x.DeltaPercent;
         private readonly Func<MarketData, decimal> _ySelector = x => x.VolumePercent;
         private readonly IMarketDataCache _marketDataCache;
@@ -101,8 +100,8 @@ namespace MarketAnalysis.Strategy
             return clusterValue > _parameters.Threshold;
         }
 
-        public decimal GetStake(decimal totalFunds)
-            => _stakingService.GetStake(totalFunds);
+        public decimal GetStake(DateTime today, decimal totalFunds)
+            => _stakingService.GetStake(today, totalFunds);
 
         private static decimal GetAverage(List<decimal> values)
             => values.Average() * 1_000;

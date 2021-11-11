@@ -46,9 +46,9 @@ namespace MarketAnalysis.Strategy
             return data.Delta < _parameters.Threshold;
         }
 
-        public decimal GetStake(decimal totalFunds)
+        public decimal GetStake(DateTime today, decimal totalFunds)
         {
-            return _stakingService.GetStake(totalFunds);
+            return _stakingService.GetStake(today, totalFunds);
         }
 
         public override bool Equals(object obj)

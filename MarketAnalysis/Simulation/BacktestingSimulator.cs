@@ -43,7 +43,7 @@ namespace MarketAnalysis.Simulation
 
                 if (state.ShouldBuy)
                 {
-                    var funds = strategy.GetStake(state.TotalFunds);
+                    var funds = strategy.GetStake(data.Date, state.TotalFunds);
                     state.AddBuyOrder(investor.OrderBrokerage, investor.OrderDelayDays, funds);
                 }
 

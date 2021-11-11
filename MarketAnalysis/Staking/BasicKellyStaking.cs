@@ -43,7 +43,7 @@ namespace MarketAnalysis.Staking
             _fraction = fraction.Clamp(0, 1);
         }
 
-        public decimal GetStake(decimal totalFunds)
+        public decimal GetStake(DateTime _, decimal totalFunds)
         {
             return totalFunds * _fraction;
         }

@@ -78,7 +78,7 @@ namespace MarketAnalysis.Factories
 
             return new DeltaStrategy(
                 optimiser,
-                new NoStaking(),
+                new DollarValueAveraging(_marketDataCache),
                 parameters);
         }
 
@@ -88,7 +88,7 @@ namespace MarketAnalysis.Factories
 
             return new VolumeStrategy(
                 optimiser,
-                new NoStaking(),
+                new DollarValueAveraging(_marketDataCache),
                 parameters);
         }
 
@@ -110,7 +110,7 @@ namespace MarketAnalysis.Factories
             return new EntropyStrategy(
                 _marketDataCache,
                 optimiser,
-                new NoStaking(),
+                new DollarCostAveraging(),
                 parameters);
         }
 
@@ -120,7 +120,7 @@ namespace MarketAnalysis.Factories
 
             return new MovingAverageStrategy(
                 _marketDataCache,
-                new NoStaking(),
+                new DollarCostAveraging(),
                 optimiser,
                 parameters);
         }
@@ -131,7 +131,7 @@ namespace MarketAnalysis.Factories
 
             return new WeightedStrategy(
                 _simulationCache,
-                new NoStaking(),
+                new DollarCostAveraging(),
                 optimiser,
                 parameters);
         }
@@ -142,7 +142,7 @@ namespace MarketAnalysis.Factories
 
             return new OptimalStoppingStrategy(
                 optimiser,
-                new NoStaking(),
+                new DollarCostAveraging(),
                 parameters);
         }
         
@@ -153,7 +153,7 @@ namespace MarketAnalysis.Factories
             return new ProbabilityStrategy(
                 _marketDataCache,
                 optimiser,
-                new NoStaking(),
+                new DollarValueAveraging(_marketDataCache),
                 parameters);
         }
 
@@ -163,7 +163,7 @@ namespace MarketAnalysis.Factories
 
             return new SpreadStrategy(
                 optimiser,
-                new NoStaking(),
+                new DollarValueAveraging(_marketDataCache),
                 parameters);
         }
 
@@ -175,7 +175,7 @@ namespace MarketAnalysis.Factories
                 optimiser,
                 _marketDataCache,
                 _ratingService,
-                new NoStaking(),
+                new DollarValueAveraging(_marketDataCache),
                 parameters);
         }
 
@@ -183,6 +183,6 @@ namespace MarketAnalysis.Factories
             => new StaticDatesStrategy(parameters);
 
         private IStrategy Create(HolidayEffectParameters parameters)
-            => new HolidayEffectStrategy(parameters, new NoStaking());
+            => new HolidayEffectStrategy(parameters, new DollarValueAveraging(_marketDataCache));
     }
 }

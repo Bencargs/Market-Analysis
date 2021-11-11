@@ -58,9 +58,9 @@ namespace MarketAnalysis.Strategy
             return testSets.Any(x => x.Contains(strength));
         }
 
-        public decimal GetStake(decimal totalFunds)
+        public decimal GetStake(DateTime today, decimal totalFunds)
         {
-            return _stakingService.GetStake(totalFunds);
+            return _stakingService.GetStake(today, totalFunds);
         }
 
         private static int GetRelativeStrength(decimal price, MarketData[] data)

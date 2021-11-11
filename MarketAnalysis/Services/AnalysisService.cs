@@ -76,12 +76,12 @@ namespace MarketAnalysis.Services
                 return result.ToArray();
             }
 
+            var (sequential, parallelisable) = strategies.Split(x => x is IAggregateStrategy);
             foreach (var investor in _investorProvider)
             {
                 _resultsProvider.Initialise();
                 var histories = new ConcurrentDictionary<IStrategy, SimulationState[]>();
                 using var progress = ProgressBarProvider.Create(0, "Evaluating...");
-                var (sequential, parallelisable) = strategies.Split(x => x is IAggregateStrategy);
                 Parallel.ForEach(parallelisable, strategy =>
                 {
                     histories[strategy] = SimulateStrategy(strategy, progress);

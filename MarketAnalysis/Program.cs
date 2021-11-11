@@ -26,7 +26,7 @@ namespace MarketAnalysis
                 RegisterLogger();
                 await using var provider = RegisterServices();
                 var service = provider.GetService<AnalysisService>();
-                await service.Execute();
+                await service!.Execute();
                 op.Complete();
             }
             catch (Exception ex)

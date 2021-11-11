@@ -10,6 +10,6 @@ namespace MarketAnalysis.Strategy
         IParameters Parameters { get; }
         void Optimise(DateTime fromDate, DateTime toDate);
         bool ShouldBuy(MarketData data);
-        decimal GetStake(decimal totalFunds);
+        decimal GetStake(DateTime _, decimal totalFunds);
     }
 }

@@ -15,7 +15,7 @@ namespace MarketAnalysis.Staking
         {
         }
 
-        public decimal GetStake(decimal totalFunds)
+        public decimal GetStake(DateTime _, decimal totalFunds)
             => totalFunds * _fraction;
     }
 }
