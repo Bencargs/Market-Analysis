@@ -12,6 +12,7 @@ using System.IO;
 using System.Threading.Tasks;
 using MarketAnalysis.Simulation;
 using Microsoft.Extensions.Configuration;
+using System.Runtime.InteropServices;
 
 namespace MarketAnalysis
 {
@@ -83,12 +84,23 @@ namespace MarketAnalysis
 
         private static void RegisterConfiguration()
         {
+            var settingsFile = GetSettingsFile();
+
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", false, true)
+                .AddJsonFile(settingsFile, false, true)
                 .Build();
             IConfigurationSection settings = configuration.GetSection("Settings");
             Configuration.Initialise(settings);
+        }
+
+        private static string GetSettingsFile()
+        {
+            var platform = "windows";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                platform = "linux";
+
+            return $"appsettings.{platform}.json";
         }
     }
 }
