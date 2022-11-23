@@ -48,5 +48,8 @@ namespace MarketAnalysis.Models
         
         [Description("Spread")]
         Spread,
+
+        [Description("Multiple")]
+        Multiple,
     }
 }

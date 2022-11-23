@@ -46,6 +46,7 @@ namespace MarketAnalysis.Factories
                 ProbabilityParameters p => Create(p),
                 SpreadParameters p => Create(p),
                 ClusteringParameters p => Create(p),
+                MultipleParameters p => Create(p),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -133,6 +134,13 @@ namespace MarketAnalysis.Factories
                 _simulationCache,
                 new DollarCostAveraging(),
                 optimiser,
+                parameters);
+        }
+
+        private IStrategy Create(MultipleParameters parameters)
+        {
+            return new MultipleStrategy(
+                new DollarCostAveraging(),
                 parameters);
         }
 

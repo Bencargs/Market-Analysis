@@ -1,5 +1,6 @@
 ﻿using OxyPlot;
 using OxyPlot.Core.Drawing;
+using OxyPlot.Legends;
 using OxyPlot.Series;
 using System.Collections.Generic;
 using System.IO;
@@ -37,11 +38,14 @@ namespace MarketAnalysis.Models
         {
             _plot = new PlotModel
             {
-                Title = title,
+                Title = title
+            };
+            _plot.Legends.Add(new Legend
+            {
                 LegendPosition = LegendPosition.BottomLeft,
                 LegendPlacement = LegendPlacement.Outside,
                 LegendOrientation = LegendOrientation.Horizontal
-            };
+            });
             _plot.Axes.Add(new OxyPlot.Axes.LinearAxis
             {
                 Title = xAxisTitle,

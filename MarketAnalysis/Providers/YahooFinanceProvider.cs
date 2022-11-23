@@ -29,7 +29,7 @@ namespace MarketAnalysis.Providers
                 await using var response = await request.Content.ReadAsStreamAsync();
                 using var reader = new StreamReader(response);
                 using var csv = new CsvReader(reader, CultureInfo.CurrentCulture);
-                csv.Configuration.RegisterClassMap<YahooTimeSeriesDataMap>();
+                csv.Context.RegisterClassMap<YahooTimeSeriesDataMap>();
                 var records = csv.GetRecordsAsync<YahooTimeSeriesData>();
                 var results = await ConvertToRow(records);
                 return results;

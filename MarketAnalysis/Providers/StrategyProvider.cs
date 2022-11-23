@@ -33,13 +33,14 @@ namespace MarketAnalysis.Providers
                 _strategyFactory.Create(new ClusteringParameters())
                 //_strategyFactory.Create(new WeightedParameters())
             };
-            //var strategies = subStrategies.Concat(new[]
-            //{
-            //    _strategyFactory.Create(new WeightedParameters {Weights = subStrategies.ToDictionary(x => x, v => 0d)})
-            //});
-            var strategies = subStrategies;
+            var strategies = subStrategies.Concat(new IStrategy[]
+            {
+                //_strategyFactory.Create(new WeightedParameters {Weights = subStrategies.ToDictionary(x => x, v => 0d)})
+                _strategyFactory.Create(new MultipleParameters { Strategies = subStrategies.ToList(), Threshold = 5 })
+            });
+            //var strategies = subStrategies;
 
-            Log.Information($"Evaluating against strategies: {string.Join<IStrategy>(", ", strategies)}");
+            Log.Information($"Evaluating against strategies: {string.Join(", ", strategies)}");
 
             return strategies.ToArray();
         }
