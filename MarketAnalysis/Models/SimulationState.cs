@@ -38,7 +38,7 @@ namespace MarketAnalysis.Models
         public void AddBuyOrder(decimal brokerage, int orderDelay, decimal funds)
         {
             var cost = funds - brokerage;
-            if (cost <= 0)
+            if ((cost - SharePrice) <= 0)
                 return;
 
             TotalFunds -= cost;

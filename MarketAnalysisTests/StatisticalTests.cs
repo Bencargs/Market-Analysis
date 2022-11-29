@@ -26,7 +26,7 @@ namespace MarketAnalysisTests
         private static readonly DateTime StartDate = DateTime.Parse("2010-07-01");
 
         [Test]
-        public void MarketAverageProfit()
+        public void MarketAverageDailyProfit()
         {
             var rng = new Random(RandomSeed);
             var data = CreateMarketData().SkipWhile(x => x.Date < StartDate).ToArray();
@@ -54,7 +54,7 @@ namespace MarketAnalysisTests
         }
 
         [Test]
-        public void DeltaAverageProfit()
+        public void DeltaAverageDailyProfit()
         {
             var rng = new Random(RandomSeed);
             var data = CreateMarketData().SkipWhile(x => x.Date < StartDate).ToArray();
@@ -79,7 +79,7 @@ namespace MarketAnalysisTests
         }
 
         [Test]
-        public void OptimalStoppingAverageProfit()
+        public void OptimalStoppingAverageDailyProfit()
         {
             var rng = new Random(RandomSeed);
             var data = CreateMarketData().SkipWhile(x => x.Date < StartDate).ToArray();
@@ -104,7 +104,7 @@ namespace MarketAnalysisTests
         }
 
         [Test]
-        public void HolidayEffectAverageProfit()
+        public void HolidayEffectAverageDailyProfit()
         {
             var rng = new Random(RandomSeed);
             var data = CreateMarketData().SkipWhile(x => x.Date < StartDate).ToArray();
@@ -129,7 +129,7 @@ namespace MarketAnalysisTests
         }
 
         [Test]
-        public void SpreadAverageProfit()
+        public void SpreadAverageDailyProfit()
         {
             var rng = new Random(RandomSeed);
             var data = CreateMarketData().SkipWhile(x => x.Date < StartDate).ToArray();

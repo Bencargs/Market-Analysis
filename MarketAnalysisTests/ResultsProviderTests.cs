@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Configuration;
 using System.IO;
 using System.Threading.Tasks;
 using ApprovalTests;
@@ -14,7 +13,6 @@ using MarketAnalysis.Repositories;
 using MarketAnalysis.Services;
 using MarketAnalysis.Strategy;
 using MarketAnalysis.Strategy.Parameters;
-using MarketAnalysisTests.ApprovalTests;
 using Moq;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -30,11 +28,6 @@ namespace MarketAnalysisTests
         [SetUp]
         public void Setup()
         {
-            ConfigurationManager.AppSettings["BacktestingDate"] = "2010-07-01";
-            ConfigurationManager.AppSettings["CacheSize"] = "2000";
-            ConfigurationManager.AppSettings["DataPath"] = "MarketData.csv";
-            ConfigurationManager.AppSettings["RelativePath"] = @"../../../";
-
             var marketData = CreateMarketData();
             var marketDataCache = CreateMarketDataCache(marketData);
 
@@ -49,9 +42,8 @@ namespace MarketAnalysisTests
                 simulationFactory,
                 investorProvider);
 
-            
             var strategyFactory = CreateStrategyFactory(
-                marketDataCache, 
+                marketDataCache,
                 simulationCache,
                 investorProvider,
                 ratingService);
@@ -67,7 +59,7 @@ namespace MarketAnalysisTests
 
             _target.Initialise();
 
-            var strategy = strategyFactory.Create(new HolidayEffectParameters());
+            var strategy = strategyFactory.Create(new RelativeStrengthParameters());
             var stateJson = File.ReadAllText(@"HolidayEffectSimulationState.json");
             var simulationState = JsonConvert.DeserializeObject<SimulationState[]>(stateJson);
             var resultsToAdd = new ConcurrentDictionary<IStrategy, SimulationState[]>();
@@ -79,17 +71,17 @@ namespace MarketAnalysisTests
         [Test]
         public async Task PerformanceChart()
         {
-            var path = Path.Combine(Environment.CurrentDirectory, "ChartTests", "PerformanceChart.png");
-            
+            var path = Path.Combine(Environment.CurrentDirectory, "..", "..", "..", "ChartTests", "PerformanceChart.png");
+
             await _target.SaveChart(ResultsChart.Performance, path);
-            
+
             Approvals.Verify(new FileInfo(path));
         }
 
         [Test]
         public async Task RelativeChart()
         {
-            var path = Path.Combine(Environment.CurrentDirectory, "ChartTests", "RelativeChart.png");
+            var path = Path.Combine(Environment.CurrentDirectory, "..", "..", "..", "ChartTests", "RelativeChart.png");
 
             await _target.SaveChart(ResultsChart.Relative, path);
 
@@ -99,7 +91,7 @@ namespace MarketAnalysisTests
         [Test]
         public async Task SignalChart()
         {
-            var path = Path.Combine(Environment.CurrentDirectory, "ChartTests", "SignalChart.png");
+            var path = Path.Combine(Environment.CurrentDirectory, "..", "..", "..", "ChartTests", "SignalChart.png");
 
             await _target.SaveChart(ResultsChart.Signal, path);
 

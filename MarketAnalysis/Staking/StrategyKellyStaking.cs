@@ -55,7 +55,6 @@ namespace MarketAnalysis.Staking
             var probability = (decimal)profit.Length / (profit.Length + loss.Length);
             var tradeValue = avgProfit / avgLoss;
 
-
             var fraction = probability - (1 - probability) / tradeValue;
 
             _fraction = fraction.Clamp(0, 1);

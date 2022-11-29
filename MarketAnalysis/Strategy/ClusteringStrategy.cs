@@ -51,11 +51,12 @@ namespace MarketAnalysis.Strategy
             var marketDataValues = _ratingService.CalculateMarketDataValues(history);
             foreach (var data in history)
             {
+                if (!marketDataValues.TryGetValue(data.Date, out var value))
+                    continue;
+
                 var x = _xSelector(data);
                 var y = _ySelector(data);
-                var cell = grid[x, y];
-                marketDataValues.TryGetValue(data.Date, out var value);
-                cell.Add(value);
+                grid[x, y].Add(value);
             }
 
             // Determine the average value of each cell
@@ -67,6 +68,7 @@ namespace MarketAnalysis.Strategy
             var minValue = Convert.ToInt32(Math.Round(averages.Min(), MidpointRounding.ToNegativeInfinity));
             var maxValue = Convert.ToInt32(Math.Round(averages.Max(), MidpointRounding.ToPositiveInfinity));
             var range = maxValue - minValue;
+            if (range == 0) return;
 
             // Search for optimal buy threshold
             var potentials = Enumerable.Range(minValue, range)
@@ -95,16 +97,16 @@ namespace MarketAnalysis.Strategy
                 return false;
 
             var clusterAverage = GetAverage(cell);
-            var clusterValue = Convert.ToInt32(Math.Abs(clusterAverage));
+            var clusterValue = Math.Abs(Convert.ToInt32(clusterAverage));
 
-            return clusterValue > _parameters.Threshold;
+            return clusterValue < _parameters.Threshold;
         }
 
         public decimal GetStake(DateTime today, decimal totalFunds)
             => _stakingService.GetStake(today, totalFunds);
 
         private static decimal GetAverage(List<decimal> values)
-            => values.Average() * 1_000;
+            => values.Average() * 100;
 
         public override bool Equals(object obj)
         {

@@ -34,19 +34,17 @@ namespace MarketAnalysis.Strategy
         {
             _stakingService.Evaluate(fromDate, endDate);
 
-            var potentials = Enumerable.Range(0, 100).SelectMany(x =>
+            var potentials = Enumerable.Range(1, 100).SelectMany(x =>
             {
-                return Enumerable.Range(1, 6).SelectMany(threshold =>
+                return Enumerable.Range(1, 2/*6*/).SelectMany(threshold =>
                 {
                     var value = x / 100d;
-                    const double increment = 0.001d;
-                    return Enumerable.Range(0, _parameters.Weights.Count).Select(y =>
+                    return Enumerable.Range(1, _parameters.Weights.Count - 1).Select(y =>
                     {
                         var newWeights = _parameters.Weights.Select((w, j) =>
                         {
-                            var allocation = j == y ? (value + increment) : value;
-                            return (strategy: w.Key, allocation);
-                        }).ToDictionary(k => k.strategy, v => v.allocation);
+                            return (strategy: w.Key, value);
+                        }).ToDictionary(k => k.strategy, v => v.value);
 
                         return new WeightedParameters{ Threshold = threshold, Weights = newWeights };
                     });
