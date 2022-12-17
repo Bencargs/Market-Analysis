@@ -58,6 +58,7 @@ namespace MarketAnalysis
             services.AddTransient<StrategyProvider>();
             services.AddSingleton<IInvestorProvider, InvestorProvider>();
             services.AddTransient<MarketDataProvider>();
+            services.AddTransient<MarketStatisticsProvider>();
             services.AddTransient<ReportProvider>();
 
             // Factories

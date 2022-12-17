@@ -11,7 +11,10 @@ namespace MarketAnalysis.Providers
         void Initialise();
         void AddResults(Investor investor, ConcurrentDictionary<IStrategy , SimulationState[]> history);
         Dictionary<Investor, IEnumerable<SimulationResult>> GetResults();
+        decimal CurrentPrice();
         decimal MarketAverage();
+        float PriceProbability(Period period);
+        (decimal Price, float Probability) MaximumPriceProbability();
         Task SaveSimulationResults();
         Task SaveChart(ResultsChart chartType, string path);
         Task SaveData(IEnumerable<MarketData> data);

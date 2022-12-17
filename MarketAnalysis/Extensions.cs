@@ -91,5 +91,22 @@ namespace MarketAnalysis
             value = Math.Min(max, value);
             return value;
         }
+
+        public static void Increment(this Dictionary<float, int> bucket, float value)
+        {
+            if (!bucket.ContainsKey(value))
+                bucket[value] = 0;
+            else
+                bucket[value]++;
+        }
+
+        public static float Average(this Dictionary<float, int> bucket, float percent)
+        {
+            var numerator = (float)bucket.Where(x => x.Key <= percent).Sum(x => x.Value);
+            var total = (float)bucket.Sum(x => x.Value);
+            var probability = numerator / total;
+
+            return (float)Math.Round(probability, 4, MidpointRounding.AwayFromZero);
+        }
     }
 }

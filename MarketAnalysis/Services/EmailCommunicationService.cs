@@ -44,7 +44,7 @@ namespace MarketAnalysis.Services
             }
         }
 
-        private SendGridMessage CreateEmailMessage(DateTime date, Investor investor, string content, List<Attachment> attachments)
+        private static SendGridMessage CreateEmailMessage(DateTime date, Investor investor, string content, List<Attachment> attachments)
         {
             var from = new EmailAddress("research@cbc.com", "CBC Market Analysis");
             var subject = $"Market Report {date:dd MMM yyyy}";

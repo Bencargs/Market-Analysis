@@ -19,25 +19,28 @@ namespace MarketAnalysis.Providers
         private readonly IMarketDataCache _marketDataCache;
         private readonly IRepository<MarketData> _marketDataRepository;
         private readonly RatingService _ratingService;
-
+        private readonly MarketStatisticsProvider _marketStatisticsProvider;
         private readonly IRepository<SimulationResult> _simulationResultsRepository;
 
         public ResultsProvider(
             IMarketDataCache marketDataCache,
             IRepository<MarketData> marketDataRepository,
             RatingService ratingService,
+            MarketStatisticsProvider marketStatisticsProvider,
             IRepository<SimulationResult> simulationResultsRepository)
         {
             _marketDataCache = marketDataCache;
             _marketDataRepository = marketDataRepository;
             _ratingService = ratingService;
+            _marketStatisticsProvider = marketStatisticsProvider;
             _simulationResultsRepository = simulationResultsRepository;
         }
 
         public void Initialise()
         {
             _ratingService.RateMarketData();
-            
+            _marketStatisticsProvider.Initialise();
+
             _charts.Add(ResultsChart.Performance, new Chart("Strategy returns", "Return ($ AU)", "Time (Days)"));
             _charts[ResultsChart.Performance].AddSeries(
                 _ratingService
@@ -133,6 +136,11 @@ namespace MarketAnalysis.Providers
                 .GetMarketAverageWorth()
                 .Skip(_marketDataCache.BacktestingIndex)
                 .Last();
+
+        public decimal CurrentPrice() => _marketDataCache[_marketDataCache.Count - 1].Price;
+
+        public float PriceProbability(Period period) => _marketStatisticsProvider.Probability(period, CurrentPrice(), CurrentPrice());
+        public (decimal Price, float Probability) MaximumPriceProbability() => _marketStatisticsProvider.MaximumProbability(CurrentPrice());
 
         private void AddRelativeChartSeries(SimulationState[] history, IStrategy strategy)
         {

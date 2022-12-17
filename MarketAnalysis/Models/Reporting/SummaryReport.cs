@@ -50,6 +50,11 @@ namespace MarketAnalysis.Reports
             template.Replace("stake", ResultsProvider.Stake(_results).ToString("C2"));
             template.Replace("profit", ResultsProvider.TotalProfit(_results).ToString("C2"));
             template.Replace("marketAverage", _resultsProvider.MarketAverage().ToString("C2"));
+            template.Replace("price", _resultsProvider.CurrentPrice().ToString("C2"));
+            template.Replace("dailyProbability", _resultsProvider.PriceProbability(Period.Day).ToString("P2"));
+            template.Replace("weeklyProbability", _resultsProvider.PriceProbability(Period.Week).ToString("P2"));
+            template.Replace("monthlyProbability", _resultsProvider.PriceProbability(Period.Month).ToString("P2"));
+            template.Replace("quarterlyProbability", _resultsProvider.PriceProbability(Period.Quarter).ToString("P2"));
         }
 
         private void AddResultsSummary(ReportPage template)

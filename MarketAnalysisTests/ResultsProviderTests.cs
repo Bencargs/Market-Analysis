@@ -41,6 +41,7 @@ namespace MarketAnalysisTests
                 marketDataCache,
                 simulationFactory,
                 investorProvider);
+            var marketStatisticService = new MarketStatisticsProvider(marketDataCache);
 
             var strategyFactory = CreateStrategyFactory(
                 marketDataCache,
@@ -55,6 +56,7 @@ namespace MarketAnalysisTests
                 marketDataCache,
                 marketDataRepository.Object,
                 ratingService,
+                marketStatisticService,
                 simulationResultsRepository.Object);
 
             _target.Initialise();
@@ -96,6 +98,26 @@ namespace MarketAnalysisTests
             await _target.SaveChart(ResultsChart.Signal, path);
 
             Approvals.Verify(new FileInfo(path));
+        }
+
+        [Test]
+        [UseApprovalSubdirectory("StatisticalTests")]
+        public void PriceProbabilities()
+        {
+            var currentPrice = _target.CurrentPrice();
+            var dailyProbability = _target.PriceProbability(Period.Day);
+            var weeklyProbability = _target.PriceProbability(Period.Week);
+            var monthlyProbability = _target.PriceProbability(Period.Month);
+            var quarterlyProbability = _target.PriceProbability(Period.Quarter);
+            var maximumProbability = _target.MaximumPriceProbability();
+
+            Approvals.Verify(
+@$"Current Price: {currentPrice:C2}
+Daily: {dailyProbability:P2}
+Weekly: {weeklyProbability:P2}
+Monthly: {monthlyProbability:P2}
+Quarterly: {quarterlyProbability:P2}
+Maximum: (Price) {maximumProbability.Price:C2}, (Probability) {maximumProbability.Probability:P2}");
         }
     }
 }

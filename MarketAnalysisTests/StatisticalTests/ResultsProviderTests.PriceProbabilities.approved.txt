@@ -1,0 +1,6 @@
+﻿Current Price: $85.49
+Daily: 46.43%
+Weekly: 53.33%
+Monthly: 42.86%
+Quarterly: 45.83%
+Maximum: (Price) $86.83, (Probability) 100.00%
