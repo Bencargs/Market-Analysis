@@ -50,9 +50,10 @@ namespace MarketAnalysis.Providers
         }
 
         public (decimal Price, float Probability) MaximumProbability(
-            decimal currentPrice)
+            decimal currentPrice,
+            Period period)
         {
-            var bucket = GetHistogram(Period.Day); // Any period returns the same probability
+            var bucket = GetHistogram(period);
 
             var maximum = Enumerable.Range(-10, 200)
                 .Select(x => currentPrice + ((decimal)x / 100))

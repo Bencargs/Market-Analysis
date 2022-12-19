@@ -26,6 +26,7 @@ namespace MarketAnalysis.Models
         public decimal[] History { get; set; }
         public bool ShouldBuy { get; set; }
         public decimal Stake { get; set; }
+        public decimal TotalFunds { get; set; }
         public string StrategyType { get; set; }
     }
 }

@@ -82,6 +82,7 @@ namespace MarketAnalysis.Providers
                     SimulationDays = simulationDays,
                     ShouldBuy = latestState.ShouldBuy,
                     Stake = latestState.OrderQueue.LatestPayment(),
+                    TotalFunds = latestState.TotalFunds,
                     ProfitTotal = profitTotal,
                     ProfitYTD = CalculateYTDProfit(investor, history),
                     AboveMarketReturn = excessReturns.Last(),
@@ -131,6 +132,19 @@ namespace MarketAnalysis.Providers
                 ? results.Where(x => x.ShouldBuy).Average(x => x.Stake)
                 : 0m;
 
+        public static decimal TotalFunds(IEnumerable<SimulationResult> results)
+            => ShouldBuy(results)
+                ? results.Where(x => x.ShouldBuy).Average(x => x.TotalFunds)
+                : results.Average(x => x.TotalFunds);
+
+        public static decimal StakePercent(IEnumerable<SimulationResult> results)
+        {
+            var totalFunds = TotalFunds(results);
+            if (totalFunds == 0) return 1;
+            
+            return Stake(results) / totalFunds;
+        }
+
         public decimal MarketAverage()
             => _ratingService
                 .GetMarketAverageWorth()
@@ -140,7 +154,7 @@ namespace MarketAnalysis.Providers
         public decimal CurrentPrice() => _marketDataCache[_marketDataCache.Count - 1].Price;
 
         public float PriceProbability(Period period) => _marketStatisticsProvider.Probability(period, CurrentPrice(), CurrentPrice());
-        public (decimal Price, float Probability) MaximumPriceProbability() => _marketStatisticsProvider.MaximumProbability(CurrentPrice());
+        public (decimal Price, float Probability) MaximumPriceProbability(Period period) => _marketStatisticsProvider.MaximumProbability(CurrentPrice(), period);
 
         private void AddRelativeChartSeries(SimulationState[] history, IStrategy strategy)
         {

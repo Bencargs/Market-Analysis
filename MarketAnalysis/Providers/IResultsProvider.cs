@@ -14,7 +14,7 @@ namespace MarketAnalysis.Providers
         decimal CurrentPrice();
         decimal MarketAverage();
         float PriceProbability(Period period);
-        (decimal Price, float Probability) MaximumPriceProbability();
+        (decimal Price, float Probability) MaximumPriceProbability(Period period);
         Task SaveSimulationResults();
         Task SaveChart(ResultsChart chartType, string path);
         Task SaveData(IEnumerable<MarketData> data);

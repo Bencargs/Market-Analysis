@@ -25,6 +25,12 @@ namespace MarketAnalysisTests
             configuration.Setup(x => x["CacheSize"]).Returns("2000");
             configuration.Setup(x => x["DataPath"]).Returns("MarketData.csv");
             configuration.Setup(x => x["RelativePath"]).Returns("");
+            configuration.Setup(x => x["LogoImagePath"]).Returns(@"..\..\..\..\MarketAnalysis\Resources\Logo.png");
+            configuration.Setup(x => x["WorldImagePath"]).Returns(@"..\..\..\..\MarketAnalysis\Resources\World.png");
+            configuration.Setup(x => x["PhoneImagePath"]).Returns(@"..\..\..\..\MarketAnalysis\Resources\Phone.png");
+            configuration.Setup(x => x["EmailImagePath"]).Returns(@"..\..\..\..\MarketAnalysis\Resources\Email.png");
+            configuration.Setup(x => x["EmailTemplatePath"]).Returns(@"..\..\..\..\MarketAnalysis\Resources\Template.html");
+            configuration.Setup(x => x["StrategyTemplatePath"]).Returns(@"..\..\..\..\MarketAnalysis\Resources\StrategyTemplate.html");
 
             Configuration.Initialise(configuration.Object);
         }

@@ -48,6 +48,7 @@ namespace MarketAnalysis.Reports
             template.Replace("InvestorNumber", _investor.Number);
             template.Replace("recommendation", template.GetRecommendation(ResultsProvider.ShouldBuy(_results)));
             template.Replace("stake", ResultsProvider.Stake(_results).ToString("C2"));
+            template.Replace("stakePercent", ResultsProvider.StakePercent(_results).ToString("P2"));
             template.Replace("profit", ResultsProvider.TotalProfit(_results).ToString("C2"));
             template.Replace("marketAverage", _resultsProvider.MarketAverage().ToString("C2"));
             template.Replace("price", _resultsProvider.CurrentPrice().ToString("C2"));

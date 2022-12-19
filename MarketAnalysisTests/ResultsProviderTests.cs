@@ -109,7 +109,7 @@ namespace MarketAnalysisTests
             var weeklyProbability = _target.PriceProbability(Period.Week);
             var monthlyProbability = _target.PriceProbability(Period.Month);
             var quarterlyProbability = _target.PriceProbability(Period.Quarter);
-            var maximumProbability = _target.MaximumPriceProbability();
+            var maximumProbability = _target.MaximumPriceProbability(Period.Day);
 
             Approvals.Verify(
 @$"Current Price: {currentPrice:C2}
@@ -118,6 +118,18 @@ Weekly: {weeklyProbability:P2}
 Monthly: {monthlyProbability:P2}
 Quarterly: {quarterlyProbability:P2}
 Maximum: (Price) {maximumProbability.Price:C2}, (Probability) {maximumProbability.Probability:P2}");
+        }
+
+        [Test]
+        public async Task SummaryReport_Html()
+        {
+            var reportProvider = new ReportProvider(_target);
+            foreach (var (investor, results) in _target.GetResults())
+            {
+                var report = await reportProvider.GenerateReports(investor, results);
+
+                Approvals.VerifyHtml(report.Summary.Body);
+            }
         }
     }
 }
