@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using ApprovalTests;
 using ApprovalTests.Namers;
@@ -124,12 +125,23 @@ Maximum: (Price) {maximumProbability.Price:C2}, (Probability) {maximumProbabilit
         public async Task SummaryReport_Html()
         {
             var reportProvider = new ReportProvider(_target);
-            foreach (var (investor, results) in _target.GetResults())
-            {
-                var report = await reportProvider.GenerateReports(investor, results);
 
-                Approvals.VerifyHtml(report.Summary.Body);
-            }
+            var (investor, results) = _target.GetResults().First();
+            var report = await reportProvider.GenerateReports(investor, results);
+
+            Approvals.VerifyHtml(report.Summary.Body);
         }
+
+        [Test]
+        public async Task StrategyReport_Html()
+        {
+            var reportProvider = new ReportProvider(_target);
+
+            var (investor, results) = _target.GetResults().First();
+            var report = await reportProvider.GenerateReports(investor, results);
+
+            Approvals.VerifyHtml(report.StrategyReports[0].Body);
+        }
+
     }
 }

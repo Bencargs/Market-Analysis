@@ -19,7 +19,6 @@ namespace MarketAnalysisTests
     {
         public TestHarness()
         {
-
             var configuration = new Mock<IConfiguration>();
             configuration.Setup(x => x["BacktestingDate"]).Returns("2010-07-01");
             configuration.Setup(x => x["CacheSize"]).Returns("2000");

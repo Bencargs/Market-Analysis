@@ -226,19 +226,19 @@ namespace MarketAnalysisTests
             var simulationFactory = new SimulatorFactory(marketDataCache, simulationCache);
             var ratingService = new RatingService(marketDataCache, simulationFactory, investorProvider);
             var strategyFactory = CreateStrategyFactory(marketDataCache, simulationCache, investorProvider, ratingService);
-            var deltaStrategy = strategyFactory.Create(new DeltaParameters());
-            var volumeStrategy = strategyFactory.Create(new VolumeParameters());
-            var _ = simulationFactory.Create<BacktestingSimulator>()
-                .Evaluate(deltaStrategy, investorProvider.Current).ToArray();
-            var __ = simulationFactory.Create<BacktestingSimulator>()
-                .Evaluate(volumeStrategy, investorProvider.Current).ToArray();
+            var strategy1 = strategyFactory.Create(new DeltaParameters());
+            var strategy2 = strategyFactory.Create(new VolumeParameters());
+            _ = simulationFactory.Create<BacktestingSimulator>()
+                .Evaluate(strategy1, investorProvider.Current).ToArray();
+            _ = simulationFactory.Create<BacktestingSimulator>()
+                .Evaluate(strategy2, investorProvider.Current).ToArray();
 
             var parameters = new WeightedParameters
             {
                 Weights = new Dictionary<IStrategy, double>
                 {
-                    { deltaStrategy, 0d },
-                    { volumeStrategy, 0d }
+                    { strategy1, 0d },
+                    { strategy2, 0d }
                 }
             };
             var strategy = strategyFactory.Create(parameters);
